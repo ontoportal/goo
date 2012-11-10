@@ -1,0 +1,267 @@
+require_relative "settings/settings"
+require_relative "../utils/rdf"
+
+module Goo
+  module Base
+
+    class Resource < OpenStruct
+      include ActiveModel::Validations
+      include Goo::Base::Settings
+
+      attr_reader :attributes
+      
+      def initialize(attributes) 
+        model = self.class.goop_settings[:model]
+        raise ArgumentError, "Can't create model, model settings do not contain model type." \
+          unless model != nil
+        raise ArgumentError, "Can't create model, model settings do not contain graph policy." \
+          unless self.class.goop_settings[:graph_policy] != nil
+        @_global_vocabularies = Goo::Naming.get_vocabularies
+        if @_global_vocabularies.default.nil?
+          raise ModelNotRegistered, "Model '#{model}' not found in vocabularies." \
+            unless @_global_vocabularies.is_model_registered(self.class)
+        end
+        super()
+        @attributes = attributes.dup
+        @attributes[:internals] = Internals.new(self)
+        @attributes[:internals].new_resource
+
+        @_cached_exists = nil
+        if @attributes.length > 1 #size 1 is internals
+          shape_me
+        end
+      end
+     
+      def contains_data?
+        ((@attributes.has_key? :internals) and @attributes.length > 1) or
+          ((not @attributes.has_key? :internals) and @attributes.length > 0)
+      end 
+
+      def internals()
+        @attributes[:internals]
+      end
+      
+      def attribute_validators(attr)
+        validators = []
+        #TODO some indexing here might help
+        self.class.validators.each do |val| 
+          validators << val if val.attributes.include? attr
+        end
+        return validators
+      end
+
+      def shape_attribute(attr)
+        validators = attribute_validators(attr)
+        validators.select! { |val| val.kind_of? CardinalityValidator }
+        if validators.length > 1
+          raise StatusException, "Error: >1 cardinality object in attribute #{attr}"
+        end
+        prx = AttributeValueProxy.new(validators[0],@attributes[:internals])
+        define_singleton_method("#{attr}=") do |*args|
+          current_value = @table[attr]
+          tvalue = prx.call({ :value => args, :attr => attr, 
+                              :current_value => current_value })
+          @table[attr] = tvalue
+        end
+        define_singleton_method("#{attr}") do |*args|
+          return @table[attr]
+        end
+      end 
+
+      def shape_me
+        check_rdftype_inconsistency
+        
+        #set to nil all the known properties via validators
+        keys_attr = @attributes.keys
+        self.class.validators.each do |val|
+          keys_attr = keys_attr | val.attributes
+        end
+        keys_attr.each do |attr|
+          next if attr == :internals
+          shape_attribute(attr)
+        end
+
+        #if attributes are set then set values for properties.
+        @attributes.each_pair do |attr,value|
+          next if attr == :internals
+          self.send("#{attr}=", value)
+        end
+        internal_status = @attributes[:internals] 
+        @attributes = @table
+        @table[:internals] = internal_status
+      end
+    
+      def method_missing(sym, *args, &block)
+        if sym.to_s[-1] == "="
+          shape_attribute(sym.to_s.chomp "=")
+          return self.send(sym,args)
+        end
+        raise NoMethodError, "undefined method `#{sym}'"
+      end
+      
+      #set resource id wihout loading the rest of the attributes.
+      def resource_id=(resource_id)
+        internals.id=resource_id
+      end
+
+      def resource_id()
+        internals.id
+      end
+
+      def exists?(reload=false)
+        if @_cached_exists.nil? or reload
+          epr = Goo.store(@store_name)
+          rs = epr.query(
+               """SELECT (count(?o) as ?c) WHERE { #{resource_id.to_turtle} a ?o }""")
+          rs.each_solution do |sol|
+            @_cached_exists = sol.get(:c).parsed_value > 0
+          end
+        end
+        return @_cached_exists
+      end
+
+      def check_rdftype_inconsistency
+        self.class.goop_settings[:model]
+        @attributes.each_pair do |k,v|
+          attr_type = RDF.rdf_type?(k)
+          if attr_type and \
+              not Goo::Utils.symbol_str_equals(@attributes[k], model_class)
+            raise ArgumentError,'Object type cannot be redefined in attributes'
+          elsif attr_type
+            @attributes.delete(k)
+          end
+        end
+      end
+
+      def each_linked_base
+        raise ArgumentError, "No block given" unless block_given?
+        @attributes.each do |key,values| 
+          mult_values = if values.kind_of? Array then values else [values] end
+          mult_values.each do |object|
+            if object.kind_of? Resource
+              yield key,object
+            end
+          end
+        end
+      end
+      
+      def lazy_loaded
+        internals.lazy_loaded
+      end
+
+      def load(resource_id=nil)
+        if resource_id.nil? and internals.id(false).nil?
+          raise StatusException, "Cannot load Resource without a resource in paramater or internals"
+        end
+        if resource_id.nil?
+          resource_id = internals.id(false)
+        end
+        unless (resource_id.kind_of? RDF::IRI or resource_id.kind_of? RDF::BNode)
+          raise ArgumentError, "resource_id must be an instance of RDF:IRI"
+        end
+        internals.load?
+
+        model_class = Queries.get_resource_class(resource_id,internals.store_name)
+        if model_class.nil?
+          raise ArgumentError, "ResourceID '#{resource_id}' does not exist"
+        end
+        if model_class != self.class
+          raise ArgumentError, 
+              "ResourceID '#{resource_id}' is an instance of type #{model_class} in the store"
+        end
+
+        store_attributes = Queries.get_resource_attributes(resource_id, self.class, 
+                                                           internals.store_name)
+        internal_status = @attributes[:internals]
+        @attributes = store_attributes
+        @attributes[:internals] = internal_status
+
+        shape_me
+        internals.id=resource_id
+        internals.loaded
+      end
+
+      def delete(in_update=false)
+        internals.delete? unless in_update
+
+        reached = Set.new
+        reached = Goo::Queries.reachable_objects_from(resource_id, internals.store_name,
+                                                      count_backlinks = true)
+        to_delete = Set.new
+        reached.each do |info|
+          #include to delete related bnodes with no extra backlinks
+          if info[:id].kind_of? RDF::BNode and info[:backlink_count] < 2
+            to_delete << info[:id]
+          end
+        end
+        objects_to_delete = [self]
+        #find those extra bnodes as objects and load them.
+        self.each_linked_base do |attr_name, linked_obj|
+          next if in_update and not linked_obj.loaded?
+          if to_delete.include? linked_obj.resource_id
+            unless linked_obj.loaded?
+              linked_obj.load
+            end
+            objects_to_delete << linked_obj
+          end
+        end
+        queries = Goo::Queries.build_sparql_delete_query(objects_to_delete)
+        return false if queries.length.nil? or queries.length == 0
+        epr = Goo.store(@store_name)
+        queries.each do |query|
+          epr.update(query) 
+        end
+
+        internals.deleted
+        if in_update
+          return objects_to_delete
+        end
+      end
+
+      def save()
+        internals.save?
+        if not valid?
+            exc = NotValidException.new("Object is not valid. It cannot be saved. Check errors.")
+            exc.errors = linked_obj.errors
+            raise exc
+        end
+        self.each_linked_base do |attr_name,linked_obj|
+          next unless linked_obj.internals.loaded?
+          if not linked_obj.valid?
+            exc = NotValidException.new("Attribute '#{attr_name}' links to a non-valid object.")
+            exc.errors = linked_obj.errors
+            raise exc
+          end
+        end
+        if exists?
+          #an update: first delete a copy from the store
+          copy = self.class.new
+          copy.load(self.resource_id)
+          copy.delete(in_update=true)
+        end
+        queries = Goo::Queries.build_sparql_update_query(self)
+        return false if queries.length.nil? or queries.length == 0
+        epr = Goo.store(@store_name)
+        queries.each do |query|
+          epr.update(query) 
+        end
+
+        internals.saved
+      end
+
+      def loaded?
+        internals.loaded?
+      end
+      def persistent?
+        internals.persistent?
+      end
+      def modified?
+        return internals.modified? if internals.modified?
+        self.each_linked_base do |attr_name,linked_obj|
+          return linked_obj.modified? if linked_obj.modified?
+        end
+        return false
+      end
+    end
+  end
+end
