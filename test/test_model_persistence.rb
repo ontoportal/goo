@@ -5,7 +5,9 @@ class TestModelPersonB < TestCase
   end
 
   def test_person_save
-    person = Person.new({:name => "Goo Fernandez", :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"), :some_stuff => [1]})
+    person = Person.new({:name => "Goo Fernandez",
+                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
+                         :some_stuff => [1]})
     if person.exists?
       person_copy = Person.new
       person_copy.load(person.resource_id)
