@@ -1,6 +1,8 @@
 
 module Goo
   module Base
+    class KeyFieldUpdateError < StandardError
+    end
     class StatusException < StandardError
     end
     class PrefixVocabularieNotFound < StandardError
