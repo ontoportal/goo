@@ -69,6 +69,36 @@ class TestModelPersonB < TestCase
     person_update.delete
     assert_equal false, person_update.exists?(reload=true)
   end
+
+  def test_person_add_remove_property
+    person = Person.new({:name => "Goo Fernandez",
+                        :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
+                        :some_stuff => [1]})
+    if person.exists?
+      person_copy = Person.new
+      person_copy.load(person.resource_id)
+      person_copy.delete
+    end
+    assert_equal false, person.exists?(reload=true)
+    person.save
+    person_update = Person.new()
+    person_update.load(person.resource_id)
+    person_update.some_date =  DateTime.parse("2013-01-01T07:00:00.000Z")
+    person_update.save
+    #reload
+    person_update = Person.new()
+    person_update.load(person.resource_id)
+    assert_equal [DateTime.parse("2013-01-01T07:00:00.000Z")], person_update.some_date
+    #equivalent to remove
+    person_update.some_date = []
+    person_update.save
+    person_update = Person.new()
+    person_update.load(person.resource_id)
+    assert_equal nil, person_update.some_date
+    person_update.delete
+    assert_equal false, person_update.exists?(reload=true)
+    no_triples_for_subject(person_update.resource_id)
+  end
   
 end
 
