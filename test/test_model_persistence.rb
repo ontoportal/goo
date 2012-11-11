@@ -4,6 +4,14 @@ class TestModelPersonB < TestCase
   def setup
   end
 
+  def no_triples_for_subject(resource_id)
+    rs = Goo.store().query("SELECT * WHERE { #{resource_id.to_turtle} ?p ?o }")
+    rs.each_solution do |sol|
+      #unreachable
+      assert_equal 1,0
+    end
+  end
+
   def test_person_save
     person = Person.new({:name => "Goo Fernandez",
                          :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
