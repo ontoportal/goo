@@ -106,7 +106,8 @@ module Goo
           shape_attribute(sym.to_s.chomp "=")
           return self.send(sym,args)
         end
-        raise NoMethodError, "undefined method `#{sym}'"
+        return nil
+        #raise NoMethodError, "undefined method `#{sym}'"
       end
       
       #set resource id wihout loading the rest of the attributes.
