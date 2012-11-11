@@ -61,6 +61,16 @@ module Goo
           current_value = @table[attr]
           tvalue = prx.call({ :value => args, :attr => attr, 
                               :current_value => current_value })
+          if internals.persistent?
+            if self.class.goop_settings[:unique] and 
+               self.class.goop_settings[:unique][:fields].include? attr and
+               @table[attr] != tvalue
+               raise KeyFieldUpdateError, "Attribute '#{attr}' cannot be changed in a persisted object."
+            end
+          end
+          if @table[attr] != tvalue
+            internals.modified = true
+          end
           @table[attr] = tvalue
         end
         define_singleton_method("#{attr}") do |*args|

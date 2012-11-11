@@ -48,9 +48,6 @@ module Goo
         value = options[:value][0]
         attr = options[:attr]
         current_value = options[:current_value]
-        if current_value != value
-          @internals.modified = true
-        end
         tvalue = cardinality_transform(attr,value,current_value)
       end
     end
