@@ -27,8 +27,7 @@ module Goo
         @attributes[:internals].new_resource
 
         @_cached_exists = nil
-        if @attributes.length > 1 #size 1 is internals
-          shape_me
+        shape_me
         end
       end
      
@@ -79,26 +78,28 @@ module Goo
       end 
 
       def shape_me
-        check_rdftype_inconsistency
-        
-        #set to nil all the known properties via validators
-        keys_attr = @attributes.keys
-        self.class.validators.each do |val|
-          keys_attr = keys_attr | val.attributes
-        end
-        keys_attr.each do |attr|
-          next if attr == :internals
-          shape_attribute(attr)
-        end
+        if @attributes.length > 1 #size 1 is internals
+          check_rdftype_inconsistency
+          
+          #set to nil all the known properties via validators
+          keys_attr = @attributes.keys
+          self.class.validators.each do |val|
+            keys_attr = keys_attr | val.attributes
+          end
+          keys_attr.each do |attr|
+            next if attr == :internals
+            shape_attribute(attr)
+          end
 
-        #if attributes are set then set values for properties.
-        @attributes.each_pair do |attr,value|
-          next if attr == :internals
-          self.send("#{attr}=", value)
+          #if attributes are set then set values for properties.
+          @attributes.each_pair do |attr,value|
+            next if attr == :internals
+            self.send("#{attr}=", value)
+          end
         end
         internal_status = @attributes[:internals] 
-        @attributes = @table
         @table[:internals] = internal_status
+        @attributes = @table
       end
     
       def method_missing(sym, *args, &block)
