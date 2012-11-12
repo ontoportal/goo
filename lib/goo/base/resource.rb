@@ -28,6 +28,13 @@ module Goo
 
         @_cached_exists = nil
         shape_me
+
+        #anon objects have an uuid property
+        policy = self.class.goop_settings[:unique][:generator]
+        if policy == :anonymous
+          if not @table.include? :uuid
+            self.uuid = Goo.uuid.generate
+          end
         end
       end
      
@@ -60,6 +67,10 @@ module Goo
           current_value = @table[attr]
           tvalue = prx.call({ :value => args, :attr => attr, 
                               :current_value => current_value })
+          if attr == "uuid"
+            #uuid forced to be unique
+            tvalue = tvalue[0] 
+          end
           if internals.persistent?
             if self.class.goop_settings[:unique] and 
                self.class.goop_settings[:unique][:fields].include? attr and

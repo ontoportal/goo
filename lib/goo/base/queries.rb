@@ -75,7 +75,7 @@ eos
       expand_bnodes = (expand_bnodes and (model.loaded? or not model.persistent?))
       vocabs = Goo::Naming.get_vocabularies
       model_uri = vocabs.uri_for_type(model.class)
-      if resource_id.iri? or (not expand_bnodes)
+      if resource_id.iri? or (not expand_bnodes) or (not model.uuid.nil?)
         triples = [ "#{resource_id.to_turtle} <#{RDF.TYPE_IRI}> <#{model_uri}>" ]
       else
         triples = [ " <#{RDF.TYPE_IRI}> <#{model_uri}>" ]
@@ -100,7 +100,7 @@ eos
           else
             object = value_to_rdf_object(single_value) 
           end
-          if resource_id.iri? or (not expand_bnodes)
+          if resource_id.iri? or (not expand_bnodes) or (not model.uuid.nil?)
             triples << "#{subject.to_turtle} <#{predicate}> #{object}" 
           else
             triples << " <#{predicate}> #{object}" 
