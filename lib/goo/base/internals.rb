@@ -25,7 +25,7 @@ module Goo
 
       def id=(resource_id)
         if @persistent
-          raise StatusException, "Cannot set up resource_ID #{resource_id} in a persitent obj."
+          raise StatusException, "Cannot set up resource_ID #{resource_id} in a persistent obj."
         end
 
         if not SparqlRd::Utils::Http.valid_uri?(resource_id.value)
