@@ -78,7 +78,7 @@ module Goo
                raise KeyFieldUpdateError, "Attribute '#{attr}' cannot be changed in a persisted object."
             end
           end
-          if @table[attr] != tvalue
+          if @table[attr] != tvalue and attr != "uuid"
             internals.modified = true
           end
           @table[attr] = tvalue
