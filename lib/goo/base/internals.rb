@@ -24,14 +24,20 @@ module Goo
       end
 
       def id=(resource_id)
+        return if (@_base_instance.resource_id and 
+                    (@_base_instance.resource_id.value == resource_id.value))
+
         if @persistent
-          raise StatusException, "Cannot set up resource_ID #{resource_id} in a persistent obj."
+          if not (@_base_instance.resource_id.bnode? and 
+                  not @_base_instance.resource_id.skolem?)
+            raise StatusException, 
+                  "Cannot set up resource_ID #{resource_id} in a persistent obj."
+          end
         end
 
         if not SparqlRd::Utils::Http.valid_uri?(resource_id.value)
           raise ArgumentError, "resource_id '#{resource_id}' must be a valid IRI."
         end
-
         @_id = resource_id
         @persistent = false
         @loaded_dependencies = false

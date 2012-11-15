@@ -51,12 +51,13 @@ module Goo
         validators = []
         #TODO some indexing here might help
         self.class.validators.each do |val| 
-          validators << val if val.attributes.include? attr
+          validators << val if val.attributes.include? attr.to_sym
         end
         return validators
       end
 
       def shape_attribute(attr)
+        attr = attr.to_sym
         validators = attribute_validators(attr)
         validators.select! { |val| val.kind_of? CardinalityValidator }
         if validators.length > 1
@@ -67,18 +68,19 @@ module Goo
           current_value = @table[attr]
           tvalue = prx.call({ :value => args, :attr => attr, 
                               :current_value => current_value })
-          if attr == "uuid"
+          if attr == :uuid
             #uuid forced to be unique
             tvalue = tvalue[0] 
           end
           if internals.persistent?
             if self.class.goop_settings[:unique] and 
+               self.class.goop_settings[:unique][:fields] and
                self.class.goop_settings[:unique][:fields].include? attr and
                @table[attr] != tvalue
                raise KeyFieldUpdateError, "Attribute '#{attr}' cannot be changed in a persisted object."
             end
           end
-          if @table[attr] != tvalue and attr != "uuid"
+          if @table[attr] != tvalue and attr != :uuid
             internals.modified = true
           end
           @table[attr] = tvalue
@@ -134,8 +136,9 @@ module Goo
       def exists?(reload=false)
         if @_cached_exists.nil? or reload
           epr = Goo.store(@store_name)
-          rs = epr.query(
-               """SELECT (count(?o) as ?c) WHERE { #{resource_id.to_turtle} a ?o }""")
+          return false if resource_id.bnode? and (not resource_id.skolem?)
+          q = """SELECT (count(?o) as ?c) WHERE { #{resource_id.to_turtle} a ?o }"""
+          rs = epr.query(q)
           rs.each_solution do |sol|
             @_cached_exists = sol.get(:c).parsed_value > 0
           end
@@ -179,12 +182,13 @@ module Goo
         if resource_id.nil?
           resource_id = internals.id(false)
         end
-        unless (resource_id.kind_of? RDF::IRI or resource_id.kind_of? RDF::BNode)
-          raise ArgumentError, "resource_id must be an instance of RDF:IRI"
+        unless (resource_id.kind_of? SparqlRd::Resultset::Node and
+               not resource_id.kind_of? SparqlRd::Resultset::Literal)
+          raise ArgumentError, "resource_id must be an instance of RDF:IRI or RDF::BNode"
         end
         internals.load?
 
-        model_class = Queries.get_resource_class(resource_id,internals.store_name)
+        model_class = Goo::Queries.get_resource_class(resource_id,internals.store_name)
         if model_class.nil?
           raise ArgumentError, "ResourceID '#{resource_id}' does not exist"
         end
@@ -193,7 +197,7 @@ module Goo
               "ResourceID '#{resource_id}' is an instance of type #{model_class} in the store"
         end
 
-        store_attributes = Queries.get_resource_attributes(resource_id, self.class, 
+        store_attributes = Goo::Queries.get_resource_attributes(resource_id, self.class, 
                                                            internals.store_name)
         internal_status = @attributes[:internals]
         @attributes = store_attributes
@@ -243,6 +247,7 @@ module Goo
 
       def save()
         internals.save?
+        return if not self.modified?
         if not valid?
             exc = NotValidException.new("Object is not valid. It cannot be saved. Check errors.")
             exc.errors = linked_obj.errors
@@ -270,6 +275,9 @@ module Goo
         end
 
         internals.saved
+        if not self.uuid.nil?
+          self.resource_id= Goo::Queries.get_resource_id_by_uuid(self.uuid, self.class, @store_name)
+        end
       end
 
       def loaded?
