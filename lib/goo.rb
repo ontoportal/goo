@@ -5,6 +5,7 @@ require "active_model"
 require "ostruct"
 require "set"
 require "uri"
+require "uuid"
 
 require_relative "goo/validators/validators"
 require_relative "goo/base/base"
@@ -15,6 +16,7 @@ module Goo
 
   @@_configuration = {}
   @@_default_store = nil
+  @@_uuid_generator = nil
 
   def self.configure
     raise ArgumentError, "Configuration needs to receive a code block" \
@@ -32,6 +34,11 @@ module Goo
     end
     @@_default_store = SparqlRd::Repository.endpoint(stores[0][:name]) \
       if @@_default_store.nil?
+    @@_uuid_generator = UUID.new
+  end
+
+  def self.uuid
+    return @@_uuid_generator
   end
 
   def self.store(name=nil)
