@@ -14,7 +14,15 @@ class Person < Goo::Base::Resource
 end
 
 class TestModelPersonA < TestCase
-  def setup
+
+  def initialize(*args)
+    super(*args)
+    voc = Goo::Naming.get_vocabularies
+    if not voc.is_type_registered? :person
+      voc.register_model(:foaf, :person, Person)
+    else
+      raise StandarError, "Error conf unit test" if :person != voc.get_model_registry(Person)[:type]
+    end
   end
 
   def test_person

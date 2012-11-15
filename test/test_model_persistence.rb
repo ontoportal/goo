@@ -1,15 +1,36 @@
 require_relative 'test_case'
 
-class TestModelPersonB < TestCase
-  def setup
+class PersonPersist < Goo::Base::Resource
+  model :person
+  validates :name, :presence => true, :cardinality => { :maximum => 1 }
+  validates :multiple_vals, :cardinality => { :maximum => 2 }
+  validates :birth_date, :date_time_xsd => true, :presence => true, :cardinality => { :maximum => 1 }
+  unique :name
+  graph_policy :type_id_graph_policy
+
+  def initialize(attributes = {})
+    super(attributes)
+  end
+end
+
+class TestModelPersonPersistB < TestCase
+
+  def initialize(*args)
+    super(*args)
+    voc = Goo::Naming.get_vocabularies
+    if not voc.is_type_registered? :personp
+      voc.register_model(:foaf, :personp, PersonPersist)
+    else
+      raise StandarError, "Error conf unit test" if :personp != voc.get_model_registry(PersonPersist)[:type]
+    end
   end
 
   def test_person_save
-    person = Person.new({:name => "Goo Fernandez",
+    person = PersonPersist.new({:name => "Goo Fernandez",
                          :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                          :some_stuff => [1]})
     if person.exists?
-      person_copy = Person.new
+      person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
       person_copy.delete
     end
@@ -22,18 +43,18 @@ class TestModelPersonB < TestCase
   end
 
   def test_person_update_unique
-    person = Person.new({:name => "Goo Fernandez",
+    person = PersonPersist.new({:name => "Goo Fernandez",
                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                         :some_stuff => [1]})
     if person.exists?
-      person_copy = Person.new
+      person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
       person_copy.delete
     end
     assert_equal false, person.exists?(reload=true)
     person.save
     begin
-    person_update = Person.new()
+    person_update = PersonPersist.new()
     person_update.load(person.resource_id)
     person_update.name = "changed name"
     #unreachable
@@ -46,23 +67,23 @@ class TestModelPersonB < TestCase
   end
 
   def test_person_update_date
-    person = Person.new({:name => "Goo Fernandez",
+    person = PersonPersist.new({:name => "Goo Fernandez",
                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                         :some_stuff => [1]})
     if person.exists?
-      person_copy = Person.new
+      person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
       person_copy.delete
     end
     assert_equal false, person.exists?(reload=true)
     person.save
-    person_update = Person.new()
+    person_update = PersonPersist.new()
     person_update.load(person.resource_id)
     person_update.birth_date =  DateTime.parse("2013-01-01T07:00:00.000Z")
     person_update.save
     assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date
     #reload
-    person_update = Person.new()
+    person_update = PersonPersist.new()
     person_update.load(person.resource_id)
     assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date
     assert_equal "Goo Fernandez", person_update.name
@@ -71,28 +92,28 @@ class TestModelPersonB < TestCase
   end
 
   def test_person_add_remove_property
-    person = Person.new({:name => "Goo Fernandez",
+    person = PersonPersist.new({:name => "Goo Fernandez",
                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                         :some_stuff => [1]})
     if person.exists?
-      person_copy = Person.new
+      person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
       person_copy.delete
     end
     assert_equal false, person.exists?(reload=true)
     person.save
-    person_update = Person.new()
+    person_update = PersonPersist.new()
     person_update.load(person.resource_id)
     person_update.some_date =  DateTime.parse("2013-01-01T07:00:00.000Z")
     person_update.save
     #reload
-    person_update = Person.new()
+    person_update = PersonPersist.new()
     person_update.load(person.resource_id)
     assert_equal [DateTime.parse("2013-01-01T07:00:00.000Z")], person_update.some_date
     #equivalent to remove
     person_update.some_date = []
     person_update.save
-    person_update = Person.new()
+    person_update = PersonPersist.new()
     person_update.load(person.resource_id)
     assert_equal nil, person_update.some_date
     person_update.delete

@@ -19,7 +19,8 @@ class TestCase < Test::Unit::TestCase
     end
   end
 
-  def setup
+  def initialize(*args)
+    super(*args)
     if Goo.store().nil?
       Goo.configure do |conf|
         conf[:stores] = [ { :name => :main , :host => "localhost", :port => 8080 , :options => { } } ]

@@ -123,7 +123,7 @@ module Goo
       end
 
       def register_model(prefix, type, model_class)
-        raise ArgumentError, "Type #{prop} already registered for prefix #{@_types[type]}" \
+        raise ArgumentError, "Type #{type} already registered for prefix #{@_types[type]}" \
           if @_types[type]
         @_types[type] = { :prefix => prefix, :model_class => model_class, :type => type} 
       end
@@ -137,6 +137,10 @@ module Goo
           return v if model_class == v[:model_class]
         end
         @_types[:default]
+      end
+
+      def is_type_registered?(type)
+        return @_types.include? type.to_sym
       end
 
       def get_ns_by_prefix(prefix)

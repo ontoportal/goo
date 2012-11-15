@@ -10,6 +10,17 @@ class Unnamed < Goo::Base::Resource
 end
 
 class TestModelUnnamed < TestCase
+
+  def initialize(*args)
+    super(*args)
+    voc = Goo::Naming.get_vocabularies
+    if not voc.is_type_registered? :with_no_name
+      voc.register_model(:foaf, :with_no_name, Unnamed)
+    else
+      raise StandarError, "Error conf unit test" if :with_no_name != voc.get_model_registry(Unnamed)[:type]
+    end
+  end
+
   def test_unnamed_save
     obj = Unnamed.new
     obj.name = "some value"
