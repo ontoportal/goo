@@ -223,5 +223,21 @@ eos
       return filled_reached_objects
     end
   
+    def self.get_resource_id_by_uuid(uuid, model_class, store_name)
+      uuid_predicate = Goo::Naming.get_vocabularies.uri_for_predicate(:uuid, model_class)
+      q = <<eos
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT ?res WHERE {
+  ?res <#{uuid_predicate}> "#{uuid}"^^xsd:string
+}
+eos
+      epr = Goo.store(store_name)
+      res = epr.query(q)
+      res.each_solution do |sol|
+        return sol.get(:res)
+      end
+      return nil  
+    end
+
   end
 end
