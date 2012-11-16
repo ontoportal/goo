@@ -267,16 +267,24 @@ module Goo
           copy.load(self.resource_id)
           copy.delete(in_update=true)
         end
-        queries = Goo::Queries.build_sparql_update_query(self)
-        return false if queries.length.nil? or queries.length == 0
-        epr = Goo.store(@store_name)
-        queries.each do |query|
-          epr.update(query) 
+
+        modified_models = []
+        modified_models << self if self.modified?
+        Goo::Queries.recursively_collect_modified_models(self, modified_models)
+        if modified_models.length > 0
+          queries = Goo::Queries.build_sparql_update_query(modified_models)
+          return false if queries.length.nil? or queries.length == 0
+          epr = Goo.store(@store_name)
+          queries.each do |query|
+            epr.update(query) 
+          end
         end
 
-        internals.saved
         if not self.uuid.nil?
           self.resource_id= Goo::Queries.get_resource_id_by_uuid(self.uuid, self.class, @store_name)
+        end
+        modified_models.each do |model|
+          model.internals.saved
         end
       end
 

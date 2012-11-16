@@ -57,8 +57,8 @@ eos
             object_class = self.get_resource_class(object.value, store_name)
             if not object.nil?
               object_instance = object_class.new
-              object_instance.resource_id= object
               object_instance.lazy_loaded
+              object_instance.resource_id= object
               attributes[attr_name] << object_instance
             else
               attributes[attr_name] << object
@@ -156,10 +156,7 @@ eos
         return queries
     end
 
-    def self.build_sparql_update_query(model)
-      modified_models = []
-      modified_models << model if model.modified?
-      recursively_collect_modified_models(model, modified_models)
+    def self.build_sparql_update_query(modified_models)
       queries = []
       modified_models.each do |mmodel|
         triples = model_to_triples(mmodel,mmodel.resource_id)
