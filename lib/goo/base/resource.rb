@@ -73,7 +73,8 @@ module Goo
             tvalue = tvalue[0] 
           end
           if internals.persistent?
-            if self.class.goop_settings[:unique] and 
+            if not internals.lazy_loaded? and
+               self.class.goop_settings[:unique] and 
                self.class.goop_settings[:unique][:fields] and
                self.class.goop_settings[:unique][:fields].include? attr and
                @table[attr] != tvalue

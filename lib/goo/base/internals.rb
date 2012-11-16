@@ -24,10 +24,13 @@ module Goo
       end
 
       def id=(resource_id)
-        return if (@_base_instance.resource_id and 
-                    (@_base_instance.resource_id.value == resource_id.value))
+        if not lazy_loaded?
+          #this cannot evaluated in lazy loading since now props are loaded
+          return if (@_base_instance.resource_id and 
+                      (@_base_instance.resource_id.value == resource_id.value))
+        end
 
-        if @persistent
+        if @persistent and not lazy_loaded?
           if not (@_base_instance.resource_id.bnode? and 
                   not @_base_instance.resource_id.skolem?)
             raise StatusException, 
@@ -39,7 +42,9 @@ module Goo
           raise ArgumentError, "resource_id '#{resource_id}' must be a valid IRI."
         end
         @_id = resource_id
-        @persistent = false
+        if not lazy_loaded?
+          @persistent = false
+        end
         @loaded_dependencies = false
       end
       
@@ -51,7 +56,7 @@ module Goo
       end
       
       def load?
-        if @persistent or @modified
+        if (@persistent and not lazy_loaded?) or @modified
           raise StatusException, "Resource cannot be loaded if object contains attributes."
         end
         true
@@ -107,9 +112,15 @@ module Goo
       def loaded?
         @loaded
       end
+      
       def persistent?
         @persistent
       end
+      
+      def lazy_loaded?
+        return (@persistent and not @loaded)
+      end
+
       def lazy_loaded
         @persistent = true
         @loaded = false
