@@ -81,14 +81,17 @@ class TestModelPersonPersistB < TestCase
     person_update.load(person.resource_id)
     person_update.birth_date =  DateTime.parse("2013-01-01T07:00:00.000Z")
     person_update.save
+    assert_equal 1, count_pattern("#{person_update.resource_id.to_turtle} a ?type .")
     assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date
     #reload
     person_update = PersonPersist.new()
     person_update.load(person.resource_id)
     assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date
     assert_equal "Goo Fernandez", person_update.name
+
     person_update.delete
     assert_equal false, person_update.exists?(reload=true)
+    assert_equal 0, count_pattern("#{person_update.resource_id.to_turtle} a ?type .")
   end
 
   def test_person_add_remove_property
