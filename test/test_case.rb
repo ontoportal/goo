@@ -19,6 +19,16 @@ class TestCase < Test::Unit::TestCase
     end
   end
 
+  def count_pattern(pattern)
+    rs = Goo.store().query("SELECT * WHERE { #{pattern} }")
+    count = 0
+    rs.each_solution do |sol|
+      #unreachable
+      count =+ 1
+    end
+    return count
+  end
+
   def initialize(*args)
     super(*args)
     if Goo.store().nil?
