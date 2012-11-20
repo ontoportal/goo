@@ -20,11 +20,11 @@ class TestCase < Test::Unit::TestCase
   end
 
   def count_pattern(pattern)
-    rs = Goo.store().query("SELECT * WHERE { #{pattern} }")
+    q = "SELECT * WHERE { #{pattern} }"
+    rs = Goo.store().query(q)
     count = 0
     rs.each_solution do |sol|
-      #unreachable
-      count =+ 1
+      count = count + 1
     end
     return count
   end
