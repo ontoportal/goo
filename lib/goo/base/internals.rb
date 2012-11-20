@@ -90,6 +90,7 @@ module Goo
       def saved
         @persistent = true
         @modified= false
+        @loaded = true
       end
     
       def delete?
