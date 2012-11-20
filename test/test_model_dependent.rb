@@ -35,7 +35,7 @@ class TestModelDependencies < TestCase
     end
   end
 
-  def _model_deps_save
+  def test_model_deps_save
     m1 = Model1.new
     m1.prop = "m1"
     if m1.exists?
