@@ -262,7 +262,7 @@ module Goo
             raise exc
           end
         end
-        if exists?
+        if exists?(reload=true)
           #an update: first delete a copy from the store
           copy = self.class.new
           copy.load(self.resource_id)
