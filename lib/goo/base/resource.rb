@@ -262,16 +262,20 @@ module Goo
             raise exc
           end
         end
-        if exists?(reload=true)
-          #an update: first delete a copy from the store
-          copy = self.class.new
-          copy.load(self.resource_id)
-          copy.delete(in_update=true)
-        end
 
         modified_models = []
         modified_models << self if self.modified?
         Goo::Queries.recursively_collect_modified_models(self, modified_models)
+
+        modified_models.each do |mmodel|
+          if mmodel.exists?(reload=true)
+            #an update: first delete a copy from the store
+            copy = mmodel.class.new
+            copy.load(mmodel.resource_id)
+            copy.delete(in_update=true)
+          end
+        end
+
         if modified_models.length > 0
           queries = Goo::Queries.build_sparql_update_query(modified_models)
           return false if queries.length.nil? or queries.length == 0
