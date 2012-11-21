@@ -28,3 +28,9 @@ Rake::TestTask.new do |t|
   t.name = "test:dependent"
   t.test_files = FileList['test/test_model_dependent.rb']
 end
+
+Rake::TestTask.new do |t|
+  t.libs = []
+  t.name = "test:search"
+  t.test_files = FileList['test/test_model_search.rb']
+end

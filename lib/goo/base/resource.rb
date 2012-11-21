@@ -306,6 +306,21 @@ module Goo
         end
         return false
       end
+
+      def self.search(attributes)
+        epr = Goo.store(@store_name)
+        search_query = Goo::Queries.search_by_attributes(attributes, self, @store_name)
+        rs = epr.query(search_query)
+        items = []
+        rs.each_solution do |sol|
+          resource_id = sol.get(:subject)
+          item = self.new
+          item.internals.lazy_loaded
+          item.resource_id = resource_id
+          items << item
+        end
+        return items
+      end
     end
   end
 end
