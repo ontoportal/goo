@@ -139,13 +139,13 @@ eos
     def self.build_sparql_delete_query(models)
         queries = []
         #TODO: dangerous. Model [0] is the master, the others are bnodes.
-        graph_id_master = Goo::Naming.getGraphId(models[0])
+        graph_id_master = Goo::Naming.get_graph_id(models[0].class)
         models.each do |model|
           triples = model_to_triples(model,model.resource_id, expand_bnodes = false)
           if model.resource_id.kind_of? RDF::BNode
             graph_id = graph_id_master
           else
-            graph_id = Goo::Naming.getGraphId(model)
+            graph_id = Goo::Naming.get_graph_id(model.class)
           end 
           query = ["DELETE DATA { GRAPH <#{graph_id}> {"]
           triples.map! { |t| t + ' .' }
@@ -161,7 +161,7 @@ eos
       modified_models.each do |mmodel|
         triples = model_to_triples(mmodel,mmodel.resource_id)
         triples.map! { |t| t + ' .' }
-        graph_id = Goo::Naming.getGraphId(mmodel)
+        graph_id = Goo::Naming.get_graph_id(mmodel.class)
         query = ["INSERT DATA { GRAPH <#{graph_id}> {"]
         query << triples
         query << "} }"
