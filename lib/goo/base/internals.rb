@@ -81,9 +81,9 @@ module Goo
         
         save_policy = @_base_instance.class.goop_settings[:unique][:policy]
 
-        if @_base_instance.exists?(reload=true) and not persistent and save_policy == :unique 
+        if @_base_instance.exist?(reload=true) and not persistent and save_policy == :unique 
           raise DuplicateResourceError, "Object cannot be saved." +
-          " Resource '#{@_id}' exists in the store and cannot be replaced"
+          " Resource '#{@_id}' exist in the store and cannot be replaced"
         end
       end
 

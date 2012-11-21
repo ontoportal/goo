@@ -26,7 +26,7 @@ module Goo
         @attributes[:internals] = Internals.new(self)
         @attributes[:internals].new_resource
 
-        @_cached_exists = nil
+        @_cached_exist = nil
         shape_me
 
         #anon objects have an uuid property
@@ -134,17 +134,17 @@ module Goo
         internals.id
       end
 
-      def exists?(reload=false)
-        if @_cached_exists.nil? or reload
+      def exist?(reload=false)
+        if @_cached_exist.nil? or reload
           epr = Goo.store(@store_name)
           return false if resource_id.bnode? and (not resource_id.skolem?)
           q = """SELECT (count(?o) as ?c) WHERE { #{resource_id.to_turtle} a ?o }"""
           rs = epr.query(q)
           rs.each_solution do |sol|
-            @_cached_exists = sol.get(:c).parsed_value > 0
+            @_cached_exist = sol.get(:c).parsed_value > 0
           end
         end
-        return @_cached_exists
+        return @_cached_exist
       end
 
       def check_rdftype_inconsistency
@@ -268,7 +268,7 @@ module Goo
         Goo::Queries.recursively_collect_modified_models(self, modified_models)
 
         modified_models.each do |mmodel|
-          if mmodel.exists?(reload=true)
+          if mmodel.exist?(reload=true)
             #an update: first delete a copy from the store
             copy = mmodel.class.new
             copy.load(mmodel.resource_id)

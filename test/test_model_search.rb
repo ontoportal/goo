@@ -34,14 +34,14 @@ class TestModelSearch < TestCase
       else
         toy.prop_odd = n
       end
-      if toy.exists?
+      if toy.exist?
         toy_copy = ToyObject.new
         toy_copy.load(toy.resource_id)
         toy_copy.delete
       end
-      assert_equal false, toy.exists?(reload=true)
+      assert_equal false, toy.exist?(reload=true)
       toy.save
-      assert_equal true, toy.exists?(reload=true)
+      assert_equal true, toy.exist?(reload=true)
       assert_equal 1, count_pattern("#{toy.resource_id.to_turtle} a ?type .")
     end
   end

@@ -38,20 +38,20 @@ class TestModelDependencies < TestCase
   def test_model_deps_save
     m1 = Model1.new
     m1.prop = "m1"
-    if m1.exists?
+    if m1.exist?
       m1_copy = Model1.new
       m1_copy.load(m1.resource_id)
       m1_copy.delete
     end
     m2 = Model2.new
     m2.prop = "m2"
-    if m2.exists?
+    if m2.exist?
       m2_copy = Model2.new
       m2_copy.load(m2.resource_id)
       m2_copy.delete
     end
-    assert_equal false, m1.exists?(reload=true)
-    assert_equal false, m2.exists?(reload=true)
+    assert_equal false, m1.exist?(reload=true)
+    assert_equal false, m2.exist?(reload=true)
     m1.m2 = m2
     assert_instance_of Array, m1.m2
     assert_instance_of Model2, m1.m2[0]
@@ -69,12 +69,12 @@ class TestModelDependencies < TestCase
     assert_equal "m2", m1_copy.m2[0].prop
     assert_equal false, m1_copy.m2[0].internals.lazy_loaded?
     m1.delete
-    assert_equal false, m1.exists?(reload=true)
+    assert_equal false, m1.exist?(reload=true)
     assert_equal false, m1.persistent?
-    assert_equal true, m2.exists?(reload=true)
+    assert_equal true, m2.exist?(reload=true)
     assert_equal true, m2.persistent?
     m2.delete
-    assert_equal false, m2.exists?(reload=true)
+    assert_equal false, m2.exist?(reload=true)
     assert_equal false, m2.persistent?
   end
 
@@ -82,20 +82,20 @@ class TestModelDependencies < TestCase
   def test_model_deps_update
     m1 = Model1.new
     m1.prop = "m1"
-    if m1.exists?
+    if m1.exist?
       m1_copy = Model1.new
       m1_copy.load(m1.resource_id)
       m1_copy.delete
     end
     m2 = Model2.new
     m2.prop = "m2"
-    if m2.exists?
+    if m2.exist?
       m2_copy = Model2.new
       m2_copy.load(m2.resource_id)
       m2_copy.delete
     end
-    assert_equal false, m1.exists?(reload=true)
-    assert_equal false, m2.exists?(reload=true)
+    assert_equal false, m1.exist?(reload=true)
+    assert_equal false, m2.exist?(reload=true)
     m1.m2 = m2
     assert_instance_of Array, m1.m2
     assert_instance_of Model2, m1.m2[0]
@@ -109,13 +109,13 @@ class TestModelDependencies < TestCase
     assert_equal 1, count_pattern("#{m1.resource_id.to_turtle} a ?type .")
     assert_equal 1, count_pattern("#{m1.m2[0].resource_id.to_turtle} a ?type .")
     m1.delete
-    assert_equal false, m1.exists?(reload=true)
-    assert_equal true, m2.exists?(reload=true)
+    assert_equal false, m1.exist?(reload=true)
+    assert_equal true, m2.exist?(reload=true)
     assert_equal 0, count_pattern("#{m1.resource_id.to_turtle} a ?type .")
     assert_equal 1, count_pattern("#{m2.resource_id.to_turtle} a ?type .")
     m2.delete
-    assert_equal false, m1.exists?(reload=true)
-    assert_equal false, m2.exists?(reload=true)
+    assert_equal false, m1.exist?(reload=true)
+    assert_equal false, m2.exist?(reload=true)
     assert_equal 0, count_pattern("#{m1.resource_id.to_turtle} a ?type .")
     assert_equal 0, count_pattern("#{m2.resource_id.to_turtle} a ?type .")
   end

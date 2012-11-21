@@ -29,16 +29,16 @@ class TestModelPersonPersistB < TestCase
     person = PersonPersist.new({:name => "Goo Fernandez",
                          :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                          :some_stuff => [1]})
-    if person.exists?
+    if person.exist?
       person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
       person_copy.delete
     end
-    assert_equal false, person.exists?(reload=true)
+    assert_equal false, person.exist?(reload=true)
     person.save
-    assert_equal true, person.exists?(reload=true)
+    assert_equal true, person.exist?(reload=true)
     person.delete
-    assert_equal false, person.exists?(reload=true)
+    assert_equal false, person.exist?(reload=true)
     no_triples_for_subject(person.resource_id)
   end
 
@@ -46,12 +46,12 @@ class TestModelPersonPersistB < TestCase
     person = PersonPersist.new({:name => "Goo Fernandez",
                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                         :some_stuff => [1]})
-    if person.exists?
+    if person.exist?
       person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
       person_copy.delete
     end
-    assert_equal false, person.exists?(reload=true)
+    assert_equal false, person.exist?(reload=true)
     person.save
     begin
     person_update = PersonPersist.new()
@@ -63,19 +63,19 @@ class TestModelPersonPersistB < TestCase
       assert_instance_of Goo::Base::KeyFieldUpdateError, e
     end
     person_update.delete
-    assert_equal false, person_update.exists?(reload=true)
+    assert_equal false, person_update.exist?(reload=true)
   end
 
   def test_person_update_date
     person = PersonPersist.new({:name => "Goo Fernandez",
                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                         :some_stuff => [1]})
-    if person.exists?
+    if person.exist?
       person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
       person_copy.delete
     end
-    assert_equal false, person.exists?(reload=true)
+    assert_equal false, person.exist?(reload=true)
     person.save
     person_update = PersonPersist.new()
     person_update.load(person.resource_id)
@@ -90,7 +90,7 @@ class TestModelPersonPersistB < TestCase
     assert_equal "Goo Fernandez", person_update.name
 
     person_update.delete
-    assert_equal false, person_update.exists?(reload=true)
+    assert_equal false, person_update.exist?(reload=true)
     assert_equal 0, count_pattern("#{person_update.resource_id.to_turtle} a ?type .")
   end
 
@@ -98,12 +98,12 @@ class TestModelPersonPersistB < TestCase
     person = PersonPersist.new({:name => "Goo Fernandez",
                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                         :some_stuff => [1]})
-    if person.exists?
+    if person.exist?
       person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
       person_copy.delete
     end
-    assert_equal false, person.exists?(reload=true)
+    assert_equal false, person.exist?(reload=true)
     person.save
     person_update = PersonPersist.new()
     person_update.load(person.resource_id)
@@ -120,7 +120,7 @@ class TestModelPersonPersistB < TestCase
     person_update.load(person.resource_id)
     assert_equal nil, person_update.some_date
     person_update.delete
-    assert_equal false, person_update.exists?(reload=true)
+    assert_equal false, person_update.exist?(reload=true)
     no_triples_for_subject(person_update.resource_id)
   end
 
@@ -128,14 +128,14 @@ class TestModelPersonPersistB < TestCase
     person = PersonPersist.new({:name => "Goo Fernandez",
                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                         :some_stuff => [1]})
-    if person.exists?
+    if person.exist?
       person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
       person_copy.delete
     end
-    assert_equal false, person.exists?(reload=true)
+    assert_equal false, person.exist?(reload=true)
     person.save
-    assert_equal true, person.exists?(reload=true)
+    assert_equal true, person.exist?(reload=true)
     resource_id = person.resource_id
     
     #static load
@@ -144,7 +144,7 @@ class TestModelPersonPersistB < TestCase
     assert_equal person.resource_id.value, item.resource_id.value
     assert_equal person.name, item.name
     person.delete
-    assert_equal false, item.exists?(reload=true)
+    assert_equal false, item.exist?(reload=true)
 
     item = Goo::Base::Resource.load(resource_id)
     assert_equal nil, item

@@ -26,7 +26,7 @@ class TestModelUnnamed < TestCase
     obj.name = "some value"
     obj.prop1 = 1
     obj.save
-    assert_equal true, obj.exists?
+    assert_equal true, obj.exist?
     load_obj = Unnamed.new
     load_obj.load(obj.resource_id)
     assert_equal obj.prop1, load_obj.prop1
@@ -39,6 +39,6 @@ class TestModelUnnamed < TestCase
     assert_equal "changed value", load_obj.name
     assert_equal obj.resource_id.value, load_obj.resource_id.value
     load_obj.delete
-    assert_equal false, load_obj.exists?(reload=true)
+    assert_equal false, load_obj.exist?(reload=true)
   end
 end
