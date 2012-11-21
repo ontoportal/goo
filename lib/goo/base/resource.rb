@@ -321,6 +321,17 @@ module Goo
         end
         return items
       end
+
+      def self.load(resource_id, store_name=nil)
+        model_class = Queries.get_resource_class(resource_id, store_name)
+        if model_class.nil?
+          return nil
+        end
+        inst = model_class.new
+        inst.load(resource_id)
+        return inst
+      end
+
     end
   end
 end

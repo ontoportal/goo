@@ -123,6 +123,32 @@ class TestModelPersonPersistB < TestCase
     assert_equal false, person_update.exists?(reload=true)
     no_triples_for_subject(person_update.resource_id)
   end
+
+  def test_static_load
+    person = PersonPersist.new({:name => "Goo Fernandez",
+                        :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
+                        :some_stuff => [1]})
+    if person.exists?
+      person_copy = PersonPersist.new
+      person_copy.load(person.resource_id)
+      person_copy.delete
+    end
+    assert_equal false, person.exists?(reload=true)
+    person.save
+    assert_equal true, person.exists?(reload=true)
+    resource_id = person.resource_id
+    
+    #static load
+    item = Goo::Base::Resource.load(resource_id)
+    assert_instance_of person.class, item
+    assert_equal person.resource_id.value, item.resource_id.value
+    assert_equal person.name, item.name
+    person.delete
+    assert_equal false, item.exists?(reload=true)
+
+    item = Goo::Base::Resource.load(resource_id)
+    assert_equal nil, item
+  end
   
 end
 
