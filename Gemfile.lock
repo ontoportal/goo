@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    goo (0.0.1)
+    goo (0.0.2)
 
 PATH
   remote: /Users/manuelso/work/stanford/workspace/sparql_http

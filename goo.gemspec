@@ -5,6 +5,6 @@ Gem::Specification.new do |s|
   s.summary = ""
   s.authors = ["Manuel Salvadores", "Paul Alexander"]
   s.email = 'manuelso@stanford.edu'
-  s.files = Dir['lib/**/*.rb'] + ["lib/sparql_http.rb"]
+  s.files = Dir['lib/**/*.rb']
   s.homepage = 'http://github.com/ncbo/goo'
 end
