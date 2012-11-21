@@ -83,7 +83,7 @@ module Goo
 
         if @_base_instance.exists? and not persistent and save_policy == :unique 
           raise DuplicateResourceError, "Object cannot be saved." +
-          " Resource '#{resource_id}' exists in the store and cannot be replaced"
+          " Resource '#{@_id}' exists in the store and cannot be replaced"
         end
       end
 
