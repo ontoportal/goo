@@ -1,5 +1,14 @@
 require_relative 'test_case'
 
+class StatusPersist < Goo::Base::Resource
+  model :status
+  validates :description, :presence => true, :cardinality => { :maximum => 1 }
+  unique :description
+  def initialize(attributes = {})
+    super(attributes)
+  end
+end
+
 class PersonPersist < Goo::Base::Resource
   model :person
   validates :name, :presence => true, :cardinality => { :maximum => 1 }
@@ -20,8 +29,10 @@ class TestModelPersonPersistB < TestCase
     voc = Goo::Naming.get_vocabularies
     if not voc.is_type_registered? :personp
       voc.register_model(:foaf, :personp, PersonPersist)
+      voc.register_model(:foaf, :statusp, StatusPersist)
     else
       raise StandarError, "Error conf unit test" if :personp != voc.get_model_registry(PersonPersist)[:type]
+      raise StandarError, "Error conf unit test" if :statusp != voc.get_model_registry(StatusPersist)[:type]
     end
   end
 
@@ -149,6 +160,41 @@ class TestModelPersonPersistB < TestCase
     item = Goo::Base::Resource.load(resource_id)
     assert_equal nil, item
   end
-  
+ 
+  def test_person_dependent_persisted
+    statuses = {}
+    ["single","married","divorced"].each do |st|
+      st_obj = StatusPersist.new({:description => st })
+      if st_obj.exist?
+        st_obj = Goo::Base::Resource.load(st_obj.resource_id)
+      else
+        st_obj.save
+      end
+      statuses[st] = st_obj
+    end
+    person = PersonPersist.new({:name => "Goo Fernandez",
+                        :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
+                        :status => [statuses["married"]] },
+                         )
+    if person.exist?
+      person_copy = PersonPersist.new
+      person_copy.load(person.resource_id)
+      person_copy.delete
+      assert_equal 1, count_pattern("#{statuses["married"].resource_id.to_turtle} a ?type .")
+    end
+    assert_equal false, person.exist?(reload=true)
+    person.save
+    assert_equal 1, count_pattern("#{statuses["married"].resource_id.to_turtle} a ?type .")
+    person.delete
+    assert_equal 1, count_pattern("#{statuses["married"].resource_id.to_turtle} a ?type .")
+    assert_equal 0, count_pattern("#{person.resource_id.to_turtle} a ?type .")
+    sts = StatusPersist.search({})
+    sts.each do |t|
+      t.load
+      rid = t.resource_id
+      t.delete
+      assert_equal 0, count_pattern("#{rid.to_turtle} a ?type .")
+    end
+  end 
 end
 
