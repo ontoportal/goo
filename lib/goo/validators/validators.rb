@@ -17,6 +17,27 @@
       end
     end
 
+    class InstanceOfValidator < ActiveModel::EachValidator 
+      def validate_each(record, attribute, value)
+        return if value.nil? #other validators will take care of Cardinality.
+        vocs = Goo::Naming.get_vocabularies
+        if not vocs.is_type_registered?(attribute)
+          raise ArgumentError, "Model #{attribute} is not registered."
+        end
+        values = value
+        if not (value.kind_of? Array)
+          values = [value]
+        end
+        registered_class = vocs.get_model_class_for(options[:with])
+        values.each do |v|
+          if not v.kind_of? registered_class
+            record.errors[attribute] << \
+             (options[:message] || "#{attribute} contains instances that are not #{options[:with]}")
+          end
+        end
+      end
+    end
+
     class CardinalityValidator < ActiveModel::EachValidator 
       def validate_each(record, attribute, value)
         raise ArgumentError, "CardinalityValidator for #{attribute} needs options :maximum and/or :minimun." \
