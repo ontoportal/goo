@@ -1,5 +1,21 @@
 require_relative 'test_case'
 
+class CustomValidator < ActiveModel::EachValidator 
+  def validate_each(record, attribute, value)
+    return if value.nil? #other validators will take care of Cardinality.
+    values = value
+    if not (value.kind_of? Array)
+      values = [value]
+    end
+    values.each do |v|
+      if v.kind_of? Fixnum and v > options[:with_max]
+        record.errors[attribute] << \
+         (options[:message] || "#{attribute} cannot contain values > #{options[:with_max]}.")
+      end
+    end
+  end
+end
+
 class ContactData < Goo::Base::Resource
   model :contact_data
   def initialize(attributes = {})
@@ -13,6 +29,7 @@ class Person < Goo::Base::Resource
   validates :multiple_vals, :cardinality => { :maximum => 2 }
   validates :birth_date, :date_time_xsd => true, :presence => true, :cardinality => { :maximum => 1 }
   validates :contact_data , :instance_of => { :with => :contact_data }
+  validates :custom_values , :custom => { :with_max => 999 }
   unique :name
   graph_policy :type_id_graph_policy
 
@@ -116,5 +133,14 @@ class TestModelPersonA < TestCase
     person.contact_data << 10
     assert_equal false, person.valid? 
     assert_equal 1, person.errors[:contact_data].length
+  end
+
+  def test_custom_validator
+    person = Person.new({:name => "Goo Fernandez", :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z") })
+    person.custom_values= [ 1, 2, 3]
+    assert_equal true, person.valid?
+    person.custom_values << 100000 
+    assert_equal false, person.valid?
+    assert_equal 1, person.errors[:custom_values].length
   end
 end
