@@ -146,6 +146,13 @@ module Goo
       def get_ns_by_prefix(prefix)
         @_vocabs[prefix]
       end
+
+      def get_model_class_for(model_type)
+        if @_types.include? model_type.to_sym
+          return @_types[model_type.to_sym][:model_class]
+        end
+        return nil
+      end
       
     end
   end
