@@ -107,7 +107,7 @@ module Goo
 
       def register(prefix,namespace, properties = [])
         raise ArgumentError, "Prefix and/or namespace can only be registered once" \
-          if @_vocabs[prefix] or @_inverse_vocabs[namespace]
+          if (@_vocabs[prefix] or @_inverse_vocabs[namespace]) and (@_inverse_vocabs[namespace] != :default)
         @_vocabs[prefix] = namespace
         return if prefix == :unknown
         @_inverse_vocabs[namespace]=prefix
