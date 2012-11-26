@@ -20,7 +20,7 @@ end
 Rake::TestTask.new do |t|
   t.libs = []
   t.name = "test:anon"
-  t.test_files = FileList['test/test_model_bnodes.rb']
+  t.test_files = FileList['test/test_model_unnamed.rb']
 end
 
 Rake::TestTask.new do |t|
