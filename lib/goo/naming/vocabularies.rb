@@ -55,7 +55,7 @@ module Goo
       end
 
       def construct_uri(namespace, name, predicate)
-        fragment = name.to_s.camelize
+        fragment = name.to_s
         fragment[0] = fragment[0].downcase if predicate
         namespace + fragment
       end
@@ -83,7 +83,7 @@ module Goo
         return nil unless prefix
         fragment = uri[@_vocabs[prefix].length, uri.length]
         #round trip to safely know that the property is in reg
-        fragment_symbol=fragment.underscore.to_sym
+        fragment_symbol=fragment.to_sym
         if @_properties[fragment_symbol] == prefix or \
              prefix == :default
           return fragment_symbol
