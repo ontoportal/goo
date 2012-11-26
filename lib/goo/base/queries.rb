@@ -49,7 +49,8 @@ eos
           next
         end
         if attr_name.nil?
-          puts "attr_name not found for #{pvalue}"
+          #TODO some means of proper warning here
+          #puts "attr_name not found for #{pvalue}"
         else
           attributes[attr_name] = [] if attributes[attr_name].nil?
           object = sol.get(:object)
