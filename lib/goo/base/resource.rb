@@ -288,6 +288,12 @@ module Goo
         if not self.uuid.nil?
           self.resource_id= Goo::Queries.get_resource_id_by_uuid(self.uuid, self.class, @store_name)
         end
+        self.each_linked_base do |attr_name, umodel|
+          if umodel.resource_id.bnode? and umodel.modified?
+            umodel.resource_id= Goo::Queries.get_resource_id_by_uuid(umodel.uuid, umodel.class, @store_name)
+          end
+        end
+
         modified_models.each do |model|
           model.internals.saved
         end

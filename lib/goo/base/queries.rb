@@ -71,7 +71,7 @@ eos
       return attributes
     end
 
-    def self.model_to_triples(model,resource_id, expand_bnodes = true)
+    def self.model_to_triples(model,resource_id, expand_bnodes = false)
       expand_bnodes = (expand_bnodes and (model.loaded? or not model.persistent?))
       vocabs = Goo::Naming.get_vocabularies
       model_uri = vocabs.uri_for_type(model.class)
@@ -160,6 +160,11 @@ eos
       queries = []
       modified_models.each do |mmodel|
         triples = model_to_triples(mmodel,mmodel.resource_id)
+        mmodel.each_linked_base do |attr_name, umodel|
+          if umodel.resource_id.bnode? and umodel.modified?
+            triples.concat(model_to_triples(umodel, umodel.resource_id))
+          end
+        end
         triples.map! { |t| t + ' .' }
         graph_id = Goo::Naming.get_graph_id(mmodel.class)
         query = ["INSERT DATA { GRAPH <#{graph_id}> {"]
