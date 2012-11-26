@@ -218,7 +218,7 @@ module Goo
         to_delete = Set.new
         reached.each do |info|
           #include to delete related bnodes with no extra backlinks
-          if info[:id].kind_of? RDF::BNode and info[:backlink_count] < 2
+          if info[:id].bnode? and info[:backlink_count] < 2
             to_delete << info[:id]
           end
         end
@@ -291,6 +291,7 @@ module Goo
         self.each_linked_base do |attr_name, umodel|
           if umodel.resource_id.bnode? and umodel.modified?
             umodel.resource_id= Goo::Queries.get_resource_id_by_uuid(umodel.uuid, umodel.class, @store_name)
+            umodel.internals.saved
           end
         end
 

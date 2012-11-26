@@ -142,7 +142,7 @@ eos
         graph_id_master = Goo::Naming.get_graph_id(models[0].class)
         models.each do |model|
           triples = model_to_triples(model,model.resource_id, expand_bnodes = false)
-          if model.resource_id.kind_of? RDF::BNode
+          if model.resource_id.bnode?
             graph_id = graph_id_master
           else
             graph_id = Goo::Naming.get_graph_id(model.class)
