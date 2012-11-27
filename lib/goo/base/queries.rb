@@ -250,7 +250,11 @@ eos
       patterns << " ?subject a <#{model_uri}> ."
       attributes.each do |attribute, value|
         predicate = vocabs.uri_for_predicate(attribute,model_class)
-        rdf_object_string = value_to_rdf_object(value)
+        if value.kind_of? Goo::Base::Resource
+          rdf_object_string = value.resource_id.to_turtle 
+        else
+          rdf_object_string = value_to_rdf_object(value)
+        end
         patterns << " ?subject <#{predicate}> #{rdf_object_string} ."
       end
       patterns = patterns.join "\n"
