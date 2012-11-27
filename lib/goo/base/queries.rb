@@ -85,7 +85,7 @@ eos
       model.attributes.each_pair do |name,value|
         next if name == :internals
         subject = resource_id
-        predicate = vocabs.uri_for_predicate(name,model.class)
+        predicate = vocabs.uri_for_predicate(name)
         values = (value.kind_of? Array and value or [value])
         values.each do |single_value|
           if single_value.kind_of? Goo::Base::Resource
@@ -227,7 +227,7 @@ eos
     end
   
     def self.get_resource_id_by_uuid(uuid, model_class, store_name)
-      uuid_predicate = Goo::Naming.get_vocabularies.uri_for_predicate(:uuid, model_class)
+      uuid_predicate = Goo::Naming.get_vocabularies.uri_for_predicate(:uuid)
       q = <<eos
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 SELECT ?res WHERE {
@@ -249,7 +249,7 @@ eos
       graph_id = Goo::Naming.get_graph_id(model_class)
       patterns << " ?subject a <#{model_uri}> ."
       attributes.each do |attribute, value|
-        predicate = vocabs.uri_for_predicate(attribute,model_class)
+        predicate = vocabs.uri_for_predicate(attribute)
         if value.kind_of? Goo::Base::Resource
           rdf_object_string = value.resource_id.to_turtle 
         else

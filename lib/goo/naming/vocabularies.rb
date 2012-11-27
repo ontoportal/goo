@@ -60,7 +60,7 @@ module Goo
         namespace + fragment
       end
 
-      def uri_for_predicate(name,model_class)
+      def uri_for_predicate(name)
         if not @default
           raise PropertyNameNotFound, "Property name #{name} not found in vocabularies" \
             unless @_properties[name]
