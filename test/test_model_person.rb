@@ -30,6 +30,7 @@ class Person < Goo::Base::Resource
   validates :birth_date, :date_time_xsd => true, :presence => true, :cardinality => { :maximum => 1 }
   validates :contact_data , :instance_of => { :with => :contact_data }
   validates :custom_values , :custom => { :with_max => 999 }
+  validates :numbers , :instance_of => { :with => Fixnum }
   unique :name
   graph_policy :type_id_graph_policy
 
@@ -142,5 +143,16 @@ class TestModelPersonA < TestCase
     person.custom_values << 100000 
     assert_equal false, person.valid?
     assert_equal 1, person.errors[:custom_values].length
+  end
+
+  def test_multiple_valuues
+    person = Person.new({:name => "Goo Fernandez"})
+    person.numbers= [50,2]
+    assert_equal 50, person.numbers[0]
+    person.birth_date= DateTime.parse("2012-10-04T07:00:00.000Z")
+    assert_equal true, person.valid?
+    person.numbers << "a"
+    assert_equal false, person.valid?
+    assert_equal 1,person.errors[:numbers].length
   end
 end

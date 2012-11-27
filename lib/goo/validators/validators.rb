@@ -21,14 +21,16 @@
       def validate_each(record, attribute, value)
         return if value.nil? #other validators will take care of Cardinality.
         vocs = Goo::Naming.get_vocabularies
-        if not vocs.is_type_registered?(options[:with])
-          raise ArgumentError, "Model #{options[:with]} is not registered."
+        values = [value].flatten
+        registered_class = nil
+        if options[:with].kind_of? Symbol
+          if not vocs.is_type_registered?(options[:with])
+            raise ArgumentError, "Model #{options[:with]} is not registered."
+          end
+          registered_class = vocs.get_model_class_for(options[:with])
+        else
+          registered_class = options[:with]
         end
-        values = value
-        if not (value.kind_of? Array)
-          values = [value]
-        end
-        registered_class = vocs.get_model_class_for(options[:with])
         values.each do |v|
           if not v.kind_of? registered_class
             record.errors[attribute] << \
