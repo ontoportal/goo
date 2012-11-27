@@ -256,9 +256,7 @@ eos
       patterns = patterns.join "\n"
       query = <<eos
 SELECT ?subject WHERE {
-  GRAPH <#{graph_id}> {
     #{patterns}
-  }
 }
 eos
       return query
