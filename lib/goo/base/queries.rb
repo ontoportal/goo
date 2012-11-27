@@ -241,6 +241,25 @@ eos
       end
       return nil  
     end
+  
+    def self.hash_to_triples_for_query(hash)
+      vocabs = Goo::Naming.get_vocabularies
+      patterns = []
+      hash.each do |attr,v|
+        predicate = vocabs.uri_for_predicate(attr)
+        [v].flatten.each do |value|
+        predicate = vocabs.uri_for_predicate(attr)
+          if value.kind_of? Goo::Base::Resource
+            rdf_object_string = value.resource_id.to_turtle 
+          elsif value.kind_of? Hash
+            rdf_object_string =  hash_to_triples_for_query(value)
+          else
+            rdf_object_string = value_to_rdf_object(value)
+          end
+          patterns << " <#{predicate}> #{rdf_object_string};"
+        end
+        return '[' + (patterns.join '\n') + ' ]' 
+    end
 
     def self.search_by_attributes(attributes, model_class, store_name)
       vocabs = Goo::Naming.get_vocabularies
@@ -252,6 +271,8 @@ eos
         predicate = vocabs.uri_for_predicate(attribute)
         if value.kind_of? Goo::Base::Resource
           rdf_object_string = value.resource_id.to_turtle 
+        elsif value.kind_of? Hash
+          rdf_object_string =  hash_to_triples_for_query(value)
         else
           rdf_object_string = value_to_rdf_object(value)
         end
