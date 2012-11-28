@@ -56,7 +56,7 @@ eos
           object = sol.get(:object)
           if object.iri? or object.bnode?
             object_class = self.get_resource_class(object.value, store_name)
-            if not object.nil?
+            if not object.nil? and not object_class.nil?
               object_instance = object_class.new
               object_instance.lazy_loaded
               object_instance.resource_id= object
@@ -88,6 +88,9 @@ eos
         predicate = vocabs.uri_for_predicate(name)
         values = (value.kind_of? Array and value or [value])
         values.each do |single_value|
+          if single_value.kind_of? Array
+            binding.pry
+          end
           if single_value.kind_of? Goo::Base::Resource
             object_iri = single_value.resource_id
             if object_iri.bnode? and expand_bnodes and
@@ -98,6 +101,8 @@ eos
             else
               object = object_iri.to_turtle
             end
+          elsif single_value.kind_of? SparqlRd::Resultset::Node 
+            object = single_value.to_turtle
           else
             object = value_to_rdf_object(single_value) 
           end
@@ -248,7 +253,7 @@ eos
       hash.each do |attr,v|
         predicate = vocabs.uri_for_predicate(attr)
         [v].flatten.each do |value|
-        predicate = vocabs.uri_for_predicate(attr)
+          predicate = vocabs.uri_for_predicate(attr)
           if value.kind_of? Goo::Base::Resource
             rdf_object_string = value.resource_id.to_turtle 
           elsif value.kind_of? Hash
@@ -258,7 +263,8 @@ eos
           end
           patterns << " <#{predicate}> #{rdf_object_string};"
         end
-        return '[' + (patterns.join '\n') + ' ]' 
+      end
+      return "[\n\t" + (patterns.join "\n") + " \n]" 
     end
 
     def self.search_by_attributes(attributes, model_class, store_name)
@@ -280,7 +286,7 @@ eos
       end
       patterns = patterns.join "\n"
       query = <<eos
-SELECT ?subject WHERE {
+SELECT DISTINCT ?subject WHERE {
     #{patterns}
 }
 eos
