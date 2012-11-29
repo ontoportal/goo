@@ -56,6 +56,26 @@ class TestModelUnnamed < TestCase
     assert_equal false, load_obj.exist?(reload=true)
   end
 
+  def test_named_new_from_hash
+    list = Unnamed.search({})
+    list.each do |u|
+      u.load
+      u.delete
+    end
+    list = Unnamed.search({})
+    assert_equal 0, list.length
+    unn = Unnamed.new({:name => "some value"})
+    unn.save
+    list = Unnamed.search({})
+    assert_equal 1, list.length
+    list.each do |u|
+      u.load
+      u.delete
+    end
+    list = Unnamed.search({})
+    assert_equal 0, list.length
+  end
+
   def test_named_depends_on_unnnamed
     unn = Unnamed.new
     unn.name = "some value"
