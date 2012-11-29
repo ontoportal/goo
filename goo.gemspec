@@ -7,4 +7,5 @@ Gem::Specification.new do |s|
   s.email = 'manuelso@stanford.edu'
   s.files = Dir['lib/**/*.rb']
   s.homepage = 'http://github.com/ncbo/goo'
+  s.add_dependency("active_model")
 end
