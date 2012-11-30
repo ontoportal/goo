@@ -53,7 +53,6 @@ class TestReview < Test::Unit::TestCase
 
     r.body = "This is a test review"
     r.ontologyReviewed = "SNOMED"
-    binding.pry
     assert r.valid?
   end
 
@@ -67,7 +66,6 @@ class TestReview < Test::Unit::TestCase
 
     assert_equal false, r.exist?(reload=true)
     r.save
-    binding.pry
     assert_equal true, r.exist?(reload=true)
     r.delete
     assert_equal false, r.exist?(reload=true)
