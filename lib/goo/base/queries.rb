@@ -86,9 +86,6 @@ eos
         predicate = model.class.uri_for_predicate(name)
         values = (value.kind_of? Array and value or [value])
         values.each do |single_value|
-          if single_value.kind_of? Array
-            binding.pry
-          end
           if single_value.kind_of? Goo::Base::Resource
             object_iri = single_value.resource_id
             if object_iri.bnode? and expand_bnodes and

@@ -124,10 +124,6 @@ class TestModelSearch < TestCase
         toy_copy.delete
       end
       assert_equal false, toy.exist?(reload=true)
-      if not toy.valid?
-        binding.pry
-      end
-
       toy.save
       assert_equal true, toy.exist?(reload=true)
       assert_equal 1, count_pattern("#{toy.resource_id.to_turtle} a ?type .")
