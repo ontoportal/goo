@@ -45,7 +45,7 @@ module Goo
 
       def call(*args)
         options = args[0]
-        value = options[:value][0]
+        value = options[:value]
         attr = options[:attr]
         current_value = options[:current_value]
         tvalue = cardinality_transform(attr,value,current_value)

@@ -72,11 +72,15 @@ class TestModelSearch < TestCase
 
     blue = Color.new({:code => "blue"})
     red = Color.new({:code => "red"})
-    white = Color.new({:code => "white"})
+    white = Color.new()
+    white.code = "white"
 
     wheel_blue = ToyFeature.new(:description => "wheel", :color => [white])
     wheel_red = ToyFeature.new(:description => "wheel", :color => [red])
-    engine = ToyFeature.new(:description => "engine", :color => [blue, red])
+    engine = ToyFeature.new()
+    engine.description = "engine"
+    engine.color = [blue, red]
+
     wheel_blue.save
     wheel_red.save
     engine.save

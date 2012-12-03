@@ -10,7 +10,7 @@ module Goo
       attr_reader :attributes
       attr_reader :errors
       
-      def initialize(attributes) 
+      def initialize(attributes = {}) 
         model = self.class.goop_settings[:model]
         raise ArgumentError, "Can't create model, model settings do not contain model type." \
           unless model != nil
@@ -60,7 +60,8 @@ module Goo
                                       @attributes[:internals])
         define_singleton_method("#{attr}=") do |*args|
           current_value = @table[attr]
-          tvalue = prx.call({ :value => args, :attr => attr, 
+          value = args.flatten
+          tvalue = prx.call({ :value => value, :attr => attr, 
                               :current_value => current_value })
           if attr == :uuid
             #uuid forced to be unique
