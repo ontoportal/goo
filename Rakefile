@@ -37,6 +37,6 @@ end
 
 Rake::TestTask.new do |t|
   t.libs = []
-  t.name = "test:search"
-  t.test_files = FileList['test/test_model_search.rb']
+  t.name = "test:find"
+  t.test_files = FileList['test/test_model_find.rb']
 end
