@@ -181,7 +181,7 @@ class TestModelPersonPersistB < TestCase
     person.delete
     assert_equal 1, count_pattern("#{statuses["married"].resource_id.to_turtle} a ?type .")
     assert_equal 0, count_pattern("#{person.resource_id.to_turtle} a ?type .")
-    sts = StatusPersist.search({})
+    sts = StatusPersist.where({})
     sts.each do |t|
       t.load
       rid = t.resource_id
@@ -190,4 +190,3 @@ class TestModelPersonPersistB < TestCase
     end
   end 
 end
-

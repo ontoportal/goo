@@ -306,8 +306,16 @@ module Goo
         end
         return false
       end
+      
+      def self.all()
+        return self.where({})
+      end
 
-      def self.search(attributes)
+      def self.where(*args)
+        if (args.length == 0) or (args.length > 1) or (not args[0].kind_of? Hash)
+          raise ArgumentError, "#{self.class.name}.where accepts (attribute => value) associations or :all"
+        end
+        attributes = args[0]
         epr = Goo.store(@store_name)
         search_query = Goo::Queries.search_by_attributes(attributes, self, @store_name)
         rs = epr.query(search_query)
@@ -320,6 +328,17 @@ module Goo
           items << item
         end
         return items
+      end
+
+      def self.find(param, store_name=nil)
+        if param.kind_of? String
+          iri = RDF::IRI.new(self.prefix + param)
+        elsif param.kind_of? RDF::IRI
+          iri = param
+        else
+          raise ArgumentError, "#{self.class.name}.find only accepts String or RDF::IRI as input."
+        end
+        return self.load(iri)
       end
 
       def self.load(resource_id, store_name=nil)

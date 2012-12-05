@@ -51,22 +51,22 @@ class TestModelUnnamed < TestCase
   end
 
   def test_named_new_from_hash
-    list = Unnamed.search({})
+    list = Unnamed.where({})
     list.each do |u|
       u.load
       u.delete
     end
-    list = Unnamed.search({})
+    list = Unnamed.where({})
     assert_equal 0, list.length
     unn = Unnamed.new({:name => "some value"})
     unn.save
-    list = Unnamed.search({})
+    list = Unnamed.where({})
     assert_equal 1, list.length
     list.each do |u|
       u.load
       u.delete
     end
-    list = Unnamed.search({})
+    list = Unnamed.where({})
     assert_equal 0, list.length
   end
 

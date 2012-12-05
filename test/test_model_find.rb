@@ -4,8 +4,7 @@ TestInit.configure_goo
 
 class Color < Goo::Base::Resource
   model :color
-  attribute :code, :cardinality => { :maximum => 1 }
-  unique :code
+  attribute :code, :unique => true
 
   def initialize(attributes = {})
     super(attributes)
@@ -40,28 +39,28 @@ class ToyObject < Goo::Base::Resource
   end
 end
 
-class TestModelSearch < TestCase
+class TestModelwhere < TestCase
 
   def initialize(*args)
     super(*args)
   end
   def delete_toys()
-    list = ToyObject.search({})
+    list = ToyObject.all
     list.each do |c|
       c.load
       c.delete
     end
-    list = ToyPart.search({})
+    list = ToyPart.all
     list.each do |c|
       c.load
       c.delete
     end
-    list = ToyFeature.search({})
+    list = ToyFeature.all
     list.each do |f|
       f.load
       f.delete
     end
-    list = Color.search({})
+    list = Color.all
     list.each do |c|
       c.load
       c.delete
@@ -84,9 +83,9 @@ class TestModelSearch < TestCase
     wheel_blue.save
     wheel_red.save
     engine.save
-    list = ToyFeature.search({})
+    list = ToyFeature.all
     assert_equal 3, list.length
-    list = Color.search({})
+    list = Color.all
     assert_equal 3, list.length
   end 
 
@@ -102,15 +101,15 @@ class TestModelSearch < TestCase
         toy.name_even = n
         toy.name_x = "x"
 
-        #two different ways of searching for features
-        white = Color.search({:code => "white"})[0]
-        white_wheel = ToyFeature.search({:description => "wheel" , :color => white})
-        red_wheel = ToyFeature.search({:description => "wheel" , :color => { :code => "red"}})
+        #two different ways of whereing for features
+        white = Color.where(:code => "white")[0]
+        white_wheel = ToyFeature.where(:description => "wheel" , :color => white)
+        red_wheel = ToyFeature.where(:description => "wheel" , :color => { :code => "red"})
         toy_part = ToyPart.new({:name => "toypart#{n}", :feature => [white_wheel[0],red_wheel[0]] })
         toy.part= toy_part
       else
         toy.name_odd = n
-        engine_blue = ToyFeature.search({:color => { :code => "blue"}})[0]
+        engine_blue = ToyFeature.where(:color => { :code => "blue"})[0]
         engine_blue.load
         #the only blue thing is an engine
         assert_equal "engine", engine_blue.description 
@@ -130,12 +129,12 @@ class TestModelSearch < TestCase
     end
   end
 
-  def x_earch_simple
+  def test_search_simple
     max = 6
     create_toys(max)
 
     #get them all
-    toys = ToyObject.search({})
+    toys = ToyObject.all
     assert_equal max, toys.length
     lits = Set.new
     toys.each do |t|
@@ -145,39 +144,39 @@ class TestModelSearch < TestCase
     (0..max-1).each do |n|
       assert_equal true, (lits.include? "some value for #{n}")
     end
-    toys = ToyObject.search({:name_x => "x" })
+    toys = ToyObject.where(:name_x => "x" )
     assert_equal max/2, toys.length
     toys.each do |t|
       t.load
       assert_instance_of Fixnum, t.name_even[0]
       assert_equal 0, t.name_even[0] % 2
     end
-    toys = ToyObject.search({})
+    toys = ToyObject.all
     toys.each do |t|
       t.load
       t.delete
     end
-    toys = ToyObject.search({})
+    toys = ToyObject.all
     assert_equal 0, toys.length
 
     delete_toys()
   end
 
-  def test_search_with_nested
+  def test_where_with_nested
     max = 6
     create_toys(max)
 
     #things that have a part with a name that is toypart
-    list = ToyObject.search({ :part => { :name => "toypart0"} })
+    list = ToyObject.where(:part => { :name => "toypart0"})
     assert_equal 1, list.length
-    blues = Color.search({:code => "blue"})
+    blues = Color.where(:code => "blue")
     assert_equal 1, blues.length
     blue = blues[0]
-    list = ToyObject.search({ :part => { :feature => { :color => blue }} })
+    list = ToyObject.where(:part => { :feature => { :color => blue }}) 
     assert_equal 3, list.length
-    list = ToyObject.search({ :part => {
+    list = ToyObject.where( :part => {
                             :feature => { :color => blue  }}, 
-                            :all_prop => "common" })
+                            :all_prop => "common" )
     assert_equal 3, list.length
     list.each do |x|
       x.load
@@ -193,7 +192,25 @@ class TestModelSearch < TestCase
       end
     end
 
+    delete_toys()
+  end
 
+
+  def test_find
+    create_toy_parts()
+    white = Color.find("white")
+    assert_instance_of Color, white
+    assert white.resource_id.value.end_with? "white"
+    assert_equal "white", white.code
+
+    iri_blue = Color.prefix + "blue"
+    blue = Color.find(RDF::IRI.new(iri_blue))
+    assert_instance_of Color, blue
+    assert blue.resource_id.value.end_with? "blue"
+    assert_equal "blue", blue.code
+
+    not_exist = Color.find("xxxxxxxxx")
+    assert not_exist.nil?
     delete_toys()
   end
 end
