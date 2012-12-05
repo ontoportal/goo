@@ -22,6 +22,9 @@ module Goo
       def validate_each(record, attribute, value)
         begin
           #why do I need module here.
+          if value.nil?
+            return #cardinality should take care of this.
+          end
           datetime = Goo::Utils.xsd_date_time_parse(value)
           if not datetime
             record.internals.errors[attribute] << \
@@ -79,8 +82,7 @@ module Goo
 
         if (record.exist?(reload=true) and not record.internals.persistent)
             record.internals.errors[attribute] << \
-            (options[:message] ||  "Object cannot be saved." +
-            " Resource '#{@_id}' exist in the store and cannot be replaced")
+            (options[:message] || " Resource '#{record.resource_id.value}' already exists in the store and cannot be replaced")
         end
       end
     end
