@@ -23,7 +23,7 @@ class TestReview < Test::Unit::TestCase
     super(*args)
     if Goo.store().nil?
       Goo.configure do |conf|
-        conf[:stores] = [ { :name => :main , :host => "localhost", :port => 8080 , :options => { } } ]
+        conf[:stores] = [ { :name => :main , :host => "localhost", :port => 9000 , :options => { } } ]
         conf[:namespaces] = {
           :metadata => "http://data.bioontology.org/metadata/",
           :default => :metadata,
