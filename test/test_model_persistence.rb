@@ -17,6 +17,7 @@ class PersonPersist < Goo::Base::Resource
   attribute :multiple_vals, :cardinality => { :maximum => 2 }
   attribute :birth_date, :date_time_xsd => true, :cardinality => { :max => 1, :min => 1  }
   attribute :created, :date_time_xsd => true, :single_value=> true, :default => lambda { |record| DateTime.now }
+  attribute :friends, :not_nil => false
 
   def initialize(attributes = {})
     super(attributes)
@@ -33,6 +34,7 @@ class TestModelPersonPersistB < TestCase
     person = PersonPersist.new({:name => "Goo Fernandez",
                          :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                          :some_stuff => [1]})
+    assert (person.valid?)
     if person.exist?
       person_copy = PersonPersist.new
       person_copy.load(person.resource_id)

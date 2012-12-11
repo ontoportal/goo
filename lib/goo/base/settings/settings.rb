@@ -166,6 +166,9 @@ module Goo
                 if opt_name == :default
                     Settings.set_default_options(self,attr_name,sub_options)
                 end
+                if sub_options == false# things like :not_nil => false
+                  next
+                end
                 if Settings.is_validator(opt_name)
                   if Settings.cardinality_shortcuts.include? opt_name
                     Settings.set_validator_options(self,attr_name,:cardinality,
