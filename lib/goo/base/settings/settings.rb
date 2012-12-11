@@ -62,6 +62,11 @@ module Goo
         end
       end
 
+      def self.set_default_options(model_class, att_name, options)
+        att =  model_class.goop_settings[:attributes][att_name.to_sym]
+        att[:default] = options
+      end
+
       def self.cardinality_shortcuts
         @@_cardinality_shortcuts
       end
@@ -158,6 +163,9 @@ module Goo
           options.each do |opt|
             if opt.kind_of? Hash
               opt.each do |opt_name,sub_options|
+                if opt_name == :default
+                    Settings.set_default_options(self,attr_name,sub_options)
+                end
                 if Settings.is_validator(opt_name)
                   if Settings.cardinality_shortcuts.include? opt_name
                     Settings.set_validator_options(self,attr_name,:cardinality,

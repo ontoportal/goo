@@ -82,7 +82,21 @@ module Goo
           @table[attr] = tvalue
         end
         define_singleton_method("#{attr}") do |*args|
-          return @table[attr]
+          attr_value = @table[attr]
+          
+          #returning default value
+          if attr_value.nil?
+            attrs = self.class.goop_settings[:attributes]
+            if attrs.include? attr
+              if attrs[attr].include? :default
+                default_value = attrs[attr][:default].call(self)
+                @table[attr] = default_value
+                return default_value
+              end
+            end
+          end
+
+          return attr_value
         end
       end 
 

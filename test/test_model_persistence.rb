@@ -16,6 +16,7 @@ class PersonPersist < Goo::Base::Resource
   attribute :name, :unique => true
   attribute :multiple_vals, :cardinality => { :maximum => 2 }
   attribute :birth_date, :date_time_xsd => true, :cardinality => { :max => 1, :min => 1  }
+  attribute :created, :date_time_xsd => true, :single_value=> true, :default => lambda { |record| DateTime.now }
 
   def initialize(attributes = {})
     super(attributes)
@@ -82,7 +83,14 @@ class TestModelPersonPersistB < TestCase
     person.save
     person_update = PersonPersist.new()
     person_update.load(person.resource_id)
+    
+    #default value is there
+    created_time = person_update.created
+    assert_instance_of DateTime, created_time
+    
+    #update field
     person_update.birth_date =  DateTime.parse("2013-01-01T07:00:00.000Z")
+
     person_update.save
     assert_equal 1, count_pattern("#{person_update.resource_id.to_turtle} a ?type .")
     assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date
@@ -91,6 +99,9 @@ class TestModelPersonPersistB < TestCase
     person_update.load(person.resource_id)
     assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date
     assert_equal "Goo Fernandez", person_update.name
+
+    #making sure default values do not change in an update
+    assert_equal created_time.xmlschema, person_update.created.xmlschema
 
     person_update.delete
     assert_equal false, person_update.exist?(reload=true)
