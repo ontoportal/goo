@@ -152,4 +152,13 @@ class TestModelPersonA < TestCase
     assert_equal false, person.valid?
     assert_equal 1,person.errors[:numbers].length
   end
+
+  def test_range_class_of_attribute
+    cls = Person.range_class(:contact_data)
+    assert(cls.kind_of? Class)
+    assert_equal cls, ContactData 
+
+    cls = Person.range_class(:non_attr)
+    assert cls.nil?
+  end
 end

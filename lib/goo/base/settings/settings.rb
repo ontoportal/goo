@@ -214,6 +214,17 @@ module Goo
           @goop_settings[:depends] << dependencies
         end
 
+        def range_class(attr)
+          attr = attr.to_sym
+          vals = attribute_validators(attr)
+          if vals.include? :instance_of
+            model_sym = vals[:instance_of][:with]
+            cls = Goo.find_model_by_name(model_sym)
+            return cls
+          end
+          nil
+        end
+
       end
 
     end
