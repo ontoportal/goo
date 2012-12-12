@@ -12,7 +12,6 @@ class StatusPersist < Goo::Base::Resource
 end
 
 class PersonPersist < Goo::Base::Resource
-  model :person_system
   attribute :name, :unique => true
   attribute :multiple_vals, :cardinality => { :maximum => 2 }
   attribute :birth_date, :date_time_xsd => true, :cardinality => { :max => 1, :min => 1  }
@@ -31,15 +30,15 @@ class TestModelPersonPersistB < TestCase
  end
 
   def test_person_save
+    data = PersonPersist.all
+    data.each do |p|
+      p.load
+      p.delete
+    end
     person = PersonPersist.new({:name => "Goo Fernandez",
                          :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                          :some_stuff => [1]})
     assert (person.valid?)
-    if person.exist?
-      person_copy = PersonPersist.new
-      person_copy.load(person.resource_id)
-      person_copy.delete
-    end
     assert_equal false, person.exist?(reload=true)
     person.save
     assert_equal true, person.exist?(reload=true)
@@ -202,4 +201,12 @@ class TestModelPersonPersistB < TestCase
       assert_equal 0, count_pattern("#{rid.to_turtle} a ?type .")
     end
   end 
+
+  def test_model_by_def_name
+    cls = Goo.find_model_by_name(:person_persist)
+    assert (cls == PersonPersist)
+    cls = Goo.find_model_by_name(:status)
+    assert (cls == StatusPersist)
+  end
+
 end
