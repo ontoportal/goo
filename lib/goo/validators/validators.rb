@@ -65,20 +65,12 @@ module Goo
 
     class UniqueValidator < Validator
       def validate_each(record, attribute, value)
-        if value.nil?
-            record.internals.errors[attribute] << \
-            (options[:message] || "#{attribute} must contain a value.")
+        if value.nil? or (value.kind_of? Array and value.length > 1) or 
+          (value.kind_of? Array and value.length == 0)
+            #cardinality takes care of this.
             return
         end
-        if value.kind_of? Array and value.length > 1
-            record.internals.errors[attribute] << \
-            (options[:message] || "#{attribute} must contain one single value.")
-        elsif value.kind_of? Array and value.length == 0
-            record.internals.errors[attribute] << \
-            (options[:message] || "#{attribute} must contain a value.")
-        else
-          value = value[0]
-        end
+        value = value[0]
 
         if (record.exist?(reload=true) and not record.internals.persistent)
             record.internals.errors[attribute] << \
