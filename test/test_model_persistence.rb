@@ -23,6 +23,12 @@ class PersonPersist < Goo::Base::Resource
   end
 end
 
+class University < Goo::Base::Resource
+  attribute :name, :unique => true
+  attribute :students,  :instance_of => { :with => :person_persist }
+  attribute :status,  :instance_of => { :with => :status }
+end
+
 class TestModelPersonPersistB < TestCase
 
   def initialize(*args)
@@ -208,5 +214,20 @@ class TestModelPersonPersistB < TestCase
     cls = Goo.find_model_by_name(:status)
     assert (cls == StatusPersist)
   end
+  
+  def test_instance_of_with_model_definitions
+    person = PersonPersist.new({:name => "Goo Fernandez",
+                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
+                         :some_stuff => [1]})
+    u = University.new
+    assert(!u.valid?)
+    u.name = "Stanford"
+    u.students = [person]
+    u.status = StatusPersist.new({:description => "OK" })
+    assert(u.valid?)
+    u.status = 10
+    u.students = ["aaa"]
+    assert(!u.valid?)
 
+  end
 end
