@@ -59,6 +59,9 @@ module Goo
         prx = AttributeValueProxy.new(card_validator,
                                       @attributes[:internals])
         define_singleton_method("#{attr}=") do |*args|
+          if self.class.inverse_attr?(attr)
+            raise ArgumentError, "#{attr} is defined as inverse property and cannot be set."
+          end
           current_value = @table[attr]
           value = args.flatten
           tvalue = prx.call({ :value => value, :attr => attr, 
@@ -83,7 +86,12 @@ module Goo
         end
         define_singleton_method("#{attr}") do |*args|
           attr_value = @table[attr]
-          
+         
+          if self.class.inverse_attr? attr
+            inv_cls, inv_attr = self.class.inverse_attr_options(attr)
+            return inv_cls.where(inv_attr => self, ignore_inverse: true)
+          end 
+
           #returning default value
           if attr_value.nil?
             attrs = self.class.goop_settings[:attributes]
@@ -330,8 +338,10 @@ module Goo
           raise ArgumentError, "#{self.class.name}.where accepts (attribute => value) associations or :all"
         end
         attributes = args[0]
+        ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
+        attributes.delete(:ignore_inverse)
         epr = Goo.store(@store_name)
-        search_query = Goo::Queries.search_by_attributes(attributes, self, @store_name)
+        search_query = Goo::Queries.search_by_attributes(attributes, self, @store_name, ignore_inverse)
         rs = epr.query(search_query)
         items = []
         rs.each_solution do |sol|
@@ -391,7 +401,6 @@ module Goo
         internals.errors.reject! { |att,val| val.length == 0 }
         return (internals.errors.length == 0)
       end
-
     end
   end
 end

@@ -67,6 +67,11 @@ module Goo
         att[:default] = options
       end
 
+      def self.set_inverse_options(model_class, att_name, options)
+        att =  model_class.goop_settings[:attributes][att_name.to_sym]
+        att[:inverse_of] = options
+      end
+
       def self.cardinality_shortcuts
         @@_cardinality_shortcuts
       end
@@ -166,6 +171,9 @@ module Goo
                 if opt_name == :default
                     Settings.set_default_options(self,attr_name,sub_options)
                 end
+                if opt_name == :inverse_of
+                    Settings.set_inverse_options(self,attr_name,sub_options)
+                end
                 if sub_options == false# things like :not_nil => false
                   next
                 end
@@ -228,8 +236,18 @@ module Goo
           nil
         end
 
-      end
+        def inverse_attr?(attr)
+          attr = attr.to_sym
+          return ((goop_settings[:attributes].include? attr) and 
+                  (goop_settings[:attributes][attr].include? :inverse_of))
+        end
 
+        def inverse_attr_options(attr)
+          attr = attr.to_sym
+          options = goop_settings[:attributes][attr][:inverse_of]
+          return Goo.find_model_by_name(options[:with]), options[:attribute]
+        end
+      end
     end
   end
 end

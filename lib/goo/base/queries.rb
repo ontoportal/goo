@@ -81,6 +81,9 @@ eos
       end
 
       model.attributes.each_pair do |name,value|
+        if model.class.inverse_attr? name
+          next
+        end
         next if name == :internals
         subject = resource_id
         predicate = model.class.uri_for_predicate(name)
@@ -270,12 +273,20 @@ eos
       return "[\n\t" + (patterns.join "\n") + " \n]" 
     end
 
-    def self.search_by_attributes(attributes, model_class, store_name)
+    def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse)
       patterns = []
       graph_id = Goo::Naming.get_graph_id(model_class)
       patterns << " ?subject a <#{ model_class.type_uri}> ."
       attributes.each do |attribute, value|
-        predicate = model_class.uri_for_predicate(attribute)
+        predicate = nil
+        inverse = false
+        if not ignore_inverse and model_class.inverse_attr? attribute
+          inv_cls, inv_attr = model_class.inverse_attr_options(attribute)
+          predicate = inv_cls.uri_for_predicate(inv_attr)
+          inverse = true
+        else
+          predicate = model_class.uri_for_predicate(attribute)
+        end
         if value.kind_of? Goo::Base::Resource
           rdf_object_string = value.resource_id.to_turtle 
         elsif value.kind_of? Hash
@@ -293,7 +304,11 @@ eos
         else
           rdf_object_string = value_to_rdf_object(value)
         end
-        patterns << " ?subject <#{predicate}> #{rdf_object_string} ."
+        if not inverse
+          patterns << " ?subject <#{predicate}> #{rdf_object_string} ."
+        else
+          patterns << " #{rdf_object_string} <#{predicate}> ?subject ."
+        end
       end
       patterns = patterns.join "\n"
       query = <<eos
