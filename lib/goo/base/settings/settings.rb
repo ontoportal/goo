@@ -142,7 +142,7 @@ module Goo
         def model(*args)
           options = args.reverse
           if options.length == 0 or (not options[-1].kind_of? Symbol)
-            type = self.to_s.to_sym
+            type = (self.name.split "::")[-1].underscore.to_sym
           else 
             type = options.pop
           end
