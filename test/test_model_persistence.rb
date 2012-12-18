@@ -27,6 +27,7 @@ class University < Goo::Base::Resource
   attribute :name, :unique => true
   attribute :students,  :instance_of => { :with => :person_persist }
   attribute :status,  :instance_of => { :with => :status }
+  attribute :iri_value, :instance_of => { :with => RDF::IRI }, :single_value  => true
 end
 
 class TestModelPersonPersistB < TestCase
@@ -216,6 +217,14 @@ class TestModelPersonPersistB < TestCase
   end
   
   def test_instance_of_with_model_definitions
+    University.all.each do |u|
+      u.load
+      u.delete
+    end
+    PersonPersist.all.each do |u|
+      u.load
+      u.delete
+    end
     person = PersonPersist.new({:name => "Goo Fernandez",
                          :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                          :some_stuff => [1]})
@@ -228,6 +237,22 @@ class TestModelPersonPersistB < TestCase
     u.status = 10
     u.students = ["aaa"]
     assert(!u.valid?)
-
+    u.students = [person]
+    u.iri_value = RDF::IRI.new("http://some.org/iri")
+    u.status = StatusPersist.new({:description => "OK" })
+    assert(u.valid?)
+    u.save
+    u.xxxx = "xxxx"
+    assert(u.valid?)
+    u.save
+    u = University.find("Stanford")
+    assert (not u.nil?)
+    models = [University, PersonPersist, StatusPersist]
+    models.each do |m|
+      m.all.each do |i|
+        i.load
+        i.delete
+      end
+    end
   end
 end

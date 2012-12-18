@@ -9,7 +9,7 @@ module Goo
       raise StandardError, "hash not yet supported here" if value.kind_of? Hash
 
       xsd_type = SparqlRd::Utils::Xsd.xsd_type_from_value(value)
-      raise XsdTypeNotFoundForValue, "XSD Type not found for value #{value}" \
+      raise XsdTypeNotFoundForValue, "XSD Type not found for value `#{value}` `#{value.class}`" \
         if xsd_type == nil
       SparqlRd::Utils::Xsd.xsd_string_from_value(value,xsd_type)
       xsd_type_string = SparqlRd::Utils::Xsd.types[xsd_type]
@@ -61,7 +61,7 @@ eos
               object_instance.resource_id= object
               attributes[attr_name] << object_instance
             else
-              attributes[attr_name] << object
+              attributes[attr_name] << RDF::IRI.new(object.value)
             end
           else
             attributes[attr_name] << object.parsed_value
