@@ -31,6 +31,7 @@ class TestModelOntology < TestCase
        o.delete
      end
     end
+
     def test_valid_save
       flush()
       p = Project.new({
@@ -92,5 +93,31 @@ class TestModelOntology < TestCase
       flush()
       assert_equal 0, Project.all.length
       assert_equal 0, Ontology.all.length
+    end
+
+    def test_setter_getter_creation_on_load
+      flush()
+      p = Project.new({
+           :name => "Great Project",
+           :ontologyUsed => [Ontology.new(acronym: "SNOMED", name: "SNOMED CT")]
+     })
+     p.save
+     assert_equal true, p.exist?(reload=true)
+     Project.all.each do |p|
+       p.load unless p.loaded?
+       assert(p.respond_to? :name)
+       assert(p.respond_to? :ontologyUsed)
+       assert(!(p.respond_to?(:xxxxx)))
+       p.ontologyUsed.each do |o|
+         o.load unless o.loaded?
+         assert(o.respond_to? :acronym)
+         assert(o.respond_to? :name)
+         assert(o.respond_to? :projects)
+         assert(!(o.respond_to?(:xxxxx)))
+       end
+     end
+     flush()
+     assert_equal 0, Project.all.length
+     assert_equal 0, Ontology.all.length
     end
 end

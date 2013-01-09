@@ -109,24 +109,22 @@ module Goo
       end
 
       def shape_me
-        if @attributes.length > 1 #size 1 is internals
-          check_rdftype_inconsistency
+        check_rdftype_inconsistency
 
-          #set to nil all the known properties via validators
-          keys_attr = @attributes.keys
-          self.class.attributes.each do |att_name, options|
-            keys_attr << att_name
-          end
-          keys_attr.each do |attr|
-            next if attr == :internals
-            shape_attribute(attr)
-          end
+        #set to nil all the known properties via validators
+        keys_attr = @attributes.keys
+        self.class.attributes.each do |att_name, options|
+          keys_attr << att_name
+        end
+        keys_attr.each do |attr|
+          next if attr == :internals
+          shape_attribute(attr)
+        end
 
-          #if attributes are set then set values for properties.
-          @attributes.each_pair do |attr,value|
-            next if attr == :internals
-            self.send("#{attr}=", value)
-          end
+        #if attributes are set then set values for properties.
+        @attributes.each_pair do |attr,value|
+          next if attr == :internals
+          self.send("#{attr}=", value)
         end
         internal_status = @attributes[:internals]
         @table[:internals] = internal_status

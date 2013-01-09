@@ -161,4 +161,17 @@ class TestModelPersonA < TestCase
     cls = Person.range_class(:non_attr)
     assert cls.nil?
   end
+
+  def test_setters_getters_creation
+    person = Person.new
+    assert(person.respond_to? "name")
+    assert(person.respond_to? :contact_data)
+    assert(person.respond_to? "multiple_vals")
+    assert(!(person.respond_to? "xxxxxxx"))
+    person = Person.new({ "name" => "name" })
+    assert(person.respond_to? "name")
+    assert(person.respond_to? :contact_data)
+    assert(person.respond_to? "multiple_vals")
+    assert(!(person.respond_to? "xxxxxxx"))
+  end
 end
