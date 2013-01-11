@@ -3,7 +3,9 @@ require_relative 'test_case'
 TestInit.configure_goo
 
 class Ontology < Goo::Base::Resource
-  attribute :acronym, :unique => true, :cardinality => { :max => 1, :min => 1 }
+  attribute :acronym, :unique => true
+  attribute :submissionId, :unique => true
+
   attribute :name, :cardinality => { :max => 1, :min => 1 }
   attribute :projects , :inverse_of => { :with => :project , :attribute => :ontologyUsed }
 end
@@ -36,7 +38,7 @@ class TestModelOntology < TestCase
       flush()
       p = Project.new({
            :name => "Great Project",
-           :ontologyUsed => [Ontology.new(acronym: "SNOMED", name: "SNOMED CT")]
+           :ontologyUsed => [Ontology.new(acronym: "SNOMED", name: "SNOMED CT", :submissionId => 1)]
          })
       assert_equal false, p.exist?(reload=true)
       p.save
@@ -51,7 +53,7 @@ class TestModelOntology < TestCase
 
     def test_inverse_of
       flush()
-      ont = Ontology.new(acronym: "SNOMED", name: "SNOMED CT")
+      ont = Ontology.new(acronym: "SNOMED", name: "SNOMED CT", :submissionId => 1)
       p = Project.new({
           :name => "Great Project",
           :ontologyUsed => [ont]
@@ -99,7 +101,7 @@ class TestModelOntology < TestCase
       flush()
       p = Project.new({
            :name => "Great Project",
-           :ontologyUsed => [Ontology.new(acronym: "SNOMED", name: "SNOMED CT")]
+           :ontologyUsed => [Ontology.new(acronym: "SNOMED", name: "SNOMED CT", :submissionId => 1)]
      })
      p.save
      assert_equal true, p.exist?(reload=true)
@@ -119,5 +121,15 @@ class TestModelOntology < TestCase
      flush()
      assert_equal 0, Project.all.length
      assert_equal 0, Ontology.all.length
+    end
+
+    def test_empty_validation
+      os = Ontology.new
+      os.submissionId = 1
+      begin
+        assert(!os.valid?)
+      rescue => e
+        assert(1==0, "An exception should not be thrown here")
+      end
     end
 end

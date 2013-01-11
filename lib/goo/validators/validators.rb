@@ -72,9 +72,13 @@ module Goo
         end
         value = value[0]
 
-        if (record.exist?(reload=true) and not record.internals.persistent)
-            record.internals.errors[attribute] << \
-            (options[:message] || " Resource '#{record.resource_id.value}' already exists in the store and cannot be replaced")
+        begin
+          if (record.exist?(reload=true) and not record.internals.persistent)
+              record.internals.errors[attribute] << \
+              (options[:message] || " Resource '#{record.resource_id.value}' already exists in the store and cannot be replaced")
+          end
+        rescue ArgumentError => e
+          record.internals.errors[attribute] << e.message
         end
       end
     end
