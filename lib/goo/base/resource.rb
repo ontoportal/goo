@@ -59,6 +59,14 @@ module Goo
         prx = AttributeValueProxy.new(card_validator,
                                       @attributes[:internals])
         define_singleton_method("#{attr}=") do |*args|
+          if internals.lazy_loaded?
+            #call comes from load
+            load_stack = caller.select { |st| st.index "`load'" }
+            call_from_load = load_stack.length > 0 and (load_stack.select { |st| st.index "resource.rb:" }).length == 0
+            if not call_from_load
+              raise NotLoadedResourceError, "Object has been lazy loaded. Call `load` to access/write attributes"
+            end
+          end
           if self.class.inverse_attr?(attr)
             raise ArgumentError, "#{attr} is defined as inverse property and cannot be set."
           end
@@ -85,6 +93,9 @@ module Goo
           @table[attr] = tvalue
         end
         define_singleton_method("#{attr}") do |*args|
+          if internals.lazy_loaded?
+            raise NotLoadedResourceError, "Object has been lazy loaded. Call `load` to access/write attributes"
+          end
           attr_value = @table[attr]
 
           if self.class.inverse_attr? attr
@@ -137,7 +148,6 @@ module Goo
           return self.send(sym,args)
         end
         return nil
-        #raise NoMethodError, "undefined method `#{sym}'"
       end
 
       #set resource id wihout loading the rest of the attributes.
@@ -271,6 +281,7 @@ module Goo
         self.each_linked_base do |attr_name,linked_obj|
           next unless linked_obj.internals.loaded?
           if not linked_obj.valid?
+            binding.pry
             exc = NotValidException.new("Attribute '#{attr_name}' links to a non-valid object.")
             exc.errors = linked_obj.internals.errors
             raise exc

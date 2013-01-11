@@ -255,4 +255,37 @@ class TestModelPersonPersistB < TestCase
       end
     end
   end
+
+  def test_exception_on_get_lazy_load
+    person = PersonPersist.new({:name => "Goo Fernandez",
+                        :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
+                        :some_stuff => [1]})
+    if person.exist?
+      person_copy = PersonPersist.new
+      person_copy.load(person.resource_id)
+      person_copy.delete
+    end
+    assert_equal false, person.exist?(reload=true)
+    person.save
+
+    PersonPersist.all.each do |p|
+      begin
+        x = p.name
+        assert(1 == 0, "Attribute exception missing on lazy load")
+      rescue => e
+        assert_instance_of Goo::Base::NotLoadedResourceError, e
+      end
+      begin
+        p.name= "aaa"
+        assert(1 == 0, "Attribute exception missing on lazy load")
+      rescue => e
+        assert_instance_of Goo::Base::NotLoadedResourceError, e
+      end
+      p.load
+      assert_instance_of(String, p.name)
+    end
+    PersonPersist.all.each do |p|
+      p.delete
+    end
+  end
 end
