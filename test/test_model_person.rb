@@ -25,6 +25,15 @@ class ContactData < Goo::Base::Resource
   end
 end
 
+#zero conf model
+class LambdaResourceId < Goo::Base::Resource
+  model :name_with => lambda { |record| RDF::IRI.new( "http://xxx/"+ (record.values.join "-")) }
+  attribute :values
+  def initialize(attributes = {})
+    super(attributes)
+  end
+end
+
 class Person < Goo::Base::Resource
   model :PersonResource, :namespace => :metadata
   attribute :name, :namespace => :omv, :unique => true
@@ -174,4 +183,13 @@ class TestModelPersonA < TestCase
     assert(person.respond_to? "multiple_vals")
     assert(!(person.respond_to? "xxxxxxx"))
   end
+
+  def test_lambda_resource_id_generation
+    obj = LambdaResourceId.new
+    obj.values = ["value1", "value2"]
+    resource_id = obj.resource_id
+    assert_instance_of(RDF::IRI, resource_id)
+    assert_equal(resource_id.value,'http://xxx/value1-value2')
+  end
+
 end
