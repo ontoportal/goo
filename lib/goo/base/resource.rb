@@ -419,6 +419,10 @@ module Goo
         return internals.errors
       end
 
+      def attr_loaded? attr
+        return (loaded? or (internals.loaded_attrs.include? attr))
+      end
+
       def valid?
         internals.errors = Hash.new()
         self.class.attributes.each do |att,att_options|

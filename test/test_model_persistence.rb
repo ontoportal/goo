@@ -345,6 +345,9 @@ class TestModelPersonPersistB < TestCase
     data = University.where :name => "Oxford", :load_attrs => [:bogus => true]
     assert_equal 1, data.length
     assert_equal "bla", data[0].bogus
+    assert !(data[0].attr_loaded? :name)
+    assert (data[0].attr_loaded? :bogus)
+    assert !(data[0].attr_loaded? :status)
 
     data = University.where :name => "Oxford", :load_attrs => [:name => true]
     assert_equal 1, data.length
