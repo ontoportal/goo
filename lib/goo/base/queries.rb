@@ -274,7 +274,40 @@ eos
       return "[\n\t" + (patterns.join "\n") + " \n]"
     end
 
-    def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse)
+    def self.attributes_for_query(attrs,var,model_class,attribute_patterns)
+        if attrs.kind_of? Array and attrs.length == 1 and attrs[0].kind_of? Hash
+          attrs = attrs[0]
+        end
+        if attrs.kind_of? Array
+          attr_hash = {}
+          attrs.each do | v |
+            attr_hash[v] = true
+          end
+          attrs = attr_hash
+        end
+        attrs = attrs.dup
+        attrs.each_entry do |attr, nested|
+          if (nested.kind_of? Hash or nested.kind_of? Array)
+            optional = nested.delete :optional
+          else
+            optional = (nested == :optional)
+          end
+          if optional
+            attribute_patterns << " OPTIONAL {"
+          end
+          predicate = model_class.uri_for_predicate(attr)
+          attribute_patterns << " ?#{var} <#{predicate}> ?#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s} ."
+          if (nested.kind_of? Hash or nested.kind_of? Array) and (nested.length > 0)
+            #TODO
+            binding.pry
+          end
+          if optional
+            attribute_patterns << "}"
+          end
+        end
+    end
+
+    def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse, load_attrs)
       patterns = []
       graph_id = Goo::Naming.get_graph_id(model_class)
       patterns << " ?subject a <#{ model_class.type_uri}> ."
@@ -312,11 +345,16 @@ eos
           patterns << " #{rdf_object_string} <#{predicate}> ?subject ."
         end
       end
+      if load_attrs and load_attrs.length > 0
+        attributes_patterns = []
+        attributes_for_query(load_attrs,"subject",model_class, attributes_patterns)
+        patterns << attributes_patterns
+      end
       patterns = patterns.join "\n"
       query = <<eos
-SELECT DISTINCT ?subject WHERE {
+SELECT DISTINCT * WHERE {
     #{patterns}
-}
+} ORDER BY ?subject
 eos
       return query
     end

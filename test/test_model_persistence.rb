@@ -25,9 +25,13 @@ end
 
 class University < Goo::Base::Resource
   attribute :name, :unique => true
+  attribute :location,  :instance_of => { :with => :location }
   attribute :students,  :instance_of => { :with => :person_persist }
   attribute :status,  :instance_of => { :with => :status }
   attribute :iri_value, :instance_of => { :with => RDF::IRI }, :single_value  => true
+end
+
+class Location < Goo::Base::Resource
 end
 
 class TestModelPersonPersistB < TestCase
@@ -288,4 +292,70 @@ class TestModelPersonPersistB < TestCase
       p.delete
     end
   end
+
+  def test_list_university_load_attrs
+    University.all.each do |u|
+      u.load
+      u.delete
+    end
+
+    locs = [ ["California", "US"], ["Boston", "US"], ["Oxford", "UK"] , ["Cambridge","UK"] ,["Soton","UK"] ]
+    unis = ["Stanford", "Harvard", "Oxford", "Cambridge", "Southampton"]
+    unis.each_index do |i|
+      u = University.new(:name => unis[i], :location => Location.new(:state =>  locs[i][0], :country => locs[i][1]))
+      if (i == 0) or (i == 3)
+        u.status = StatusPersist.new(:description => "description for status")
+      end
+      if (i == 2)
+        u.bogus = "bla"
+      end
+      u.save
+    end
+
+    #test with no nested attr
+    data = University.all :load_attrs => [:name => true, :bogus => :optional]
+    assert_equal 5, data.length
+    data.each do |u|
+      correct = ((!u.bogus.nil? and (u.name == "Oxford")) or (u.name != "Oxford"))
+      assert(correct)
+    end
+    begin
+      data[0].status
+      assert(1==0, "exception should be thrown here. not a loaded attr")
+    rescue => e
+      assert_instance_of Goo::Base::NotLoadedResourceError, e
+    end
+
+    data = University.all :load_attrs => [:name => true]
+    assert_equal 5, data.length
+    data.each do |u|
+      assert ((unis.index u.name) != nil)
+    end
+
+    data = University.all :load_attrs => [:name => true, :bogus => true]
+    assert_equal 1, data.length
+    u = data[0]
+    correct = (!u.bogus.nil? and (u.name == "Oxford"))
+    assert correct
+
+    data.each do |u|
+      assert ((unis.index u.name) != nil)
+    end
+
+    data = University.where :name => "Oxford", :load_attrs => [:bogus => true]
+    assert_equal 1, data.length
+    assert_equal "bla", data[0].bogus
+
+    data = University.where :name => "Oxford", :load_attrs => [:name => true]
+    assert_equal 1, data.length
+    assert_equal "Oxford", data[0].name
+
+
+
+    University.all.each do |u|
+      u.load
+      u.delete
+    end
+  end
+
 end

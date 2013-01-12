@@ -1,3 +1,4 @@
+require 'set'
 
 module Goo
   module Base
@@ -8,6 +9,7 @@ module Goo
       attr_reader :loaded_dependencies
       attr_reader :store_name
       attr_accessor :errors
+      attr_accessor :loaded_attrs
 
       alias :modified? :modified
 
@@ -22,6 +24,7 @@ module Goo
         @modified = @_base_instance.contains_data?
         @loaded_dependencies = false
         @store_name = store_name
+        @loaded_attrs = Set.new
       end
 
       def id=(resource_id)

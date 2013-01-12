@@ -59,7 +59,7 @@ module Goo
         prx = AttributeValueProxy.new(card_validator,
                                       @attributes[:internals])
         define_singleton_method("#{attr}=") do |*args|
-          if internals.lazy_loaded?
+          if internals.lazy_loaded? #and !(internals.loaded_attrs.include? attr.to_sym)
             #call comes from load
             load_stack = caller.select { |st| st.index "`load'" }
             call_from_load = load_stack.length > 0 and (load_stack.select { |st| st.index "resource.rb:" }).length == 0
@@ -93,7 +93,7 @@ module Goo
           @table[attr] = tvalue
         end
         define_singleton_method("#{attr}") do |*args|
-          if internals.lazy_loaded?
+          if internals.lazy_loaded?  and !(internals.loaded_attrs.include? attr.to_sym)
             raise NotLoadedResourceError, "Object has been lazy loaded. Call `load` to access/write attributes"
           end
           attr_value = @table[attr]
@@ -338,8 +338,21 @@ module Goo
         return false
       end
 
-      def self.all()
-        return self.where({})
+      def lazy_load_attr(attr,value)
+        internals.loaded_attrs << attr
+        if !self.respond_to? attr
+          shape_attribute(attr.to_s)
+        end
+        if value
+          @attributes[attr] = value.value
+        else
+          @attributes[attr] = value
+        end
+      end
+
+      def self.all(*args)
+        (args << {:load_attrs => []}) if args.length == 0
+        return self.where(*args)
       end
 
       def self.where(*args)
@@ -347,20 +360,38 @@ module Goo
           raise ArgumentError, "#{self.class.name}.where accepts (attribute => value) associations or :all"
         end
         attributes = args[0]
+        load_attrs = attributes.delete :load_attrs
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
         attributes.delete(:ignore_inverse)
         epr = Goo.store(@store_name)
-        search_query = Goo::Queries.search_by_attributes(attributes, self, @store_name, ignore_inverse)
+        search_query = Goo::Queries.search_by_attributes(attributes, self, @store_name, ignore_inverse, load_attrs)
         rs = epr.query(search_query)
-        items = []
+        items = Hash.new
         rs.each_solution do |sol|
           resource_id = sol.get(:subject)
-          item = self.new
-          item.internals.lazy_loaded
-          item.resource_id = resource_id
-          items << item
+          if !items[resource_id.value]
+            item = self.new
+            item.internals.lazy_loaded
+            item.resource_id = resource_id
+            items[resource_id.value] = item
+          end
+          item = items[resource_id.value]
+          next if load_attrs.nil?
+          if load_attrs.length > 0
+            sol.get_vars.each do |var|
+              next if var == "subject"
+              value = (sol.get var.to_sym)
+              (sol_attr, sol_model) = var.split "_onmodel_"
+              if self.goop_settings[:model].to_s == sol_model
+                item.lazy_load_attr(sol_attr.to_sym, value)
+              else
+                #something nested
+                #TODO
+              end
+            end
+          end
         end
-        return items
+        return items.values
       end
 
       def self.find(param, store_name=nil)
