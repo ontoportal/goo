@@ -80,16 +80,19 @@ module Goo
     return @@_configuration[:namespaces]
   end
 
+  def first_or_empty_if_nil(x)
+    return x[0] if x.length > 0
+    return nil
+  end
+
   def self.find_model_by_uri(uri)
     ms = @@_models.select { |m| m.type_uri == uri }
-    return ms[0] if ms.length > 0
-    return nil
+    return first_or_empty_if_nil(ms)
   end
 
   def self.find_model_by_name(name)
     ms = @@_models.select { |m| m.goo_name == name }
-    return ms[0] if ms.length > 0
-    return nil
+    return first_or_empty_if_nil(ms)
   end
 
   def self.find_prefix_for_uri(uri)
