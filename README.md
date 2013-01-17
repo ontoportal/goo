@@ -40,6 +40,13 @@ If calling `valid?` fails, the correspond errors will be available by calling th
     => false
     > p.errors
 
+You can also check to see if an object exists prior to saving:
+
+    > p = Person.new(name: "paul")
+    > p.save
+    > p.exist?
+    => true
+
 #### Saving an object
 After validating an object, you can call the `save` method to store the object's triples in the triplestore backend. If the object isn't valid then calling `save` will result in an exception.
 
