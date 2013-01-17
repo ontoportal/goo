@@ -6,12 +6,21 @@ Graph Oriented Objects for Ruby. A RDF/SPARQL based ORM.
 
 [Goo](https://github.com/ncbo/goo) is a general library for Object to RDF Mapping written by Manuel Salvadores which includes functionality for basic CRUD operations.
 
-#### Creating a new object
+#### Defining a new object
 We can look at some tests in Goo to see how to work with objects built with Goo.
 
 For example, here is an object `Person` defined in a test: [`test_model_person.rb`](https://github.com/ncbo/goo/blob/master/test/test_model_person.rb#L28-L40)
 
 In the method `test_person`, you can see how an instance of the model is created: [`Person.new`](https://github.com/ncbo/goo/blob/master/test/test_model_person.rb#L49)
+
+#### Creating a new instance of a Goo object
+Instances of Goo objects can be created as empty objects or by passing a Hash of attribute key/value pairs:
+
+    > p = Person.new
+    > p.name = "paul"
+    # Alternatively, pass a Hash
+    > p = Person.new(name: "paul")
+    > p.name = "ted"
 
 #### Validating an object
 
@@ -45,12 +54,12 @@ You can also do a lookup with the full id IRI:
 
 Each object type has its own IRI prefix, so using the short form of the id will simply result it in being appended to the IRI prefix.
 
-You can also search for objects using attribute conditions:
+You can also search for objects using conditional statements for attributes:
 
     Person.where(:name => "paul")
     Person.where(:birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"))
 
-You can also retrieve all objects:
+You can also retrieve instances for all objects of a given type:
 
 `Person.all`
 
