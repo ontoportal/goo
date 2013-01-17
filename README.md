@@ -43,6 +43,8 @@ If calling `valid?` fails, the correspond errors will be available by calling th
 You can also check to see if an object exists prior to saving:
 
     > p = Person.new(name: "paul")
+    > p.exist?
+    => false
     > p.save
     > p.exist?
     => true
