@@ -5,12 +5,15 @@ module Goo
     end
 
     def self.getResourceId(model)
+      if model.class.goop_settings[:name_with]
+        return model.class.goop_settings[:name_with].call(model)
+      end
       policy = model.class.goop_settings[:unique][:generator]
       #TODO: this can be improved to discover new policies based on the symbol.
       #      good enough for now
       if policy == :concat_and_encode
         resource_id = UniqueFieldsConcatPolicy.getResourceId(model)
-        raise InvalidResourceId, 
+        raise InvalidResourceId,
             "#{resource_id} does not parse as URI. Check the resource_id generator." \
           unless SparqlRd::Utils::Http.valid_uri? resource_id.value
         return resource_id

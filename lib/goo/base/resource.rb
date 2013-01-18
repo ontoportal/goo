@@ -9,8 +9,8 @@ module Goo
 
       attr_reader :attributes
       attr_reader :errors
-      
-      def initialize(attributes = {}) 
+
+      def initialize(attributes = {})
         model = self.class.goop_settings[:model]
         raise ArgumentError, "Can't create model, model settings do not contain model type." \
           unless model != nil
@@ -37,12 +37,12 @@ module Goo
       def self.inherited(subclass)
         #hook to set up default configuration.
         subclass.model
-      end 
+      end
 
       def contains_data?
         ((@attributes.has_key? :internals) and @attributes.length > 1) or
           ((not @attributes.has_key? :internals) and @attributes.length > 0)
-      end 
+      end
 
       def internals()
         @attributes[:internals]
@@ -59,20 +59,28 @@ module Goo
         prx = AttributeValueProxy.new(card_validator,
                                       @attributes[:internals])
         define_singleton_method("#{attr}=") do |*args|
+          if internals.lazy_loaded? #and !(internals.loaded_attrs.include? attr.to_sym)
+            #call comes from load
+            load_stack = caller.select { |st| st.index "`load'" }
+            call_from_load = load_stack.length > 0 and (load_stack.select { |st| st.index "resource.rb:" }).length == 0
+            if not call_from_load
+              raise NotLoadedResourceError, "Object has been lazy loaded. Call `load` to access/write attributes"
+            end
+          end
           if self.class.inverse_attr?(attr)
             raise ArgumentError, "#{attr} is defined as inverse property and cannot be set."
           end
           current_value = @table[attr]
           value = args.flatten
-          tvalue = prx.call({ :value => value, :attr => attr, 
+          tvalue = prx.call({ :value => value, :attr => attr,
                               :current_value => current_value })
           if attr == :uuid
             #uuid forced to be unique
-            tvalue = tvalue[0] 
+            tvalue = tvalue[0]
           end
           if internals.persistent?
             if not internals.lazy_loaded? and
-               self.class.goop_settings[:unique] and 
+               self.class.goop_settings[:unique] and
                self.class.goop_settings[:unique][:fields] and
                self.class.goop_settings[:unique][:fields].include? attr and
                @table[attr] != tvalue
@@ -85,12 +93,15 @@ module Goo
           @table[attr] = tvalue
         end
         define_singleton_method("#{attr}") do |*args|
+          if internals.lazy_loaded?  and !(internals.loaded_attrs.include? attr.to_sym)
+            raise NotLoadedResourceError, "Object has been lazy loaded. Call `load` to access/write attributes"
+          end
           attr_value = @table[attr]
-         
+
           if self.class.inverse_attr? attr
             inv_cls, inv_attr = self.class.inverse_attr_options(attr)
             return inv_cls.where(inv_attr => self, ignore_inverse: true)
-          end 
+          end
 
           #returning default value
           if attr_value.nil?
@@ -106,42 +117,39 @@ module Goo
 
           return attr_value
         end
-      end 
+      end
 
       def shape_me
-        if @attributes.length > 1 #size 1 is internals
-          check_rdftype_inconsistency
-          
-          #set to nil all the known properties via validators
-          keys_attr = @attributes.keys
-          self.class.attributes.each do |att_name, options|
-            keys_attr << att_name
-          end
-          keys_attr.each do |attr|
-            next if attr == :internals
-            shape_attribute(attr)
-          end
+        check_rdftype_inconsistency
 
-          #if attributes are set then set values for properties.
-          @attributes.each_pair do |attr,value|
-            next if attr == :internals
-            self.send("#{attr}=", value)
-          end
+        #set to nil all the known properties via validators
+        keys_attr = @attributes.keys
+        self.class.attributes.each do |att_name, options|
+          keys_attr << att_name
         end
-        internal_status = @attributes[:internals] 
+        keys_attr.each do |attr|
+          next if attr == :internals
+          shape_attribute(attr)
+        end
+
+        #if attributes are set then set values for properties.
+        @attributes.each_pair do |attr,value|
+          next if attr == :internals
+          self.send("#{attr}=", value)
+        end
+        internal_status = @attributes[:internals]
         @table[:internals] = internal_status
         @attributes = @table
       end
-    
+
       def method_missing(sym, *args, &block)
         if sym.to_s[-1] == "="
           shape_attribute(sym.to_s.chomp "=")
           return self.send(sym,args)
         end
         return nil
-        #raise NoMethodError, "undefined method `#{sym}'"
       end
-      
+
       #set resource id wihout loading the rest of the attributes.
       def resource_id=(resource_id)
         internals.id=resource_id
@@ -179,7 +187,7 @@ module Goo
 
       def each_linked_base
         raise ArgumentError, "No block given" unless block_given?
-        @attributes.each do |key,values| 
+        @attributes.each do |key,values|
           mult_values = if values.kind_of? Array then values else [values] end
           mult_values.each do |object|
             if object.kind_of? Resource
@@ -188,7 +196,7 @@ module Goo
           end
         end
       end
-      
+
       def lazy_loaded
         internals.lazy_loaded
       end
@@ -211,11 +219,11 @@ module Goo
           raise ArgumentError, "ResourceID '#{resource_id}' does not exist"
         end
         if model_class != self.class
-          raise ArgumentError, 
+          raise ArgumentError,
               "ResourceID '#{resource_id}' is an instance of type #{model_class} in the store"
         end
 
-        store_attributes = Goo::Queries.get_resource_attributes(resource_id, self.class, 
+        store_attributes = Goo::Queries.get_resource_attributes(resource_id, self.class,
                                                            internals.store_name)
         internal_status = @attributes[:internals]
         @attributes = store_attributes
@@ -254,7 +262,7 @@ module Goo
         return false if queries.length.nil? or queries.length == 0
         epr = Goo.store(@store_name)
         queries.each do |query|
-          epr.update(query) 
+          epr.update(query)
         end
 
         internals.deleted
@@ -296,7 +304,7 @@ module Goo
           return false if queries.length.nil? or queries.length == 0
           epr = Goo.store(@store_name)
           queries.each do |query|
-            epr.update(query) 
+            epr.update(query)
           end
         end
 
@@ -328,9 +336,22 @@ module Goo
         end
         return false
       end
-      
-      def self.all()
-        return self.where({})
+
+      def lazy_load_attr(attr,value)
+        internals.loaded_attrs << attr
+        if !self.respond_to? attr
+          shape_attribute(attr.to_s)
+        end
+        if value
+          @attributes[attr] = value.value
+        else
+          @attributes[attr] = value
+        end
+      end
+
+      def self.all(*args)
+        (args << {:load_attrs => []}) if args.length == 0
+        return self.where(*args)
       end
 
       def self.where(*args)
@@ -338,20 +359,38 @@ module Goo
           raise ArgumentError, "#{self.class.name}.where accepts (attribute => value) associations or :all"
         end
         attributes = args[0]
+        load_attrs = attributes.delete :load_attrs
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
         attributes.delete(:ignore_inverse)
         epr = Goo.store(@store_name)
-        search_query = Goo::Queries.search_by_attributes(attributes, self, @store_name, ignore_inverse)
+        search_query = Goo::Queries.search_by_attributes(attributes, self, @store_name, ignore_inverse, load_attrs)
         rs = epr.query(search_query)
-        items = []
+        items = Hash.new
         rs.each_solution do |sol|
           resource_id = sol.get(:subject)
-          item = self.new
-          item.internals.lazy_loaded
-          item.resource_id = resource_id
-          items << item
+          if !items[resource_id.value]
+            item = self.new
+            item.internals.lazy_loaded
+            item.resource_id = resource_id
+            items[resource_id.value] = item
+          end
+          item = items[resource_id.value]
+          next if load_attrs.nil?
+          if load_attrs.length > 0
+            sol.get_vars.each do |var|
+              next if var == "subject"
+              value = (sol.get var.to_sym)
+              (sol_attr, sol_model) = var.split "_onmodel_"
+              if self.goop_settings[:model].to_s == sol_model
+                item.lazy_load_attr(sol_attr.to_sym, value)
+              else
+                #something nested
+                #TODO
+              end
+            end
+          end
         end
-        return items
+        return items.values
       end
 
       def self.find(param, store_name=nil)
@@ -377,6 +416,10 @@ module Goo
 
       def errors
         return internals.errors
+      end
+
+      def attr_loaded? attr
+        return (loaded? or (internals.loaded_attrs.include? attr))
       end
 
       def valid?

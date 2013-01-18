@@ -65,16 +65,20 @@ module Goo
 
     class UniqueValidator < Validator
       def validate_each(record, attribute, value)
-        if value.nil? or (value.kind_of? Array and value.length > 1) or 
+        if value.nil? or (value.kind_of? Array and value.length > 1) or
           (value.kind_of? Array and value.length == 0)
             #cardinality takes care of this.
             return
         end
         value = value[0]
 
-        if (record.exist?(reload=true) and not record.internals.persistent)
-            record.internals.errors[attribute] << \
-            (options[:message] || " Resource '#{record.resource_id.value}' already exists in the store and cannot be replaced")
+        begin
+          if (record.exist?(reload=true) and not record.internals.persistent)
+              record.internals.errors[attribute] << \
+              (options[:message] || " Resource '#{record.resource_id.value}' already exists in the store and cannot be replaced")
+          end
+        rescue ArgumentError => e
+          record.internals.errors[attribute] << e.message
         end
       end
     end

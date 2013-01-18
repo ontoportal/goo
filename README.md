@@ -62,12 +62,12 @@ You can also do a lookup with the full id IRI:
 
 Each object type has its own IRI prefix, so using the short form of the id will simply result it in being appended to the IRI prefix.
 
-You can also search for objects using attribute conditions:
+You can also search for objects using conditional statements for attributes:
 
     Person.where(:name => "paul")
     Person.where(:birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"))
 
-You can also retrieve all objects:
+You can also retrieve instances for all objects of a given type:
 
 `Person.all`
 

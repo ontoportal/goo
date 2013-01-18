@@ -20,5 +20,7 @@ module Goo
     end
     class DuplicateResourceError < StandardError
     end
+    class NotLoadedResourceError < StandardError
+    end
   end
 end

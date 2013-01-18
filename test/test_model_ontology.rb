@@ -3,7 +3,9 @@ require_relative 'test_case'
 TestInit.configure_goo
 
 class Ontology < Goo::Base::Resource
-  attribute :acronym, :unique => true, :cardinality => { :max => 1, :min => 1 }
+  attribute :acronym, :unique => true
+  attribute :submissionId, :unique => true
+
   attribute :name, :cardinality => { :max => 1, :min => 1 }
   attribute :projects , :inverse_of => { :with => :project , :attribute => :ontologyUsed }
 end
@@ -31,11 +33,12 @@ class TestModelOntology < TestCase
        o.delete
      end
     end
+
     def test_valid_save
       flush()
       p = Project.new({
            :name => "Great Project",
-           :ontologyUsed => [Ontology.new(acronym: "SNOMED", name: "SNOMED CT")]
+           :ontologyUsed => [Ontology.new(acronym: "SNOMED", name: "SNOMED CT", :submissionId => 1)]
          })
       assert_equal false, p.exist?(reload=true)
       p.save
@@ -50,7 +53,7 @@ class TestModelOntology < TestCase
 
     def test_inverse_of
       flush()
-      ont = Ontology.new(acronym: "SNOMED", name: "SNOMED CT")
+      ont = Ontology.new(acronym: "SNOMED", name: "SNOMED CT", :submissionId => 1)
       p = Project.new({
           :name => "Great Project",
           :ontologyUsed => [ont]
@@ -70,7 +73,7 @@ class TestModelOntology < TestCase
       p2 = Project.new({
           :name => "Not So Great",
           :ontologyUsed => [ont]
-      }) 
+      })
       p2.save
       assert_equal true, p2.exist?(reload=true)
       projects = ont.projects
@@ -81,7 +84,7 @@ class TestModelOntology < TestCase
         p.load
         assert_instance_of String, p.name
       end
-      
+
       ont_search = Ontology.where(:projects => p)
       assert_instance_of Array, ont_search
       assert_equal 1, ont_search.length
@@ -92,5 +95,41 @@ class TestModelOntology < TestCase
       flush()
       assert_equal 0, Project.all.length
       assert_equal 0, Ontology.all.length
+    end
+
+    def test_setter_getter_creation_on_load
+      flush()
+      p = Project.new({
+           :name => "Great Project",
+           :ontologyUsed => [Ontology.new(acronym: "SNOMED", name: "SNOMED CT", :submissionId => 1)]
+     })
+     p.save
+     assert_equal true, p.exist?(reload=true)
+     Project.all.each do |p|
+       p.load unless p.loaded?
+       assert(p.respond_to? :name)
+       assert(p.respond_to? :ontologyUsed)
+       assert(!(p.respond_to?(:xxxxx)))
+       p.ontologyUsed.each do |o|
+         o.load unless o.loaded?
+         assert(o.respond_to? :acronym)
+         assert(o.respond_to? :name)
+         assert(o.respond_to? :projects)
+         assert(!(o.respond_to?(:xxxxx)))
+       end
+     end
+     flush()
+     assert_equal 0, Project.all.length
+     assert_equal 0, Ontology.all.length
+    end
+
+    def test_empty_validation
+      os = Ontology.new
+      os.submissionId = 1
+      begin
+        assert(!os.valid?)
+      rescue => e
+        assert(1==0, "An exception should not be thrown here")
+      end
     end
 end
