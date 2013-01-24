@@ -93,7 +93,10 @@ module Goo
             unless not options[attr] or (options[attr].instance_of?(Fixnum) or options[attr] >= 0)
         end
         if value.nil? and options[:min] and options[:min] > 0
-            record.internals.errors[attribute] << \
+          if options[:min] == 1 and record.class.goop_settings[:attributes][attribute].include? :default
+            return
+          end
+          record.internals.errors[attribute] << \
             (options[:message] || "#{attribute} is nil. It does not satisfy cardinality #{options}")
         elsif value.kind_of?(Array)
           if (options[:min]  and value.length < options[:min]) or \

@@ -15,7 +15,8 @@ class PersonPersist < Goo::Base::Resource
   attribute :name, :unique => true
   attribute :multiple_vals, :cardinality => { :maximum => 2 }
   attribute :birth_date, :date_time_xsd => true, :cardinality => { :max => 1, :min => 1  }
-  attribute :created, :date_time_xsd => true, :single_value=> true, :default => lambda { |record| DateTime.now }
+  attribute :created, :date_time_xsd => true, :cardinality => { :min => 1  },
+            :single_value=> true, :default => lambda { |record| DateTime.now }
   attribute :friends, :not_nil => false
 
   def initialize(attributes = {})
@@ -118,6 +119,19 @@ class TestModelPersonPersistB < TestCase
     person_update.delete
     assert_equal false, person_update.exist?(reload=true)
     assert_equal 0, count_pattern("#{person_update.resource_id.to_turtle} a ?type .")
+  end
+
+  def test_person_default_value_and_validation
+    person = PersonPersist.new({:name => "Goo Fernandez",
+                    :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
+                    :some_stuff => [1]})
+    if person.exist?
+      person_copy = PersonPersist.new
+      person_copy.load(person.resource_id)
+      person_copy.delete
+    end
+    assert(person.valid?)
+    assert(person.errors[:created].nil?)
   end
 
   def test_person_add_remove_property
