@@ -2,6 +2,15 @@ require_relative 'test_case'
 
 TestInit.configure_goo
 
+class NoUniqueFailInFind < Goo::Base::Resource
+  attribute :x
+  attribute :y
+
+  def initialize(attributes = {})
+    super(attributes)
+  end
+end
+
 class TwoUniquesWrong < Goo::Base::Resource
   attribute :x , :unique => true
   attribute :y , :unique => true
@@ -395,6 +404,14 @@ class TestModelPersonPersistB < TestCase
       t.valid?
     rescue => e
       assert_instance_ofA(ArgumentError, e)
+    end
+  end
+
+  def test_no_unique_fail_find
+    begin
+      NoUniqueFailInFind.find("bogus")
+    rescue => e
+      assert_instance_of ArgumentError, e
     end
   end
 

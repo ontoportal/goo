@@ -394,6 +394,11 @@ module Goo
       end
 
       def self.find(param, store_name=nil)
+
+        if self.goop_settings[:unique][:fields].nil?
+          raise ArgumentError, "The call #{self.name}.find cannot be used if the model has no `:unique => true` attributes"
+        end
+
         if param.kind_of? String
           iri = RDF::IRI.new(self.prefix + param)
         elsif param.kind_of? RDF::IRI
