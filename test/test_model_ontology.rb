@@ -7,6 +7,7 @@ class Ontology < Goo::Base::Resource
   attribute :acronym, :not_nil => true, :single_value => true
   attribute :submissionId, :not_nil => true, :single_value => true
 
+  attribute :homePage, :uri => true
   attribute :name, :cardinality => { :max => 1, :min => 1 }
   attribute :projects , :inverse_of => { :with => :project , :attribute => :ontologyUsed }
 end
@@ -54,7 +55,8 @@ class TestModelOntology < TestCase
 
     def test_inverse_of
       flush()
-      ont = Ontology.new(acronym: "SNOMED", name: "SNOMED CT", :submissionId => 1)
+      ont = Ontology.new(acronym: "SNOMED", name: "SNOMED CT", :submissionId => 1,
+                         :homePage => "http://bioportal.bioontology.org/doc")
       p = Project.new({
           :name => "Great Project",
           :ontologyUsed => [ont]
@@ -132,5 +134,24 @@ class TestModelOntology < TestCase
       rescue => e
         assert(1==0, "An exception should not be thrown here")
       end
+    end
+
+    def test_uri_validation
+      os = Ontology.new
+      os.homePage = ["http://bioportal.bioontology.org/some/valid/uri",
+        "http://bioportal.bioontology.org/some/valid/uri2"]
+      os.valid?
+      assert(os.errors[:homePage].nil?)
+
+      os.homePage = "http://bioportal.bioontology.org/some/valid/uri2"
+      os.valid?
+      assert(os.errors[:homePage].nil?)
+      os.homePage = ["http://bioportal.bioontology.org/some/valid/uri",
+        "not a valid uri"]
+      os.valid?
+      assert(!os.errors[:homePage].nil?)
+      os.homePage = "not a valid uri"
+      os.valid?
+      assert(!os.errors[:homePage].nil?)
     end
 end

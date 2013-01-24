@@ -21,7 +21,6 @@ module Goo
     class DateTimeXsdValidator < Validator
       def validate_each(record, attribute, value)
         begin
-          #why do I need module here.
           if value.nil?
             return #cardinality should take care of this.
           end
@@ -29,6 +28,26 @@ module Goo
           if not datetime
             record.internals.errors[attribute] << \
               (options[:message] || "#{attribute}=#{value} is not an XSD Datetime string")
+          end
+        rescue ArgumentError => e
+          record.internals.errors[attribute] << \
+           (options[:message] || "#{attribute}= #{value} is not an XSD Datetime #{e.message}")
+        end
+      end
+    end
+
+    class URIValidator < Validator
+      def validate_each(record, attribute, value)
+        begin
+          if value.nil?
+            return #cardinality should take care of this.
+          end
+          value = [value] unless value.kind_of? Array
+          value.each do |v|
+            if !(SparqlRd::Utils::Http.valid_uri? v)
+              record.internals.errors[attribute] << \
+                (options[:message] || "#{attribute}=#{v} is not a valid URI.")
+            end
           end
         rescue ArgumentError => e
           record.internals.errors[attribute] << \
