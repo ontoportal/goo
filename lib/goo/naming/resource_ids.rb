@@ -12,7 +12,7 @@ module Goo
       #TODO: this can be improved to discover new policies based on the symbol.
       #      good enough for now
       if policy == :concat_and_encode
-        resource_id = UniqueFieldsConcatPolicy.getResourceId(model)
+        resource_id = UniqueFieldPolicy.getResourceId(model)
         raise InvalidResourceId,
             "#{resource_id} does not parse as URI. Check the resource_id generator." \
           unless SparqlRd::Utils::Http.valid_uri? resource_id.value
@@ -26,22 +26,26 @@ module Goo
       raise PolicyNotSupported, "Policy '#{policy}' not supported"
     end
 
-    class UniqueFieldsConcatPolicy
+    class UniqueFieldPolicy
       def self.getResourceId(model)
         fields = model.class.goop_settings[:unique][:fields]
-        name = []
-        fields.each do |field|
-          field_value = model.send("#{field}")
-          raise ArgumentError, "Field #{field} has no value. Value is needed to generate resource id" \
-            if field_value == nil or (field_value.kind_of? Array and field_value.length == 0)
-          raise ArgumentError, "Field #{field} holds multiple values. " << \
-                               "Unique Resource policy cannot be constructed from N-ary relations" \
-                               if field_value.kind_of? Array and field_value.length > 1
-          name << field_value
+        if fields.length != 1
+          raise ArgumentError, "Model '#{model.class.name}' has '#{fields.length}' :unique attributes. Only 1 is allowed."
         end
-        uri_last_fragment = URI.encode(name.join "+")
+        #this policy only allows for one unique attribute
+        field = fields[0]
+        field_value = model.send("#{field}")
+        raise ArgumentError, "Field #{field} has no value. Value is needed to generate resource id" \
+          if field_value == nil or (field_value.kind_of? Array and field_value.length == 0)
+        raise ArgumentError, "Field #{field} holds multiple values. " << \
+                             "Unique Resource policy cannot be constructed from multiple value attributes" \
+                             if field_value.kind_of? Array and field_value.length > 1
+        if field_value.kind_of? Array
+          field_value = field_value[0]
+        end
+        uri_last_fragment = URI.encode(field_value)
         return RDF::IRI.new(model.class.prefix + uri_last_fragment)
-      end
+       end
     end
 
     class AnonymousPolicy

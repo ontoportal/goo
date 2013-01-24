@@ -3,8 +3,9 @@ require_relative 'test_case'
 TestInit.configure_goo
 
 class Ontology < Goo::Base::Resource
-  attribute :acronym, :unique => true
-  attribute :submissionId, :unique => true
+  model :ontology,  :name_with => lambda { |record| RDF::IRI.new( "http://ontology.org/ont/#{record.acronym }/#{record.submissionId}") }
+  attribute :acronym, :not_nil => true, :single_value => true
+  attribute :submissionId, :not_nil => true, :single_value => true
 
   attribute :name, :cardinality => { :max => 1, :min => 1 }
   attribute :projects , :inverse_of => { :with => :project , :attribute => :ontologyUsed }

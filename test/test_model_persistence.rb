@@ -2,6 +2,15 @@ require_relative 'test_case'
 
 TestInit.configure_goo
 
+class TwoUniquesWrong < Goo::Base::Resource
+  attribute :x , :unique => true
+  attribute :y , :unique => true
+
+  def initialize(attributes = {})
+    super(attributes)
+  end
+end
+
 class StatusPersist < Goo::Base::Resource
   model :status
   attribute :description, :unique => true
@@ -119,6 +128,9 @@ class TestModelPersonPersistB < TestCase
     person_update.delete
     assert_equal false, person_update.exist?(reload=true)
     assert_equal 0, count_pattern("#{person_update.resource_id.to_turtle} a ?type .")
+  end
+
+  def test_uri_validation
   end
 
   def test_person_default_value_and_validation
@@ -372,6 +384,17 @@ class TestModelPersonPersistB < TestCase
     University.all.each do |u|
       u.load
       u.delete
+    end
+  end
+
+  def test_too_many_unique
+    t = TwoUniquesWrong.new
+    t.x = 1
+    t.x = 0
+    begin
+      t.valid?
+    rescue => e
+      assert_instance_ofA(ArgumentError, e)
     end
   end
 
