@@ -34,6 +34,10 @@ class LambdaResourceId < Goo::Base::Resource
   end
 end
 
+class SomeTypeDef  < Goo::Base::Resource
+  attribute :type, :namespace => :rdf
+end
+
 class Person < Goo::Base::Resource
   model :PersonResource, :namespace => :metadata
   attribute :name, :namespace => :omv, :unique => true
@@ -190,6 +194,22 @@ class TestModelPersonA < TestCase
     resource_id = obj.resource_id
     assert_instance_of(RDF::IRI, resource_id)
     assert_equal(resource_id.value,'http://xxx/value1-value2')
+  end
+
+  def test_type_attr
+    begin
+      x = SomeTypeDef.new(:type => "a")
+      assert(1 == 0)
+    rescue => e
+      assert_instance_of(ArgumentError, e)
+    end
+    begin
+      x = SomeTypeDef.new
+      x.type = "a"
+      assert(1 == 0)
+    rescue => e
+      assert_instance_of(ArgumentError, e)
+    end
   end
 
 end

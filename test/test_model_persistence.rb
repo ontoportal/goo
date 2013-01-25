@@ -402,6 +402,8 @@ class TestModelPersonPersistB < TestCase
     t.x = 0
     begin
       t.valid?
+      binding.pry
+      assert(1 == 0)
     rescue => e
       assert_instance_ofA(ArgumentError, e)
     end
@@ -410,6 +412,7 @@ class TestModelPersonPersistB < TestCase
   def test_no_unique_fail_find
     begin
       NoUniqueFailInFind.find("bogus")
+      assert(1 == 0)
     rescue => e
       assert_instance_of ArgumentError, e
     end
