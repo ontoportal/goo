@@ -402,10 +402,9 @@ class TestModelPersonPersistB < TestCase
     t.x = 0
     begin
       t.valid?
-      binding.pry
       assert(1 == 0)
     rescue => e
-      assert_instance_ofA(ArgumentError, e)
+      assert_instance_of(Goo::Naming::InvalidResourceId, e)
     end
   end
 

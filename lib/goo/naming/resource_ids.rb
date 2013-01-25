@@ -30,7 +30,7 @@ module Goo
       def self.getResourceId(model)
         fields = model.class.goop_settings[:unique][:fields]
         if fields.length != 1
-          raise ArgumentError, "Model '#{model.class.name}' has '#{fields.length}' :unique attributes. Only 1 is allowed."
+          raise InvalidResourceId, "Model '#{model.class.name}' has '#{fields.length}' :unique attributes. Only 1 is allowed."
         end
         #this policy only allows for one unique attribute
         field = fields[0]
