@@ -62,9 +62,11 @@ module Goo
           if internals.lazy_loaded? #and !(internals.loaded_attrs.include? attr.to_sym)
             #call comes from load
             load_stack = caller.select { |st| st.index "`load'" }
-            call_from_load = load_stack.length > 0 and (load_stack.select { |st| st.index "resource.rb:" }).length == 0
+            call_from_load = load_stack.length > 0 and
+                (load_stack.select { |st| st.index "resource.rb:" }).length == 0
             if not call_from_load
-              raise NotLoadedResourceError, "Object has been lazy loaded. Call `load` to access/write attributes"
+              raise NotLoadedResourceError,
+                "Object has been lazy loaded. Call `load` to access/write attributes"
             end
           end
           if self.class.inverse_attr?(attr)
@@ -84,7 +86,8 @@ module Goo
                self.class.goop_settings[:unique][:fields] and
                self.class.goop_settings[:unique][:fields].include? attr and
                @table[attr] != tvalue
-               raise KeyFieldUpdateError, "Attribute '#{attr}' cannot be changed in a persisted object."
+               raise KeyFieldUpdateError,
+                 "Attribute '#{attr}' cannot be changed in a persisted object."
             end
           end
           if @table[attr] != tvalue and attr != :uuid
@@ -94,7 +97,8 @@ module Goo
         end
         define_singleton_method("#{attr}") do |*args|
           if internals.lazy_loaded?  and !(internals.loaded_attrs.include? attr.to_sym)
-            raise NotLoadedResourceError, "Object has been lazy loaded. Call `load` to access/write attributes"
+            raise NotLoadedResourceError,
+              "Object has been lazy loaded. Call `load` to access/write attributes"
           end
           attr_value = @table[attr]
 
@@ -203,7 +207,8 @@ module Goo
 
       def load(resource_id=nil)
         if resource_id.nil? and internals.id(false).nil?
-          raise StatusException, "Cannot load Resource without a resource in paramater or internals"
+          raise StatusException,
+            "Cannot load Resource without a resource in paramater or internals"
         end
         if resource_id.nil?
           resource_id = internals.id(false)
@@ -274,14 +279,16 @@ module Goo
       def save()
         return if not self.modified?
         if not valid?
-            exc = NotValidException.new("Object is not valid. It cannot be saved. Check errors.")
+            exc = NotValidException.new
+              "Object is not valid. It cannot be saved. Check errors."
             exc.errors = self.internals.errors
             raise exc
         end
         self.each_linked_base do |attr_name,linked_obj|
           next unless linked_obj.internals.loaded?
           if not linked_obj.valid?
-            exc = NotValidException.new("Attribute '#{attr_name}' links to a non-valid object.")
+            exc = NotValidException.new
+              "Attribute '#{attr_name}' links to a non-valid object."
             exc.errors = linked_obj.internals.errors
             raise exc
           end
@@ -309,11 +316,13 @@ module Goo
         end
 
         if not self.uuid.nil?
-          self.resource_id= Goo::Queries.get_resource_id_by_uuid(self.uuid, self.class, @store_name)
+          self.resource_id=
+              Goo::Queries.get_resource_id_by_uuid(self.uuid, self.class, @store_name)
         end
         self.each_linked_base do |attr_name, umodel|
           if umodel.resource_id.bnode? and umodel.modified?
-            umodel.resource_id= Goo::Queries.get_resource_id_by_uuid(umodel.uuid, umodel.class, @store_name)
+            umodel.resource_id=
+              Goo::Queries.get_resource_id_by_uuid(umodel.uuid, umodel.class, @store_name)
             umodel.internals.saved
           end
         end
@@ -356,14 +365,17 @@ module Goo
 
       def self.where(*args)
         if (args.length == 0) or (args.length > 1) or (not args[0].kind_of? Hash)
-          raise ArgumentError, "#{self.class.name}.where accepts (attribute => value) associations or :all"
+          raise ArgumentError,
+            "#{self.class.name}.where accepts (attribute => value) associations or :all"
         end
         attributes = args[0]
         load_attrs = attributes.delete :load_attrs
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
         attributes.delete(:ignore_inverse)
         epr = Goo.store(@store_name)
-        search_query = Goo::Queries.search_by_attributes(attributes, self, @store_name, ignore_inverse, load_attrs)
+        search_query = Goo::Queries.search_by_attributes(
+                          attributes, self, @store_name,
+                          ignore_inverse, load_attrs)
         rs = epr.query(search_query)
         items = Hash.new
         rs.each_solution do |sol|
@@ -396,7 +408,9 @@ module Goo
       def self.find(param, store_name=nil)
 
         if self.goop_settings[:unique][:fields].nil?
-          raise ArgumentError, "The call #{self.name}.find cannot be used if the model has no `:unique => true` attributes"
+          mess = "The call #{self.name}.find cannot be used " +
+                 " if the model has no `:unique => true` attributes"
+          raise ArgumentError, mess
         end
 
         if param.kind_of? String
@@ -404,7 +418,8 @@ module Goo
         elsif param.kind_of? RDF::IRI
           iri = param
         else
-          raise ArgumentError, "#{self.class.name}.find only accepts String or RDF::IRI as input."
+          raise ArgumentError,
+                "#{self.class.name}.find only accepts String or RDF::IRI as input."
         end
         return self.load(iri)
       end
