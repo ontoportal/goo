@@ -174,13 +174,10 @@ module Goo
 
       def check_rdftype_inconsistency
         self.class.goop_settings[:model]
-        @attributes.each_pair do |k,v|
-          attr_type = RDF.rdf_type?(k)
-          if attr_type and \
-              not Goo::Utils.symbol_str_equals(@attributes[k], model_class)
-            raise ArgumentError,'Object type cannot be redefined in attributes'
-          elsif attr_type
-            @attributes.delete(k)
+        self.class.goop_settings[:attributes].each do |k,opts|
+          pred = self.class.uri_for_predicate(k)
+          if RDF.rdf_type?(pred)
+            raise ArgumentError, "A model cannot use the rdf:type predicate. This is a reserved predicate for internal use."
           end
         end
       end

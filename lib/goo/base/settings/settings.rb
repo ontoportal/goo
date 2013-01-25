@@ -108,14 +108,13 @@ module Goo
           if att == :uuid
             return (namespace :default) + "uuid"
           end
-          att = att.to_s
           if not goop_settings[:attributes].include? att
-            return prefix + att
+            return prefix + att.to_s
           end
           if not goop_settings[:attributes][att].include? :namespace
-            return prefix + att
+            return prefix + att.to_s
           end
-          return namespace( goop_settings[:attributes][att] ) + att
+          return namespace( goop_settings[:attributes][att][:namespace] ) + att.to_s
         end
 
         def namespace(symb)
