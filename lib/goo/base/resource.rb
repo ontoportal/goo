@@ -224,9 +224,8 @@ module Goo
           raise ArgumentError,
               "ResourceID '#{resource_id}' is an instance of type #{model_class} in the store"
         end
-
         store_attributes = Goo::Queries.get_resource_attributes(resource_id, self.class,
-                                                           internals.store_name)
+                                                         internals.store_name)
         internal_status = @attributes[:internals]
         @attributes = store_attributes
         @attributes[:internals] = internal_status
@@ -409,24 +408,37 @@ module Goo
 
       def self.find(param, store_name=nil)
 
-        if self.goop_settings[:unique][:fields].nil?
+        if (self.goop_settings[:unique][:fields].nil? or
+           self.goop_settings[:unique][:fields].length != 1)
           mess = "The call #{self.name}.find cannot be used " +
                  " if the model has no `:unique => true` attributes"
           raise ArgumentError, mess
         end
 
+        key_attribute = goop_settings[:unique][:fields][0]
+
         if param.kind_of? String
-          iri = RDF::IRI.new(self.prefix + param)
+          ins = self.where key_attribute => param
+          if ins.length > 1
+            raise ArgumentError,
+              "Inconsistent model behaviour. There are #{ins.length} instance with #{key_attribute} => #{param}"
+          end
+          return nil if ins.length == 0
+          return ins[0]
         elsif param.kind_of? RDF::IRI
           iri = param
+          inst = self.new
+          inst.internals.lazy_loaded
+          inst.resource_id = param
+          return inst
         else
           raise ArgumentError,
                 "#{self.class.name}.find only accepts String or RDF::IRI as input."
         end
-        return self.load(iri)
+        return self.load(iri,store_name,false)
       end
 
-      def self.load(resource_id, store_name=nil)
+      def self.load(resource_id, store_name=nil,load_attributes=true)
         model_class = Queries.get_resource_class(resource_id, store_name)
         if model_class.nil?
           return nil

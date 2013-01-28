@@ -199,12 +199,14 @@ class TestModelwhere < TestCase
   def test_find
     create_toy_parts()
     white = Color.find("white")
+    white.load unless white.loaded?
     assert_instance_of Color, white
     assert white.resource_id.value.end_with? "white"
     assert_equal "white", white.code
 
     iri_blue = Color.prefix + "blue"
     blue = Color.find(RDF::IRI.new(iri_blue))
+    blue.load unless blue.loaded?
     assert_instance_of Color, blue
     assert blue.resource_id.value.end_with? "blue"
     assert_equal "blue", blue.code
