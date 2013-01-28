@@ -234,6 +234,7 @@ module Goo
         shape_me
         internals.id=resource_id
         internals.loaded
+        return self
       end
 
       def delete(in_update=false)
@@ -261,7 +262,9 @@ module Goo
           end
         end
         queries = Goo::Queries.build_sparql_delete_query(objects_to_delete)
-        return false if queries.length.nil? or queries.length == 0
+        if queries.length.nil? or queries.length == 0
+          raise ArgumentError, "Internal error, no queries generated for delete"
+        end
         epr = Goo.store(@store_name)
         queries.each do |query|
           epr.update(query)
@@ -271,10 +274,11 @@ module Goo
         if in_update
           return objects_to_delete
         end
+        return nil
       end
 
       def save()
-        return if not self.modified?
+        return nil if not self.modified?
         if not valid?
             exc = NotValidException.new
               "Object is not valid. It cannot be saved. Check errors."
@@ -305,7 +309,7 @@ module Goo
 
         if modified_models.length > 0
           queries = Goo::Queries.build_sparql_update_query(modified_models)
-          return false if queries.length.nil? or queries.length == 0
+          return nil if queries.length.nil? or queries.length == 0
           epr = Goo.store(@store_name)
           queries.each do |query|
             epr.update(query)
@@ -327,6 +331,7 @@ module Goo
         modified_models.each do |model|
           model.internals.saved
         end
+        return self
       end
 
       def loaded?

@@ -162,7 +162,8 @@ class TestModelPersonPersistB < TestCase
     if person.exist?
       person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
-      person_copy.delete
+      value = person_copy.delete
+      assert(value.nil?)
     end
     assert_equal false, person.exist?(reload=true)
     person.save
@@ -174,14 +175,19 @@ class TestModelPersonPersistB < TestCase
     #reload
     person_update = PersonPersist.new()
     person_update.load(person.resource_id)
+    assert_instance_of(PersonPersist, person_update)
     assert_equal [DateTime.parse("2013-01-01T07:00:00.000Z")], person_update.some_date
     #equivalent to remove
     person_update.some_date = []
-    person_update.save
+    x = person_update.save
+    assert_instance_of(PersonPersist, x)
+    assert_equal(x, person_update)
     person_update = PersonPersist.new()
-    person_update.load(person.resource_id)
+    same_inst = person_update.load(person.resource_id)
+    assert_equal(same_inst, person_update)
     assert_equal nil, person_update.some_date
-    person_update.delete
+    xx = person_update.delete
+    assert(xx.nil?)
     assert_equal false, person_update.exist?(reload=true)
     no_triples_for_subject(person_update.resource_id)
   end
@@ -229,7 +235,8 @@ class TestModelPersonPersistB < TestCase
                          )
     if person.exist?
       person_copy = PersonPersist.new
-      person_copy.load(person.resource_id)
+      cpy = person_copy.load(person.resource_id)
+      assert_instance_of(PersonPersist,cpy)
       person_copy.delete
       assert_equal 1, count_pattern("#{statuses["married"].resource_id.to_turtle} a ?type .")
     end
