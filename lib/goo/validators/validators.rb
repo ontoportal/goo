@@ -51,7 +51,28 @@ module Goo
           end
         rescue ArgumentError => e
           record.internals.errors[attribute] << \
-           (options[:message] || "#{attribute}= #{value} is not an XSD Datetime #{e.message}")
+           (options[:message] || "#{attribute}= #{value}  is not a valid URI #{e.message}")
+        end
+      end
+    end
+
+    class EmailValidator < Validator
+      def validate_each(record, attribute, value)
+        regex_email = /\b[A-Z0-9._%a-z\-]+@(?:[A-Z0-9a-z\-]+\.)+[A-Za-z]{2,4}\z/
+        begin
+          if value.nil?
+            return #cardinality should take care of this.
+          end
+          value = [value] unless value.kind_of? Array
+          value.each do |v|
+            if (v =~ regex_email).nil?
+              record.internals.errors[attribute] << \
+                (options[:message] || "#{attribute}=#{v} is not a valid email.")
+            end
+          end
+        rescue ArgumentError => e
+          record.internals.errors[attribute] << \
+           (options[:message] || "#{attribute}= #{value} is not a valid email #{e.message}")
         end
       end
     end

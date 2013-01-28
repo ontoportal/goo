@@ -46,6 +46,7 @@ class Person < Goo::Base::Resource
   attribute :contact_data , :instance_of => { :with => :contact_data }, :optional =>true
   attribute :custom_values , :custom => { :with_max => 999 }
   attribute :numbers , :instance_of => { :with => Fixnum }
+  attribute :email, :email => true
 
   def initialize(attributes = {})
     super(attributes)
@@ -212,4 +213,20 @@ class TestModelPersonA < TestCase
     end
   end
 
+  def test_email_validation
+    person = Person.new
+    person.email = "manuelso@stanford.edu"
+    person.valid?
+    assert(person.errors[:email].nil?)
+    person.email = "manuelso@stanford"
+    person.valid?
+    assert(!person.errors[:email].nil?)
+    assert_equal(1, person.errors[:email].length)
+    person.email = ["m@gmail.com", "manuelso@stanford",
+      "x@eeee", "aaaa", "", nil, "manuelso@stanford.edu",
+      "@", "@gmail.com"]
+    person.valid?
+    assert(!person.errors[:email].nil?)
+    assert_equal(7, person.errors[:email].length)
+  end
 end
