@@ -406,7 +406,7 @@ module Goo
         return items.values
       end
 
-      def self.find(param, store_name=nil)
+      def self.find(param, load_attributes=true, store_name=nil)
 
         if (self.goop_settings[:unique][:fields].nil? or
            self.goop_settings[:unique][:fields].length != 1)
@@ -424,18 +424,15 @@ module Goo
               "Inconsistent model behaviour. There are #{ins.length} instance with #{key_attribute} => #{param}"
           end
           return nil if ins.length == 0
+          ins[0].load if load_attributes
           return ins[0]
         elsif param.kind_of? RDF::IRI
           iri = param
-          inst = self.new
-          inst.internals.lazy_loaded
-          inst.resource_id = param
-          return inst
         else
           raise ArgumentError,
                 "#{self.class.name}.find only accepts String or RDF::IRI as input."
         end
-        return self.load(iri,store_name,false)
+        return self.load(iri,store_name,load_attributes)
       end
 
       def self.load(resource_id, store_name=nil,load_attributes=true)
