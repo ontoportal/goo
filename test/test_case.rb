@@ -17,7 +17,8 @@ module TestInit
   def self.configure_goo
     if Goo.store().nil?
       Goo.configure do |conf|
-        conf[:stores] = [ { :name => :main , :host => "localhost", :port => 9000 , :options => { } } ]
+        #  :rules => :NONE is a 4store specific param.
+        conf[:stores] = [ { :name => :main , :host => "localhost", :port => 9000 , :options => { :rules => :NONE } } ]
         conf[:namespaces] = {
           :omv => "http://omv.org/ontology/",
           :goo => "http://goo.org/default/",
