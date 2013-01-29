@@ -198,6 +198,10 @@ module Goo
         end
       end
 
+      def lazy_loaded?
+        internals.lazy_loaded?
+      end
+
       def lazy_loaded
         internals.lazy_loaded
       end
