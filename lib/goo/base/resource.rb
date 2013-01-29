@@ -406,7 +406,7 @@ module Goo
         return items.values
       end
 
-      def self.find(param, load_attributes=true, store_name=nil)
+      def self.find(param, store_name=nil, load_attributes=true)
 
         if (self.goop_settings[:unique][:fields].nil? or
            self.goop_settings[:unique][:fields].length != 1)
