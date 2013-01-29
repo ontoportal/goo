@@ -57,7 +57,9 @@ module Goo
       if @@_default_store.nil?
 
     @@_uuid_generator = UUID.new
-    @@_support_skolem = Goo::Naming::Skolem.detect
+    #somehow this upsets 4store
+    #@@_support_skolem = Goo::Naming::Skolem.detect
+    @@_support_skolem = false
   end
 
   def self.uuid
