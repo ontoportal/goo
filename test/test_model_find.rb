@@ -47,11 +47,13 @@ class TestModelwhere < TestCase
   def delete_toys()
     list = ToyObject.all
     list.each do |c|
+      assert c.lazy_loaded?
       c.load
       c.delete
     end
     list = ToyPart.all
     list.each do |c|
+      assert c.lazy_loaded?
       c.load
       c.delete
     end
@@ -62,6 +64,7 @@ class TestModelwhere < TestCase
     end
     list = Color.all
     list.each do |c|
+      assert c.lazy_loaded?
       c.load
       c.delete
     end
@@ -110,6 +113,7 @@ class TestModelwhere < TestCase
       else
         toy.name_odd = n
         engine_blue = ToyFeature.where(:color => { :code => "blue"})[0]
+        assert engine_blue.lazy_loaded?
         engine_blue.load
         #the only blue thing is an engine
         assert_equal "engine", engine_blue.description
