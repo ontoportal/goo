@@ -109,6 +109,7 @@ module Goo
 
           #returning default value
           if attr_value.nil?
+            return nil unless self.persisted?
             attrs = self.class.goop_settings[:attributes]
             if attrs.include? attr
               if attrs[attr].include? :default

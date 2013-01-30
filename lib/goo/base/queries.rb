@@ -80,6 +80,18 @@ eos
         triples = [ " <#{RDF.TYPE_IRI}> <#{model_uri}>" ]
       end
 
+      #set defaults if needed
+      model.class.goop_settings[:attributes].each_pair do |attr,conf|
+        #we have a default on attr
+        if model.class.goop_settings[:attributes][attr].include? :default
+          default_proc = model.class.goop_settings[:attributes][attr][:default]
+          #we do not have a value on attr
+          unless model.attributes.include? attr
+            model.attributes[attr] = default_proc.call(model)
+          end
+        end
+      end
+
       model.attributes.each_pair do |name,value|
         if model.class.inverse_attr? name
           next

@@ -36,6 +36,7 @@ class PersonPersist < Goo::Base::Resource
   attribute :created, :date_time_xsd => true, :cardinality => { :min => 1  },
             :single_value=> true, :default => lambda { |record| DateTime.now }
   attribute :friends, :not_nil => false
+  attribute :status ,  :default => lambda { |record| StatusPersist.find("single") }, :single_value=> true
 
   def initialize(attributes = {})
     super(attributes)
@@ -101,10 +102,48 @@ class TestModelPersonPersistB < TestCase
     assert_equal false, person_update.exist?(reload=true)
   end
 
+  def test_person_update_status
+    init_status
+    person = PersonPersist.new({:name => "Goo Fernandez",
+                        :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
+                        :some_stuff => [1]})
+
+    #default value must saved on nil
+    assert person.created.nil?
+    assert person.status.nil?
+
+    if person.exist?
+      person_copy = PersonPersist.new
+      person_copy.load(person.resource_id)
+      person_copy.delete
+    end
+    assert_equal false, person.exist?(reload=true)
+    person.save
+    assert_instance_of StatusPersist, person.status
+    assert_equal 1, count_pattern("#{person.resource_id.to_turtle} <http://goo.org/default/status> ?value .")
+    assert_instance_of DateTime, person.created
+
+    #modify status
+    person.status = StatusPersist.find("married")
+    person.save
+
+    person = PersonPersist.find("Goo Fernandez")
+    person.status.load
+    assert_equal "married", person.status.description
+
+    person.delete
+    assert_equal false, person.exist?(reload=true)
+    assert_equal 0, count_pattern("#{person.resource_id.to_turtle} a ?type .")
+  end
+
   def test_person_update_date
     person = PersonPersist.new({:name => "Goo Fernandez",
                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                         :some_stuff => [1]})
+
+    #default value must saved on nil
+    assert person.created.nil?
+
     if person.exist?
       person_copy = PersonPersist.new
       person_copy.load(person.resource_id)
@@ -117,6 +156,7 @@ class TestModelPersonPersistB < TestCase
 
     #default value is there
     created_time = person_update.created
+    assert_equal 1, count_pattern("#{person_update.resource_id.to_turtle} <http://goo.org/default/created> ?value .")
     assert_instance_of DateTime, created_time
 
     #update field
@@ -218,8 +258,22 @@ class TestModelPersonPersistB < TestCase
     assert_equal nil, item
   end
 
-  def test_person_dependent_persisted
+  def init_status
     statuses = {}
+    ["single","married","divorced"].each do |st|
+      st_obj = StatusPersist.new({:description => st })
+      if st_obj.exist?
+        st_obj = Goo::Base::Resource.load(st_obj.resource_id)
+      else
+        st_obj.save
+      end
+      statuses[st] = st_obj
+    end
+    return statuses
+  end
+
+  def test_person_dependent_persisted
+    statuses = init_status
     ["single","married","divorced"].each do |st|
       st_obj = StatusPersist.new({:description => st })
       if st_obj.exist?
