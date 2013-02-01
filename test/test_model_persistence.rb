@@ -342,6 +342,8 @@ class TestModelPersonPersistB < TestCase
     u.status = StatusPersist.new({:description => "OK" })
     assert(u.valid?)
     u.save
+    assert u.resource_id.value["university"]
+    assert person.resource_id.value["person_persist"]
     u.xxxx = "xxxx"
     assert(u.valid?)
     u.save

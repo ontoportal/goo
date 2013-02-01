@@ -44,7 +44,7 @@ module Goo
           field_value = field_value[0]
         end
         uri_last_fragment = URI.encode(field_value)
-        return RDF::IRI.new(model.class.prefix + uri_last_fragment)
+        return RDF::IRI.new(model.class.prefix + model.class.goo_name.to_s + '/' + uri_last_fragment)
        end
     end
 

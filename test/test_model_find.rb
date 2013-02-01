@@ -201,13 +201,14 @@ class TestModelwhere < TestCase
 
 
   def test_find
-    create_toy_parts()
+    max = 6
+    create_toys(max)
     white = Color.find("white")
     assert_instance_of Color, white
     assert white.resource_id.value.end_with? "white"
     assert_equal "white", white.code
 
-    iri_blue = Color.prefix + "blue"
+    iri_blue = Color.prefix + Color.goo_name.to_s + "/blue"
     blue = Color.find(RDF::IRI.new(iri_blue))
     assert_instance_of Color, blue
     assert blue.resource_id.value.end_with? "blue"
