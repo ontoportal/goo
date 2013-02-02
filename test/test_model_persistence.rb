@@ -507,4 +507,25 @@ class TestModelPersonPersistB < TestCase
     end
   end
 
+  def test_encoded_find_and_where
+    University.all.each do |u|
+      u.load
+      u.delete
+    end
+    name = "some nasty name !@\#$%^&*()_+"
+    u = University.new(name: name)
+    assert u.valid?
+    u.save
+
+    x = University.find(name)
+    x.load unless x.loaded?
+    assert x.name == name
+
+    l = University.where name: name
+    assert_equal 1, l.length
+    x.load unless x.loaded?
+    assert x.name == name
+
+  end
+
 end
