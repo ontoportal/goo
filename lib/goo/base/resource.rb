@@ -490,7 +490,7 @@ module Goo
         self.attributes.each do |att,att_options|
           values = self.attributes[att]
           next if values.nil?
-          values = [value] unless values.kind_of? Array
+          values = [values] unless values.kind_of? Array
           values.each do |value|
             if value.kind_of? Goo::Base::Resource
               next if value.persistent?
