@@ -89,6 +89,10 @@ module Goo
     return @@_configuration[:namespaces]
   end
 
+  def self.stores
+    @@_configuration[:stores]
+  end
+
   def self.first_or_empty_if_nil(x)
     return x[0] if x.length > 0
     return nil
