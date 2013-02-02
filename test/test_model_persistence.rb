@@ -316,6 +316,32 @@ class TestModelPersonPersistB < TestCase
     assert (cls == StatusPersist)
   end
 
+  def test_dependent_model_already_exists_fail
+    University.all.each do |u|
+      u.load
+      u.delete
+    end
+    PersonPersist.all.each do |u|
+      u.load
+      u.delete
+    end
+
+    u = University.new(name: "Stanford")
+    assert u.valid?
+    u.save
+
+    p = PersonPersist.new(name: "Goo Sanchez", birth_date: DateTime.parse("2012-10-04T07:00:00.000Z"))
+    p.studiesAt = University.new(name: "Stanford")
+    assert !p.valid?
+    assert p.errors[:studiesAt]
+    p.studiesAt= University.find("Stanford")
+    assert p.valid?
+
+    p.studiesAt=u
+    assert p.valid?
+
+  end
+
   def test_instance_of_with_model_definitions
     University.all.each do |u|
       u.load
@@ -402,7 +428,8 @@ class TestModelPersonPersistB < TestCase
     unis.each_index do |i|
       u = University.new(:name => unis[i], :location => Location.new(:state =>  locs[i][0], :country => locs[i][1]))
       if (i == 0) or (i == 3)
-        u.status = StatusPersist.new(:description => "description for status")
+        st_desc = "description for status"
+        u.status = StatusPersist.find(st_desc) || StatusPersist.new(:description => st_desc)
       end
       if (i == 2)
         u.bogus = "bla"

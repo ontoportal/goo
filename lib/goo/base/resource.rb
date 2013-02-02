@@ -477,8 +477,31 @@ module Goo
             end
           end
         end
+
+        new_objects_check
+
         internals.errors.reject! { |att,val| val.length == 0 }
         return (internals.errors.length == 0)
+      end
+
+      private
+      def new_objects_check
+        #checking if there are new objects that already exist
+        self.attributes.each do |att,att_options|
+          values = self.attributes[att]
+          next if values.nil?
+          values = [value] unless values.kind_of? Array
+          values.each do |value|
+            if value.kind_of? Goo::Base::Resource
+              next if value.persistent?
+              #value is new but already exists
+              if value.exist?(reload=true)
+                self.internals.errors[att] = [] if self.internals.errors[att].nil?
+                self.internals.errors[att] << "Attribute '#{att}' references a new object that already exists #{value.resource_id.value}"
+              end
+            end
+          end
+        end
       end
     end
   end
