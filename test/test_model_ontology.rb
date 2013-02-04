@@ -100,6 +100,24 @@ class TestModelOntology < TestCase
       assert_equal 0, Ontology.all.length
     end
 
+    def test_delete_on_lazy_load
+      flush()
+      p = Project.new({
+           :name => "Great Project",
+           :ontologyUsed => [Ontology.new(acronym: "SNOMED", name: "SNOMED CT", :submissionId => 1)]
+     })
+     p.save
+     ps = Project.where name: "Great Project"
+     assert ps.length == 1
+     ps = ps[0]
+     assert !ps.loaded?
+     ps.delete
+     assert_equal 0, count_pattern("#{ps.resource_id.to_turtle} ?p ?o .")
+     flush()
+     assert_equal 0, Project.all.length
+     assert_equal 0, Ontology.all.length
+    end
+
     def test_setter_getter_creation_on_load
       flush()
       p = Project.new({

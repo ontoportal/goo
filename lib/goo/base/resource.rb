@@ -242,6 +242,7 @@ module Goo
       end
 
       def delete(in_update=false)
+        self.load unless self.loaded?
         internals.delete? unless in_update
 
         reached = Set.new
