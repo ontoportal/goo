@@ -6,6 +6,7 @@ require "set"
 require "uri"
 require "uuid"
 
+require_relative "goo/search/search"
 require_relative "goo/base/base"
 require_relative "goo/naming/naming"
 require_relative "goo/utils/utils"
