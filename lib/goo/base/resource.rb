@@ -376,13 +376,15 @@ module Goo
             "#{self.class.name}.where accepts (attribute => value) associations or :all"
         end
         attributes = args[0]
+        only_known = (attributes.delete :only_known)
+        only_known = true if only_known.nil?
         load_attrs = attributes.delete :load_attrs
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
         attributes.delete(:ignore_inverse)
         epr = Goo.store(@store_name)
         search_query = Goo::Queries.search_by_attributes(
                           attributes, self, @store_name,
-                          ignore_inverse, load_attrs)
+                          ignore_inverse, load_attrs,only_known)
         rs = epr.query(search_query)
         items = Hash.new
         rs.each_solution do |sol|

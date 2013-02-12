@@ -8,6 +8,4 @@ Gem::Specification.new do |s|
   s.files = Dir['lib/**/*.rb']
   s.homepage = 'http://github.com/ncbo/goo'
   s.add_dependency("uuid")
-  s.add_dependency("rake")
-  s.add_dependency("pry")
 end

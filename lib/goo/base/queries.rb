@@ -319,12 +319,16 @@ eos
         end
     end
 
-    def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse, load_attrs)
+    def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse, load_attrs, only_known)
       patterns = []
       graph_id = Goo::Naming.get_graph_id(model_class)
       patterns << " ?subject a <#{ model_class.type_uri}> ."
       attributes.each do |attribute, value|
-        next if value.nil?
+        if only_known && model_class.attributes[attribute].nil?
+         mess =  "Attribute `#{attribute}` is not declared in `#{model_class.name}`. " +\
+                 "To enable search on unknown attributes use :only_known => false"
+         raise ArgumentError, mess
+        end
         predicate = nil
         inverse = false
         if not ignore_inverse and model_class.inverse_attr? attribute
@@ -337,7 +341,7 @@ eos
         if value.kind_of? Goo::Base::Resource
           rdf_object_string = value.resource_id.to_turtle
         elsif value.kind_of? Hash
-          if model_class.attributes[attribute][:validators].include? :instance_of
+          if (!model_class.attributes[attribute].nil?) && (model_class.attributes[attribute][:validators].include? :instance_of)
             model_symbol = model_class.attributes[attribute][:validators][:instance_of][:with]
             model_att = Goo.find_model_by_name(model_symbol)
             if model_att.nil?
@@ -346,7 +350,7 @@ eos
             end
             rdf_object_string =  hash_to_triples_for_query(value,model_att)
           else
-            raise ArgumentError, "Nested search cannot be performed due to missing instance_of"
+            raise ArgumentError, "Nested search cannot be performed due to missing instance_of in `#{attribute}`"
           end
         else
           rdf_object_string = value_to_rdf_object(value)
