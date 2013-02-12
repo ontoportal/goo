@@ -319,12 +319,16 @@ eos
         end
     end
 
-    def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse, load_attrs)
+    def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse, load_attrs, only_known)
       patterns = []
       graph_id = Goo::Naming.get_graph_id(model_class)
       patterns << " ?subject a <#{ model_class.type_uri}> ."
       attributes.each do |attribute, value|
-        next if value.nil?
+        if only_known && model_class.attributes[attribute].nil?
+         mess =  "Attribute `#{attribute}` is not declared in `#{model_class.name}`. " +\
+                 "To enable search on unknown attributes use :only_known => false"
+         raise ArgumentError, mess
+        end
         predicate = nil
         inverse = false
         if not ignore_inverse and model_class.inverse_attr? attribute

@@ -154,9 +154,9 @@ class TestModelwhere < TestCase
       ToyObject.where(:name_xxxx => { xxx: 1 } )
     end
     assert_raise ArgumentError do
-    ToyObject.where(:name_x => { xxx: 1 } )
+    ToyObject.where(:name_x => { xxx: 1 })
     end
-    toys = ToyObject.where(:name_x => "x" )
+    toys = ToyObject.where(:name_x => "x", :only_known => false)
     assert_equal max/2, toys.length
     toys.each do |t|
       t.load
@@ -188,7 +188,7 @@ class TestModelwhere < TestCase
     assert_equal 3, list.length
     list = ToyObject.where( :part => {
                             :feature => { :color => blue  }},
-                            :all_prop => "common" )
+                            :all_prop => "common" , :only_known => false)
     assert_equal 3, list.length
     list.each do |x|
       x.load
