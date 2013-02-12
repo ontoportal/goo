@@ -337,7 +337,7 @@ eos
         if value.kind_of? Goo::Base::Resource
           rdf_object_string = value.resource_id.to_turtle
         elsif value.kind_of? Hash
-          if model_class.attributes[attribute][:validators].include? :instance_of
+          if (!model_class.attributes[attribute].nil?) && (model_class.attributes[attribute][:validators].include? :instance_of)
             model_symbol = model_class.attributes[attribute][:validators][:instance_of][:with]
             model_att = Goo.find_model_by_name(model_symbol)
             if model_att.nil?
@@ -346,7 +346,7 @@ eos
             end
             rdf_object_string =  hash_to_triples_for_query(value,model_att)
           else
-            raise ArgumentError, "Nested search cannot be performed due to missing instance_of"
+            raise ArgumentError, "Nested search cannot be performed due to missing instance_of in `#{attribute}`"
           end
         else
           rdf_object_string = value_to_rdf_object(value)

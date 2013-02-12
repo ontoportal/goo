@@ -148,6 +148,14 @@ class TestModelwhere < TestCase
     (0..max-1).each do |n|
       assert_equal true, (lits.include? "some value for #{n}")
     end
+
+    #issue 75. Nil pointer with nested objects and unknown attributes
+    assert_raise ArgumentError do
+      ToyObject.where(:name_xxxx => { xxx: 1 } )
+    end
+    assert_raise ArgumentError do
+    ToyObject.where(:name_x => { xxx: 1 } )
+    end
     toys = ToyObject.where(:name_x => "x" )
     assert_equal max/2, toys.length
     toys.each do |t|
