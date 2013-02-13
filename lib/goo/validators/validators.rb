@@ -105,13 +105,13 @@ module Goo
 
     class UniqueValidator < Validator
       def validate_each(record, attribute, value)
-        if value.nil? or (value.kind_of? Array and value.length > 1) or
-          (value.kind_of? Array and value.length == 0)
-            #cardinality takes care of this.
-            return
+        unless attribute == :resource_id
+          if value.nil? or (value.kind_of? Array and value.length > 1) or
+            (value.kind_of? Array and value.length == 0)
+              #cardinality takes care of this.
+              return
+          end
         end
-        value = value[0]
-
         begin
           if (record.exist?(reload=true) and not record.internals.persistent)
               record.internals.errors[attribute] << \

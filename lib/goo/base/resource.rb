@@ -49,6 +49,7 @@ module Goo
       end
 
       def shape_attribute(attr)
+        return if attr == :resource_id
         attr = attr.to_sym
         validators = self.class.attribute_validators(attr)
         cardinality_opt = validators[:cardinality]
@@ -168,10 +169,11 @@ module Goo
         if @_cached_exist.nil? or reload
           epr = Goo.store(@store_name)
           return false if resource_id.bnode? and (not resource_id.skolem?)
-          q = """SELECT (count(?o) as ?c) WHERE { #{resource_id.to_turtle} a ?o }"""
+          q = Queries.get_exist_query(self)
           rs = epr.query(q)
+          @_cached_exist = false
           rs.each_solution do |sol|
-            @_cached_exist = sol.get(:c).parsed_value > 0
+            @_cached_exist = true
           end
         end
         return @_cached_exist
@@ -207,7 +209,14 @@ module Goo
         internals.lazy_loaded
       end
 
-      def load(resource_id=nil)
+      def load(*args)
+        resource_id = args[0]
+        opts = {}
+        opts = args[1] if args.length > 1
+
+        load_attributes = opts.delete :load_attributes
+        store_name = opts.delete :store_name
+
         if resource_id.nil? and internals.id(false).nil?
           raise StatusException,
             "Cannot load Resource without a resource in paramater or internals"
@@ -228,6 +237,10 @@ module Goo
         if model_class != self.class
           raise ArgumentError,
               "ResourceID '#{resource_id}' is an instance of type #{model_class} in the store"
+        end
+        if self.class.goop_settings[:collection]
+          binding.pry
+          graph_id = self.class.collection(nil,args)
         end
         store_attributes = Goo::Queries.get_resource_attributes(resource_id, self.class,
                                                          internals.store_name)
@@ -376,6 +389,9 @@ module Goo
             "#{self.class.name}.where accepts (attribute => value) associations or :all"
         end
         attributes = args[0]
+        if attributes.include? :resource_id
+          raise ArgumentError, ":resource_id is not an attribute. It cannot be used in :where"
+        end
         only_known = (attributes.delete :only_known)
         only_known = true if only_known.nil?
         load_attrs = attributes.delete :load_attrs
@@ -414,18 +430,33 @@ module Goo
         return items.values
       end
 
-      def self.find(param, store_name=nil, load_attributes=true)
+      def self.find(*args)
+        param = args[0]
+        opts = {}
+        opts = args[1] if args.length > 1
 
-        if (self.goop_settings[:unique][:fields].nil? or
-           self.goop_settings[:unique][:fields].length != 1)
-          mess = "The call #{self.name}.find cannot be used " +
-                 " if the model has no `:unique => true` attributes"
-          raise ArgumentError, mess
+        load_attributes = opts.delete :load_attributes
+        store_name = opts.delete :store_name
+
+        unless goop_settings[:collection].nil?
+          unless opts.nil? || (opts.include? goop_settings[:collection][:attribute])
+            raise ArgumentError, "This is a collection model that needs the attribute `#{goop_settings[:collection][:attribute]}` to run find."
+          end
         end
 
-        key_attribute = goop_settings[:unique][:fields][0]
+        #with :resource_id in DSL we do not check for :unique attributes
+        unless self.goop_settings[:attributes].include? :resource_id
+          if (self.goop_settings[:unique][:fields].nil? or
+             self.goop_settings[:unique][:fields].length != 1)
+            mess = "The call #{self.name}.find cannot be used " +
+                   " if the model has no `:unique => true` attributes"
+            raise ArgumentError, mess
+          end
+        end
 
-        if param.kind_of? String
+
+        if (param.kind_of? String) && goop_settings[:unique][:fields]
+          key_attribute = goop_settings[:unique][:fields][0]
           ins = self.where key_attribute => param
           if ins.length > 1
             raise ArgumentError,
@@ -438,18 +469,30 @@ module Goo
           iri = param
         else
           raise ArgumentError,
-                "#{self.class.name}.find only accepts String or RDF::IRI as input."
+            "#{self.class.name}.find only accepts RDF::IRI as input or String if accessing :unique fields."
         end
-        return self.load(iri,store_name,load_attributes)
+        opts = opts.merge(store_name: store_name, load_attributes: load_attributes)
+        return self.load(iri,opts)
       end
 
-      def self.load(resource_id, store_name=nil,load_attributes=true)
-        model_class = Queries.get_resource_class(resource_id, store_name)
-        if model_class.nil?
-          return nil
+      def self.load(*args)
+        resource_id = args[0]
+        opts = {}
+        opts = args[1] if args.length > 1
+
+        load_attributes = opts.delete :load_attributes
+        store_name = opts.delete :store_name
+
+        model_class = self
+        if model_class == Goo::Base::Resource
+          model_class = Queries.get_resource_class(resource_id, store_name)
+          if model_class.nil?
+            return nil
+          end
         end
         inst = model_class.new
-        inst.load(resource_id)
+        binding.pry
+        inst.load(*args)
         return inst
       end
 

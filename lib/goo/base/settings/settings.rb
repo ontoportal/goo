@@ -94,6 +94,35 @@ module Goo
           return prefix + goop_settings[:model].to_s.camelize
         end
 
+        def collection_attribute? attr
+          return false if goop_settings[:collection].nil?
+          return goop_settings[:collection][:attribute] == attr
+        end
+
+        def collection(instance,attributes=nil)
+          return nil if goop_settings[:collection].nil?
+          raise ArgumentError "Collection needs instance or attributes" if instance.nil? and attributes.nil?
+
+          id = nil
+          opts = goop_settings[:collection]
+          attr_name = opts[:attribute]
+          if instance
+            attr_value = instance.send(attr_name)
+            id = opts[:with].call(attr_value)
+          end
+          if id.nil? and attributes.include? attr_name
+            attr_value = attributes[attr_name]
+            unless attr_value.kind_of? Resource
+              raise ArgumentError, "Search on attribute `#{attr_name}` must use a Resource as value"
+            end
+            id = opts[:with].call(attr_value)
+          end
+          if id
+            return id.value if id.kind_of? SparqlRd::Resultset::IRI
+            return id
+          end
+          raise ArgumentError, "Unable to compute collection ID"
+        end
 
         def attr_for_predicate_uri(uri)
           return :rdf_type if RDF.rdf_type? uri
@@ -164,6 +193,9 @@ module Goo
           options = args.reverse
           attr_name = options.pop
           Settings.set_attribute_model(self,attr_name)
+          if attr_name == :resource_id
+            Settings.set_validator_options(self,attr_name,:unique,{})
+          end
           options.each do |opt|
             if opt.kind_of? Hash
               opt.each do |opt_name,sub_options|
@@ -193,6 +225,12 @@ module Goo
                   end
                 elsif opt_name == :namespace
                   Settings.set_namespace_options(self,attr_name,sub_options)
+                elsif opt_name == :collection
+                  unless self.goop_settings[:collection].nil?
+                    raise ArgumentError, "A Goo model only can contain one collection attribute"
+                  end
+                  self.goop_settings[:collection] = { attribute: attr_name, with: sub_options }
+                  Settings.set_validator_options(self,attr_name,:cardinality,{ :min => 1, :max => 1 })
                 end
               end
             end

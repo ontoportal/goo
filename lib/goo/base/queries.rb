@@ -156,13 +156,12 @@ eos
     def self.build_sparql_delete_query(models)
         queries = []
         #TODO: dangerous. Model [0] is the master, the others are bnodes.
-        graph_id_master = Goo::Naming.get_graph_id(models[0].class)
         models.each do |model|
           triples = model_to_triples(model,model.resource_id, expand_bnodes = false)
           if model.resource_id.bnode?
             graph_id = graph_id_master
           else
-            graph_id = Goo::Naming.get_graph_id(model.class)
+            graph_id = model.class.collection(model) || Goo::Naming.get_graph_id(model.class)
           end
           query = ["DELETE DATA { GRAPH <#{graph_id}> {"]
           triples.map! { |t| t + ' .' }
@@ -183,7 +182,7 @@ eos
           end
         end
         triples.map! { |t| t + ' .' }
-        graph_id = Goo::Naming.get_graph_id(mmodel.class)
+        graph_id = mmodel.class.collection(mmodel) || Goo::Naming.get_graph_id(mmodel.class)
         query = ["INSERT DATA { GRAPH <#{graph_id}> {"]
         query << triples
         query << "} }"
@@ -311,7 +310,7 @@ eos
           attribute_patterns << " ?#{var} <#{predicate}> ?#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s} ."
           if (nested.kind_of? Hash or nested.kind_of? Array) and (nested.length > 0)
             #TODO
-            binding.pry
+            #binding.pry
           end
           if optional
             attribute_patterns << "}"
@@ -319,11 +318,23 @@ eos
         end
     end
 
+    #we need store name here
+    def self.get_exist_query(model)
+      graph_id = model.class.collection(model) || Goo::Naming.get_graph_id(model.class)
+      return "SELECT * WHERE { GRAPH <#{graph_id}> { <#{model.resource_id.value}> a ?t .} } LIMIT 1 "
+    end
+
     def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse, load_attrs, only_known)
       patterns = []
-      graph_id = Goo::Naming.get_graph_id(model_class)
+      graph_id = model_class.collection(nil,attributes) || Goo::Naming.get_graph_id(model_class)
       patterns << " ?subject a <#{ model_class.type_uri}> ."
+
+      if attributes.include? :resource_id
+        binding.pry
+      end
+
       attributes.each do |attribute, value|
+        next if model_class.collection_attribute? attribute
         if only_known && model_class.attributes[attribute].nil?
          mess =  "Attribute `#{attribute}` is not declared in `#{model_class.name}`. " +\
                  "To enable search on unknown attributes use :only_known => false"
@@ -369,7 +380,9 @@ eos
       patterns = patterns.join "\n"
       query = <<eos
 SELECT DISTINCT * WHERE {
+  GRAPH <#{graph_id}> {
     #{patterns}
+  }
 } ORDER BY ?subject
 eos
       return query

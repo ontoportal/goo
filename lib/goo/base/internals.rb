@@ -28,6 +28,9 @@ module Goo
       end
 
       def id=(resource_id)
+        unless resource_id.kind_of?  SparqlRd::Resultset::IRI
+          raise ArgumentError, "`#{resource_id}` must be a Goo valid IRI object"
+        end
         if not lazy_loaded?
           #this cannot evaluated in lazy loading since now props are loaded
           return if (@_base_instance.resource_id and
