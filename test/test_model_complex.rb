@@ -15,7 +15,7 @@ class Term < Goo::Base::Resource
 
   attribute :submission, :collection => lambda { |s| s.resource_id }
 
-  attribute :prefLabel, :single_value => true , :namespace => :skos
+  attribute :prefLabel, :not_nil => true, :single_value => true , :namespace => :skos
   attribute :synonyms, :namespace => :skos, :name => :altLabel
   attribute :definitions, :namespace => :skos, :name => :definition
   attribute :deprecated, :namespace => :owl
@@ -42,7 +42,6 @@ class TestModelComplex < TestCase
 
     terms = Term.where submission: submission
     terms.each do |t|
-      #TODO load collection on load.
       t.load
       t.delete
     end
@@ -94,6 +93,66 @@ class TestModelComplex < TestCase
     assert_raise ArgumentError do
       terms = Term.all
     end
+  end
+
+  def test_two_resources_same_id
+    s1 = Submission.new(name: "sub1")
+    if s1.exist?
+      s1 = Submission.find("sub1")
+    else
+      s1.save
+    end
+    s2 = Submission.new(name: "sub2")
+    if s2.exist?
+      s2 = Submission.find("sub2")
+    else
+      s2.save
+    end
+
+    [s1, s2].each do |s|
+      terms = Term.where submission: s
+      terms.each do |t|
+        t.load
+        t.delete
+      end
+    end
+
+    t0 = Term.new( prefLabel: "labelX" )
+    t0.resource_id = RDF::IRI.new("http://someiri.org/term0")
+    t1 = Term.new( prefLabel: "label1" )
+    t1.resource_id = RDF::IRI.new("http://someiri.org/term")
+    t0.submission = s1
+    t1.submission = s1
+    t2 = Term.new( prefLabel: "label2" )
+    t2.resource_id = RDF::IRI.new("http://someiri.org/term")
+    t2.submission = s2
+
+    assert t0.valid?
+    assert t1.valid?
+    assert t2.valid?
+
+    t0.save
+    t1.save
+    t2.save
+
+   t1x = Term.find(RDF::IRI.new("http://someiri.org/term"), submission: s1)
+   assert t1x.loaded?
+   assert t1x.prefLabel ==  "label1"
+   t2x = Term.find(RDF::IRI.new("http://someiri.org/term"), submission: s2)
+   assert t2x.prefLabel ==  "label2"
+
+   termsS2 = Term.where submission: s2
+   assert termsS2.length == 1
+   termsS1 = Term.where submission: s1
+   assert termsS1.length == 2
+   [s1, s2].each do |s|
+     terms = Term.where submission: s
+     terms.each do |t|
+       t.load
+       t.delete
+     end
+   end
+
   end
 
   def xxx_parents_inverse_childrent
