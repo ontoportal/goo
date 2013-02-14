@@ -327,9 +327,12 @@ eos
     end
 
     def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse, load_attrs, only_known)
-      patterns = []
+      #dictionary :named_graph => triple patterns
+      patterns = {}
       graph_id = model_class.collection(nil,attributes) || Goo::Naming.get_graph_id(model_class)
-      patterns << " ?subject a <#{ model_class.type_uri}> ."
+
+      patterns[graph_id] = []
+      patterns[graph_id] << " ?subject a <#{ model_class.type_uri}> ."
 
       if attributes.include? :resource_id
       end
@@ -351,6 +354,10 @@ eos
           predicate = model_class.uri_for_predicate(attribute)
         end
         if value.kind_of? Goo::Base::Resource
+          if inverse
+            graph_id = Goo::Naming.get_graph_id(value.class)
+            patterns[graph_id] = []
+          end
           rdf_object_string = value.resource_id.to_turtle
         elsif value.kind_of? Hash
           if (!model_class.attributes[attribute].nil?) && (model_class.attributes[attribute][:validators].include? :instance_of)
@@ -368,22 +375,29 @@ eos
           rdf_object_string = value_to_rdf_object(value)
         end
         if not inverse
-          patterns << " ?subject <#{predicate}> #{rdf_object_string} ."
+          patterns[graph_id] << " ?subject <#{predicate}> #{rdf_object_string} ."
         else
-          patterns << " #{rdf_object_string} <#{predicate}> ?subject ."
+          patterns[graph_id] << " #{rdf_object_string} <#{predicate}> ?subject ."
         end
       end
+
       if load_attrs and load_attrs.length > 0
         attributes_patterns = []
         attributes_for_query(load_attrs,"subject",model_class, attributes_patterns)
-        patterns << attributes_patterns
+        patterns[graph_id] << attributes_patterns
       end
-      patterns = patterns.join "\n"
+
+      graph_patterns = []
+      patterns.each_key do |graph_id|
+        graph_patterns << [" GRAPH <#{graph_id}> {"]
+        graph_patterns << (patterns[graph_id].join "\n")
+        graph_patterns << "}"
+      end
+
+      patterns_string = graph_patterns.join "\n"
       query = <<eos
 SELECT DISTINCT * WHERE {
-  GRAPH <#{graph_id}> {
-    #{patterns}
-  }
+    #{patterns_string}
 } ORDER BY ?subject
 eos
       return query
