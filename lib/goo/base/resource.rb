@@ -466,6 +466,7 @@ module Goo
         opts = args[1] if args.length > 1
 
         load_attributes = opts.delete :load_attributes
+        load_attributes = true if load_attributes.nil? #default
         store_name = opts.delete :store_name
 
         unless goop_settings[:collection].nil?
