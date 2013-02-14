@@ -25,3 +25,5 @@ doc/
 Gemfile.local
 
 Gemfile.lock
+
+.idea/.name

@@ -20,15 +20,18 @@ class TestModelwhere < TestCase
 
   def test_search
     t = Term.new(:id => "1", :label => "some label")
-    binding.pry
+   # binding.pry
+
+    t.unindex
     t.index
 
     Term.search("some")
 
     #terms = Term.where :ontology => Ontology.find("SNOMED")
-    terms.each do |t|
-      t.index
-    end
-    Terms.indexBatch terms
+    #terms.each do |t|
+    #  t.index
+    #end
+    #Terms.indexBatch terms
+
   end
 end

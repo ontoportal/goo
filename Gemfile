@@ -5,6 +5,7 @@ gemspec
 gem 'rake'
 gem "uuid", "~> 2.3.5"
 gem 'pry'
+gem 'rsolr'
 gem 'simplecov', :require => false, :group => :test
 
 # NCBO gems (can be from a local dev path or from rubygems/git)
