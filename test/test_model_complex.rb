@@ -7,13 +7,15 @@ class Submission < Goo::Base::Resource
 end
 
 class Term < Goo::Base::Resource
-  model :class, :on_initialize => lambda { |t| t.load_attributes([:prefLabel, :synonyms, :definitions]) }, :namespace => :owl
-
-  attribute :submission, :collection => lambda { |s| s.resource_id }, :instance_of => { :with => :submission }
+  model :class,
+        :on_initialize => lambda { |t| t.load_attributes([:prefLabel, :synonyms, :definitions]) },
+        :namespace => :owl
 
   attribute :resource_id #special attribute to name the object manually
 
-  attribute :prefLabel, :namespace => :skos
+  attribute :submission, :collection => lambda { |s| s.resource_id }
+
+  attribute :prefLabel, :single_value => true , :namespace => :skos
   attribute :synonyms, :namespace => :skos, :name => :altLabel
   attribute :definitions, :namespace => :skos, :name => :definition
   attribute :deprecated, :namespace => :owl
@@ -46,11 +48,13 @@ class TestModelComplex < TestCase
     end
 
     vehicle = Term.new
-    vehicle.resource_id = RDF::IRI.new "http://someiri.org/vehicle"
     vehicle.submission = submission
     vehicle.prefLabel = "vehicle"
     vehicle.synonyms = ["transport", "vehicles"]
     vehicle.definitions = ["vehicle def 1", "vehicle def 2"]
+    assert !vehicle.valid?
+    assert !vehicle.errors[:resource_id].nil?
+    vehicle.resource_id = RDF::IRI.new "http://someiri.org/vehicle"
     assert vehicle.valid?
     vehicle.save
     assert_equal 1, count_pattern("GRAPH <#{submission.resource_id.value}> { #{vehicle.resource_id.to_turtle} a ?type . }")
@@ -72,22 +76,24 @@ class TestModelComplex < TestCase
 
     #single term retrieval
     ts = Term.find(RDF::IRI.new("http://someiri.org/vehicle"), submission: submission)
-    assert ts.length == 1
+    assert_instance_of Term, ts
+    assert "vehicle" == ts.prefLabel
+    assert ts.synonyms.length == 2
+    assert ts.synonyms.include? "transport"
+    assert ts.synonyms.include?  "vehicles"
 
     #all terms for a collection
     terms = Term.where submission: submission
     assert terms.length == 1
-    term == terms[0]
+    term = terms[0]
     term.load
     term.submission.resource_id.value == "http://goo.org/default/submission/submission1"
     term.deprecated = false
     term.save
 
-    binding.pry
-
-    #other tests.
-    #object without resource id set should not be valid.
-
+    assert_raise ArgumentError do
+      terms = Term.all
+    end
   end
 
   def test_parents_inverse_childrent

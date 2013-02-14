@@ -10,6 +10,7 @@ module Goo
       attr_reader :store_name
       attr_accessor :errors
       attr_accessor :loaded_attrs
+      attr_accessor :collection
 
       alias :modified? :modified
 
@@ -31,19 +32,19 @@ module Goo
         unless resource_id.kind_of?  SparqlRd::Resultset::IRI
           raise ArgumentError, "`#{resource_id}` must be a Goo valid IRI object"
         end
-        if not lazy_loaded?
-          #this cannot evaluated in lazy loading since now props are loaded
-          return if (@_base_instance.resource_id and
-                      (@_base_instance.resource_id.value == resource_id.value))
-        end
-
-        if @persistent and not lazy_loaded?
-          if not (@_base_instance.resource_id.bnode? and
-                  not @_base_instance.resource_id.skolem?)
-            raise StatusException,
-                  "Cannot set up resource_ID #{resource_id} in a persistent obj."
-          end
-        end
+#        if not lazy_loaded?
+#          #this cannot evaluated in lazy loading since now props are loaded
+#          return if (@_base_instance.resource_id and
+#                      (@_base_instance.resource_id.value == resource_id.value))
+#        end
+#
+#        if @persistent and not lazy_loaded?
+#          if not (@_base_instance.resource_id.bnode? and
+#                  not @_base_instance.resource_id.skolem?)
+#            raise StatusException,
+#                  "Cannot set up resource_ID #{resource_id} in a persistent obj."
+#          end
+#        end
         if not SparqlRd::Utils::Http.valid_uri?(resource_id.value)
           raise ArgumentError, "resource_id '#{resource_id}' must be a valid IRI."
         end

@@ -60,6 +60,14 @@ module Goo
         prx = AttributeValueProxy.new(card_validator,
                                       @attributes[:internals])
         define_singleton_method("#{attr}=") do |*args|
+          if self.class.goop_settings[:collection] and\
+             self.class.goop_settings[:collection][:attribute] == attr
+            if args.length > 1
+              raise ArgumentError, "#{attr} is a collection value and must have a single value"
+            end
+            value = args[0]
+            self.internals.collection = value
+          end
           if internals.lazy_loaded? #and !(internals.loaded_attrs.include? attr.to_sym)
             #call comes from load
             load_stack = caller.select { |st| st.index "`load'" }
@@ -97,6 +105,10 @@ module Goo
           @table[attr] = tvalue
         end
         define_singleton_method("#{attr}") do |*args|
+          if self.class.goop_settings[:collection] and\
+             self.class.goop_settings[:collection][:attribute] == attr
+            return self.internals.collection
+          end
           if internals.lazy_loaded?  and !(internals.loaded_attrs.include? attr.to_sym)
             raise NotLoadedResourceError,
               "Object has been lazy loaded. Call `load` to access/write attributes"
@@ -141,7 +153,7 @@ module Goo
         #if attributes are set then set values for properties.
         @attributes.each_pair do |attr,value|
           next if attr == :internals
-          self.send("#{attr}=", value)
+          self.send("#{attr}=", *value)
         end
         internal_status = @attributes[:internals]
         @table[:internals] = internal_status
@@ -238,12 +250,20 @@ module Goo
           raise ArgumentError,
               "ResourceID '#{resource_id}' is an instance of type #{model_class} in the store"
         end
+        graph_id = nil
         if self.class.goop_settings[:collection]
-          binding.pry
-          graph_id = self.class.collection(nil,args)
+          unless self.internals.collection
+            raise ArgumentError, "Find method needs collection parameter `#{self.class.goop_settings[:collection][:attribute]}`"\
+              if args.length < 2
+            raise ArgumentError, "Find method needs collection parameter `#{self.class.goop_settings[:collection][:attribute]}`"\
+              unless args[1].include? self.class.goop_settings[:collection][:attribute]
+            self.internals.collection = args[1][self.class.goop_settings[:collection][:attribute]]
+          end
+          lamb = self.class.goop_settings[:collection][:with]
+          graph_id = lamb.call(self.internals.collection)
         end
         store_attributes = Goo::Queries.get_resource_attributes(resource_id, self.class,
-                                                         internals.store_name)
+                                                         internals.store_name, graph_id)
         internal_status = @attributes[:internals]
         @attributes = store_attributes
         @attributes[:internals] = internal_status
@@ -320,6 +340,9 @@ module Goo
           if mmodel.exist?(reload=true)
             #an update: first delete a copy from the store
             copy = mmodel.class.new
+            if mmodel.internals.collection
+              copy.internals.collection = mmodel.internals.collection
+            end
             copy.load(mmodel.resource_id)
             copy.delete(in_update=true)
           end
@@ -398,6 +421,10 @@ module Goo
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
         attributes.delete(:ignore_inverse)
         epr = Goo.store(@store_name)
+        collection = nil
+        unless self.goop_settings[:collection].nil?
+          collection = args[0][self.goop_settings[:collection][:attribute]]
+        end
         search_query = Goo::Queries.search_by_attributes(
                           attributes, self, @store_name,
                           ignore_inverse, load_attrs,only_known)
@@ -410,6 +437,9 @@ module Goo
             item.internals.lazy_loaded
             item.resource_id = resource_id
             items[resource_id.value] = item
+            if collection
+              item.internals.collection = collection
+            end
           end
           item = items[resource_id.value]
           next if load_attrs.nil?
@@ -491,7 +521,6 @@ module Goo
           end
         end
         inst = model_class.new
-        binding.pry
         inst.load(*args)
         return inst
       end

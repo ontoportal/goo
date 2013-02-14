@@ -34,10 +34,16 @@ eos
       return model
     end
 
-    def self.get_resource_attributes(resource_id, model_class, store_name)
+    def self.get_resource_attributes(resource_id, model_class, store_name, graph_id)
+      if graph_id.nil?
+        graph_id = Goo::Naming.get_graph_id(model_class)
+      end
+      if graph_id.kind_of? SparqlRd::Resultset::Node
+        graph_id = graph_id.value
+      end
       epr = Goo.store(store_name)
       q = <<eos
-SELECT DISTINCT * WHERE { #{resource_id.to_turtle} ?predicate ?object }
+SELECT DISTINCT * WHERE { GRAPH <#{graph_id}> { #{resource_id.to_turtle} ?predicate ?object } }
 eos
       rs = epr.query(q)
       attributes = Hash.new()
@@ -158,11 +164,8 @@ eos
         #TODO: dangerous. Model [0] is the master, the others are bnodes.
         models.each do |model|
           triples = model_to_triples(model,model.resource_id, expand_bnodes = false)
-          if model.resource_id.bnode?
-            graph_id = graph_id_master
-          else
-            graph_id = model.class.collection(model) || Goo::Naming.get_graph_id(model.class)
-          end
+          graph_id =  model.class.collection(model) || Goo::Naming.get_graph_id(model.class)
+          graph_id = graph_id.value if graph_id.kind_of? SparqlRd::Resultset::Node
           query = ["DELETE DATA { GRAPH <#{graph_id}> {"]
           triples.map! { |t| t + ' .' }
           query << triples
@@ -310,7 +313,6 @@ eos
           attribute_patterns << " ?#{var} <#{predicate}> ?#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s} ."
           if (nested.kind_of? Hash or nested.kind_of? Array) and (nested.length > 0)
             #TODO
-            #binding.pry
           end
           if optional
             attribute_patterns << "}"
@@ -330,7 +332,6 @@ eos
       patterns << " ?subject a <#{ model_class.type_uri}> ."
 
       if attributes.include? :resource_id
-        binding.pry
       end
 
       attributes.each do |attribute, value|

@@ -107,7 +107,7 @@ module Goo
           opts = goop_settings[:collection]
           attr_name = opts[:attribute]
           if instance
-            attr_value = instance.send(attr_name)
+            attr_value = instance.internals.collection
             id = opts[:with].call(attr_value)
           end
           if id.nil? and attributes.include? attr_name
@@ -196,6 +196,10 @@ module Goo
           if attr_name == :resource_id
             Settings.set_validator_options(self,attr_name,:unique,{})
           end
+          if attr_name == :resource_id
+              goop_settings[:unique][:generator] = :resource_id
+              goop_settings[:unique][:fields] = []
+          end
           options.each do |opt|
             if opt.kind_of? Hash
               opt.each do |opt_name,sub_options|
@@ -230,7 +234,6 @@ module Goo
                     raise ArgumentError, "A Goo model only can contain one collection attribute"
                   end
                   self.goop_settings[:collection] = { attribute: attr_name, with: sub_options }
-                  Settings.set_validator_options(self,attr_name,:cardinality,{ :min => 1, :max => 1 })
                 end
               end
             end
