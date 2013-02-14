@@ -42,8 +42,9 @@ eos
         graph_id = graph_id.value
       end
       epr = Goo.store(store_name)
+      graph = " GRAPH <#{graph_id}> " unless resource_id.kind_of? SparqlRd::Resultset::BNode
       q = <<eos
-SELECT DISTINCT * WHERE { GRAPH <#{graph_id}> { #{resource_id.to_turtle} ?predicate ?object } }
+SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} ?predicate ?object } }
 eos
       rs = epr.query(q)
       attributes = Hash.new()
@@ -283,6 +284,7 @@ eos
                 patterns[graph_id] = [] unless patterns.include? graph_id
                 patterns[graph_id] << sub_patterns[graph_id]
               end
+              rdf_object_string = "?#{attr.to_s}"
             else
               raise ArgumentError, "Nested search cannot be performed due to missing instance_of"
             end
