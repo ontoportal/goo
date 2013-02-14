@@ -23,6 +23,12 @@ module Goo
         resource_id = AnonymousPolicy.getResourceId(model)
         return resource_id
       end
+      if policy == :resource_id
+        if model.attributes[:resource_id].nil?
+          raise ArgumentError, "Empty :resource_id error. Not possible to check for existance of the object."
+        end
+        return nil
+      end
       #TODO implement other policies
       raise PolicyNotSupported, "Policy '#{policy}' not supported"
     end
