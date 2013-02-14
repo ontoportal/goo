@@ -29,17 +29,19 @@ module Goo
       end
 
       def unindex
-         self.class.solr.delete_by_id self.id
+        self.class.solr.delete_by_id self.id
       end
 
       module ClassMethods
-        attr_reader :solr
-        @solr = RSolr.connect :url => SOLR_URL
+        @@solr = RSolr.connect :url => SOLR_URL
+
+        def solr
+          @@solr
+        end
 
         def search(q)
           puts "search !!!!"
-
-          resp = solr.get 'select', :params => {:q => q}
+          resp = @@solr.get 'select', :params => {:q => q}
 
 
 
