@@ -402,15 +402,18 @@ eos
       end
 
       graph_patterns = []
+      from_clauses = []
       patterns.each_key do |graph_id|
-        graph_patterns << [" GRAPH <#{graph_id}> {"]
+        from_clauses << "FROM <#{graph_id}>"
         graph_patterns << (patterns[graph_id].join "\n")
-        graph_patterns << "}"
       end
 
+      from_clauses = from_clauses.join "\n"
       patterns_string = graph_patterns.join "\n"
       query = <<eos
-SELECT DISTINCT * WHERE {
+SELECT DISTINCT *
+#{from_clauses}
+WHERE {
     #{patterns_string}
 } ORDER BY ?subject
 eos
