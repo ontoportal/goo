@@ -260,8 +260,10 @@ eos
       return nil
     end
 
-    def self.hash_to_triples_for_query(hash,model_class)
-      patterns = []
+    def self.hash_to_triples_for_query(hash,model_class,subject_var)
+      patterns = {}
+      graph_id = Goo::Naming.get_graph_id(model_class)
+      patterns[graph_id] = [] unless patterns.include? graph_id
       hash.each do |attr,v|
         predicate = model_class.uri_for_predicate(attr)
         [v].flatten.each do |value|
@@ -275,17 +277,22 @@ eos
                 raise ArgumentError, "Wrong configuration in instance_of makes nested search fail." +
                                      "`#{model_symbol}` has no associated model"
               end
-              rdf_object_string =  hash_to_triples_for_query(value,model_att)
+              binding.pry
+              sub_patterns =  hash_to_triples_for_query(value,model_att,attr.to_s)
+              sub_patterns.each_key do |graph_id|
+                patterns[graph_id] = [] unless patterns.include? graph_id
+                patterns[graph_id] << sub_patterns[graph_id]
+              end
             else
               raise ArgumentError, "Nested search cannot be performed due to missing instance_of"
             end
           else
             rdf_object_string = value_to_rdf_object(value)
           end
-          patterns << " <#{predicate}> #{rdf_object_string};"
+          patterns[graph_id] << " ?#{subject_var} <#{predicate}> #{rdf_object_string} ."
         end
       end
-      return "[\n\t" + (patterns.join "\n") + " \n]"
+      return patterns
     end
 
     def self.attributes_for_query(attrs,var,model_class,attribute_patterns)
@@ -363,11 +370,18 @@ eos
           if (!model_class.attributes[attribute].nil?) && (model_class.attributes[attribute][:validators].include? :instance_of)
             model_symbol = model_class.attributes[attribute][:validators][:instance_of][:with]
             model_att = Goo.find_model_by_name(model_symbol)
+            #graph_id = Goo::Naming.get_graph_id(model_att)
+            #patterns[graph_id] = [] unless patterns.include? graph_id
             if model_att.nil?
               raise ArgumentError, "Wrong configuration in instance_of makes nested search fail." +
                                    "`#{model_symbol}` has no associated model"
             end
-            rdf_object_string =  hash_to_triples_for_query(value,model_att)
+            sub_patterns =  hash_to_triples_for_query(value,model_att,attribute.to_s)
+            sub_patterns.each_key do |sub_graph_id|
+              patterns[sub_graph_id] = [] unless patterns.include? sub_graph_id
+              patterns[sub_graph_id] << sub_patterns[sub_graph_id]
+            end
+            rdf_object_string = "?#{attribute.to_s}"
           else
             raise ArgumentError, "Nested search cannot be performed due to missing instance_of in `#{attribute}`"
           end

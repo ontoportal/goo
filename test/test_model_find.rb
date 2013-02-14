@@ -108,11 +108,13 @@ class TestModelwhere < TestCase
         white = Color.where(:code => "white")[0]
         white_wheel = ToyFeature.where(:description => "wheel" , :color => white)
         red_wheel = ToyFeature.where(:description => "wheel" , :color => { :code => "red"})
+        assert red_wheel.length > 0
         toy_part = ToyPart.new({:name => "toypart#{n}", :feature => [white_wheel[0],red_wheel[0]] })
         toy.part= toy_part
       else
         toy.name_odd = n
         engine_blue = ToyFeature.where(:color => { :code => "blue"})[0]
+        assert !engine_blue.nil?
         assert engine_blue.lazy_loaded?
         engine_blue.load
         #the only blue thing is an engine
