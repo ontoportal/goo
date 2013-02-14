@@ -96,7 +96,7 @@ class TestModelComplex < TestCase
     end
   end
 
-  def test_parents_inverse_childrent
+  def xxx_parents_inverse_childrent
 
     vehicle = Term.new
     vehicle.resource_id = RDF::IRI.new "http://someiri.org/vehicle"
