@@ -463,7 +463,7 @@ module Goo
       def self.find(*args)
         param = args[0]
         opts = {}
-        opts = args[1] if args.length > 1
+        opts = args[1] if args.length > 1 and args[1]
 
         load_attributes = opts.delete :load_attributes
         load_attributes = true if load_attributes.nil? #default
