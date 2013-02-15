@@ -21,7 +21,8 @@ class Term < Goo::Base::Resource
   attribute :deprecated, :namespace => :owl
 
   attribute :parents, :namespace => :rdfs, :name => :subClassOf
-  attribute :children, :namespace => :rdfs, :name => :subClassOf, :inverse_of => { :with => :term , :attribute => :parents }
+  attribute :children, :namespace => :rdfs, :name => :subClassOf, :inverse_of => { :with => :class , :attribute => :parents }
+
 end
 
 class TestModelComplex < TestCase
@@ -155,7 +156,20 @@ class TestModelComplex < TestCase
 
   end
 
-  def xxx_parents_inverse_childrent
+  def test_parents_inverse_children
+
+    submission = Submission.new(name: "submission1")
+    unless submission.exist?
+      submission.save
+    else
+      submission = Submission.find("submission1")
+    end
+
+    terms = Term.where submission: submission
+    terms.each do |t|
+      t.load
+      t.delete
+    end
 
     vehicle = Term.new
     vehicle.resource_id = RDF::IRI.new "http://someiri.org/vehicle"
@@ -168,35 +182,61 @@ class TestModelComplex < TestCase
 
     van = Term.new
     van.submission = submission
+    van.resource_id = RDF::IRI.new "http://someiri.org/van"
     van.prefLabel = "van"
     van.synonyms = ["cargo", "syn van"]
     van.definitions = ["vehicle def 1", "vehicle def 2"]
     van.parents = vehicle
+    assert van.valid?
+    van.save
 
     cargo = Term.new
     cargo.submission = submission
+    cargo.resource_id = RDF::IRI.new "http://someiri.org/cargo"
     cargo.prefLabel = "cargo"
     cargo.synonyms = ["cargo yy", "cargo xx"]
     cargo.definitions = ["cargo def 1", "cargo def 2"]
     cargo.parents = vehicle
+    assert cargo.valid?
+    cargo.save
 
     minivan = Term.new
     minivan.submission = submission
+    minivan.resource_id = RDF::IRI.new "http://someiri.org/minivan"
     minivan.prefLabel = "minivan"
     minivan.synonyms = ["mini-van", "syn minivan"]
     minivan.definitions = ["minivan def 1", "minivan def 2"]
     minivan.parents = van
+    assert minivan.valid?
+    minivan.save
+
+
+    cargovan = Term.new
+    cargovan.submission = submission
+    cargovan.resource_id = RDF::IRI.new "http://someiri.org/cargovan"
+    cargovan.prefLabel = "cargovan"
+    cargovan.synonyms = ["cargo van", "syn cargovan"]
+    cargovan.definitions = ["cargovan def 1", "cargovan def 2"]
+    cargovan.parents = [cargo, van]
+    assert cargovan.valid?
+    cargovan.save
+
     assert_raise ArgumentError do
       #children as inverse cannot be assigned
       minivan.children = cargovan
     end
 
-    cargovan = Term.new
-    cargovan.submission = submission
-    cargovan.prefLabel = "cargovan"
-    cargovan.synonyms = ["cargo van", "syn cargovan"]
-    cargovan.definitions = ["cargovan def 1", "cargovan def 2"]
-    cargovan.parents = [cargo, van]
+
+    ch = vehicle.children
+    assert ch.length == 2
+    (ch.select { |c| c.resource_id.value == "http://someiri.org/van" }).length == 1
+    (ch.select { |c| c.resource_id.value == "http://someiri.org/cargo" }).length == 1
+    assert vehicle.parents.nil?
+
+
+    assert cargovan.parents.length == 2
+    #this is confussing
+    assert cargovan.children == []
   end
 
 

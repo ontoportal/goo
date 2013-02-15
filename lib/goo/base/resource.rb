@@ -117,7 +117,12 @@ module Goo
 
           if self.class.inverse_attr? attr
             inv_cls, inv_attr = self.class.inverse_attr_options(attr)
-            return inv_cls.where(inv_attr => self, ignore_inverse: true)
+            where_opts = { inv_attr => self, ignore_inverse: true }
+            if inv_cls.goop_settings[:collection]
+              #assume same collection
+              where_opts[inv_cls.goop_settings[:collection][:attribute]] = self.internals.collection
+            end
+            return inv_cls.where(where_opts) rescue binding.pry
           end
 
           #returning default value
