@@ -42,6 +42,7 @@ eos
         graph_id = graph_id.value
       end
       epr = Goo.store(store_name)
+      graph = ""
       graph = " GRAPH <#{graph_id}> " unless resource_id.kind_of? SparqlRd::Resultset::BNode
       q = <<eos
 SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} ?predicate ?object } }
@@ -178,19 +179,28 @@ eos
 
     def self.build_sparql_update_query(modified_models)
       queries = []
+      triples = {}
       modified_models.each do |mmodel|
-        triples = model_to_triples(mmodel,mmodel.resource_id)
+        graph_id = mmodel.class.collection(mmodel) || Goo::Naming.get_graph_id(mmodel.class)
+        triples[graph_id] = [] unless triples.include? graph_id
+        triples[graph_id].concat(model_to_triples(mmodel,mmodel.resource_id))
         mmodel.each_linked_base do |attr_name, umodel|
+          next if umodel.persistent? and (not umodel.modified?)
+          graph_id = mmodel.class.collection(umodel) || Goo::Naming.get_graph_id(umodel.class)
+          triples[graph_id] = [] unless triples.include? graph_id
           if umodel.resource_id.bnode? and umodel.modified?
-            triples.concat(model_to_triples(umodel, umodel.resource_id))
+            triples[graph_id].concat(model_to_triples(umodel, umodel.resource_id))
           end
         end
-        triples.map! { |t| t + ' .' }
-        graph_id = mmodel.class.collection(mmodel) || Goo::Naming.get_graph_id(mmodel.class)
-        query = ["INSERT DATA { GRAPH <#{graph_id}> {"]
-        query << triples
-        query << "} }"
-        queries << (query.join "\n")
+      end
+      triples.each_key do |gid|
+        if triples[gid].length > 0
+          query = ["INSERT DATA {"]
+          query << " GRAPH <#{gid}> {"
+          query << ((triples[gid].map { |t| t + " ."}).join "\n")
+          query << "} }"
+          queries << (query.join "\n")
+        end
       end
       return queries
     end
@@ -278,11 +288,10 @@ eos
                 raise ArgumentError, "Wrong configuration in instance_of makes nested search fail." +
                                      "`#{model_symbol}` has no associated model"
               end
-              binding.pry
               sub_patterns =  hash_to_triples_for_query(value,model_att,attr.to_s)
               sub_patterns.each_key do |graph_id|
                 patterns[graph_id] = [] unless patterns.include? graph_id
-                patterns[graph_id] << sub_patterns[graph_id]
+                patterns[graph_id].concat(sub_patterns[graph_id])
               end
               rdf_object_string = "?#{attr.to_s}"
             else
@@ -372,8 +381,6 @@ eos
           if (!model_class.attributes[attribute].nil?) && (model_class.attributes[attribute][:validators].include? :instance_of)
             model_symbol = model_class.attributes[attribute][:validators][:instance_of][:with]
             model_att = Goo.find_model_by_name(model_symbol)
-            #graph_id = Goo::Naming.get_graph_id(model_att)
-            #patterns[graph_id] = [] unless patterns.include? graph_id
             if model_att.nil?
               raise ArgumentError, "Wrong configuration in instance_of makes nested search fail." +
                                    "`#{model_symbol}` has no associated model"
@@ -381,7 +388,7 @@ eos
             sub_patterns =  hash_to_triples_for_query(value,model_att,attribute.to_s)
             sub_patterns.each_key do |sub_graph_id|
               patterns[sub_graph_id] = [] unless patterns.include? sub_graph_id
-              patterns[sub_graph_id] << sub_patterns[sub_graph_id]
+              patterns[sub_graph_id].concat(sub_patterns[sub_graph_id])
             end
             rdf_object_string = "?#{attribute.to_s}"
           else
