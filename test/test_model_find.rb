@@ -156,6 +156,9 @@ class TestModelwhere < TestCase
       ToyObject.where(:name_xxxx => { xxx: 1 } )
     end
     assert_raise ArgumentError do
+      ToyObject.where(:name_xxxx => nil )
+    end
+    assert_raise ArgumentError do
     ToyObject.where(:name_x => { xxx: 1 })
     end
     toys = ToyObject.where(:name_x => "x", :only_known => false)

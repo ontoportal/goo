@@ -417,6 +417,11 @@ module Goo
             "#{self.class.name}.where accepts (attribute => value) associations or :all"
         end
         attributes = args[0]
+        if attributes
+          attributes.each_key do |attr|
+            raise ArgumentError, "`#{attr}` value `nil` is not allowed in `where` call." if attributes[attr].nil?
+          end
+        end
         if attributes.include? :resource_id
           raise ArgumentError, ":resource_id is not an attribute. It cannot be used in :where"
         end
