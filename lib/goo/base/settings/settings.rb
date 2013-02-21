@@ -108,7 +108,7 @@ module Goo
           attr_name = opts[:attribute]
           if instance
             attr_value = instance.internals.collection
-            id = opts[:with].call(attr_value) rescue binding.pry
+            id = opts[:with].call(attr_value)
           end
           if id.nil? and attributes.include? attr_name
             attr_value = attributes[attr_name]
