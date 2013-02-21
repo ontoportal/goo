@@ -168,6 +168,11 @@ class TestModelwhere < TestCase
       assert_instance_of Fixnum, t.name_even[0]
       assert_equal 0, t.name_even[0] % 2
     end
+    with_names = ToyObject.where(:name_x => "x", :only_known => false, :load_attrs => [:name])
+    with_names.each do |c|
+      assert c.name != nil
+    end
+
     toys = ToyObject.all
     toys.each do |t|
       t.load
