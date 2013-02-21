@@ -428,6 +428,7 @@ module Goo
         only_known = (attributes.delete :only_known)
         only_known = true if only_known.nil?
         load_attrs = attributes.delete :load_attrs
+        query_options = attributes.delete :query_options
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
         attributes.delete(:ignore_inverse)
         epr = Goo.store(@store_name)
@@ -438,7 +439,7 @@ module Goo
         search_query = Goo::Queries.search_by_attributes(
                           attributes, self, @store_name,
                           ignore_inverse, load_attrs,only_known)
-        rs = epr.query(search_query)
+        rs = epr.query(search_query,options = (query_options || {}))
         items = Hash.new
         rs.each_solution do |sol|
           resource_id = sol.get(:subject)
