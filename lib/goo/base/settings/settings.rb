@@ -234,6 +234,8 @@ module Goo
                     raise ArgumentError, "A Goo model only can contain one collection attribute"
                   end
                   self.goop_settings[:collection] = { attribute: attr_name, with: sub_options }
+                else
+                  goop_settings[:attributes][attr_name][opt_name]=sub_options
                 end
               end
             end
