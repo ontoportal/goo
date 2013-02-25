@@ -247,7 +247,10 @@ module Goo
         end
         internals.load?
 
-        model_class = Goo::Queries.get_resource_class(resource_id,internals.store_name)
+        model_class = self.class
+        unless (self.class.respond_to? :goop_settings) && (self.class.goop_settings.include? :model)
+          model_class = Goo::Queries.get_resource_class(resource_id,internals.store_name)
+        end
         if model_class.nil?
           raise ArgumentError, "ResourceID '#{resource_id}' does not exist"
         end
