@@ -407,7 +407,7 @@ eos
       if load_attrs and load_attrs.length > 0
         attributes_patterns = []
         attributes_for_query(load_attrs,"subject",model_class, attributes_patterns)
-        patterns[graph_id] << attributes_patterns
+        patterns[graph_id] << attributes_patterns.map { |pattern| "OPTIONAL { #{pattern} }"}
       end
 
       graph_patterns = []
