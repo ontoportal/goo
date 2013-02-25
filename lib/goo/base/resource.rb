@@ -69,14 +69,8 @@ module Goo
             self.internals.collection = value
           end
           if internals.lazy_loaded? #and !(internals.loaded_attrs.include? attr.to_sym)
-            #call comes from load
-            load_stack = caller.select { |st| st.index "`load'" }
-            call_from_load = load_stack.length > 0 and
-                (load_stack.select { |st| st.index "resource.rb:" }).length == 0
-            if not call_from_load
-              raise NotLoadedResourceError,
-                "Object has been lazy loaded. Call `load` to access/write attributes"
-            end
+            raise NotLoadedResourceError,
+              "Object has been lazy loaded. Call `load` to access/write attributes"
           end
           if self.class.inverse_attr?(attr)
             raise ArgumentError, "#{attr} is defined as inverse property and cannot be set."
