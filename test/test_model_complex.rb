@@ -8,20 +8,20 @@ end
 
 class Term < Goo::Base::Resource
   model :class,
-        :on_initialize => lambda { |t| t.load_attributes([:prefLabel, :synonyms, :definitions]) },
+        :on_initialize => lambda { |t| t.load_attributes([:prefLabel, :synonym, :definition]) },
         :namespace => :owl
 
   attribute :resource_id #special attribute to name the object manually
 
-  attribute :submission, :collection => lambda { |s| s.resource_id }
+  attribute :submission, :collection => lambda { |s| s.resource_id }, :namespace => :default
 
   attribute :prefLabel, :not_nil => true, :single_value => true , :namespace => :skos
-  attribute :synonyms, :namespace => :skos, :name => :altLabel
-  attribute :definitions, :namespace => :skos, :name => :definition
+  attribute :synonym, :namespace => :skos, :alias => :altLabel
+  attribute :definition, :namespace => :skos
   attribute :deprecated, :namespace => :owl
 
-  attribute :parents, :namespace => :rdfs, :name => :subClassOf
-  attribute :children, :namespace => :rdfs, :name => :subClassOf, :inverse_of => { :with => :class , :attribute => :parents }
+  attribute :parents, :namespace => :rdfs, :alias => :subClassOf
+  attribute :children, :namespace => :rdfs, :alias => :subClassOf, :inverse_of => { :with => :class , :attribute => :parents }
 
 end
 
@@ -50,8 +50,8 @@ class TestModelComplex < TestCase
     vehicle = Term.new
     vehicle.submission = submission
     vehicle.prefLabel = "vehicle"
-    vehicle.synonyms = ["transport", "vehicles"]
-    vehicle.definitions = ["vehicle def 1", "vehicle def 2"]
+    vehicle.synonym = ["transport", "vehicles"]
+    vehicle.definition = ["vehicle def 1", "vehicle def 2"]
     assert !vehicle.valid?
     assert !vehicle.errors[:resource_id].nil?
     vehicle.resource_id = RDF::IRI.new "http://someiri.org/vehicle"
@@ -78,9 +78,9 @@ class TestModelComplex < TestCase
     ts = Term.find(RDF::IRI.new("http://someiri.org/vehicle"), submission: submission)
     assert_instance_of Term, ts
     assert "vehicle" == ts.prefLabel
-    assert ts.synonyms.length == 2
-    assert ts.synonyms.include? "transport"
-    assert ts.synonyms.include?  "vehicles"
+    assert ts.synonym.length == 2
+    assert ts.synonym.include? "transport"
+    assert ts.synonym.include?  "vehicles"
 
     #all terms for a collection
     terms = Term.where submission: submission
@@ -90,10 +90,19 @@ class TestModelComplex < TestCase
     term.submission.resource_id.value == "http://goo.org/default/submission/submission1"
     term.deprecated = false
     term.save
+    assert_equal 1, count_pattern("GRAPH <#{submission.resource_id.value}> { #{vehicle.resource_id.to_turtle} a ?type . }")
 
     assert_raise ArgumentError do
       terms = Term.all
     end
+
+    terms = Term.where submission: submission
+    terms.each do |t|
+      t.load
+      t.delete
+    end
+    assert_equal 0, count_pattern("GRAPH <#{submission.resource_id.value}> { #{vehicle.resource_id.to_turtle} ?p ?o . }")
+    submission.delete
   end
 
   def test_two_resources_same_id
@@ -169,14 +178,15 @@ class TestModelComplex < TestCase
     terms.each do |t|
       t.load
       t.delete
+      assert_equal 0, count_pattern("GRAPH <#{t.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
     end
 
     vehicle = Term.new
     vehicle.resource_id = RDF::IRI.new "http://someiri.org/vehicle"
     vehicle.submission = submission
     vehicle.prefLabel = "vehicle"
-    vehicle.synonyms = ["transport", "vehicles"]
-    vehicle.definitions = ["vehicle def 1", "vehicle def 2"]
+    vehicle.synonym = ["transport", "vehicles"]
+    vehicle.definition = ["vehicle def 1", "vehicle def 2"]
     assert vehicle.valid?
     vehicle.save
 
@@ -184,18 +194,19 @@ class TestModelComplex < TestCase
     van.submission = submission
     van.resource_id = RDF::IRI.new "http://someiri.org/van"
     van.prefLabel = "van"
-    van.synonyms = ["cargo", "syn van"]
-    van.definitions = ["vehicle def 1", "vehicle def 2"]
+    van.synonym = ["cargo", "syn van"]
+    van.definition = ["vehicle def 1", "vehicle def 2"]
     van.parents = vehicle
     assert van.valid?
     van.save
-
+    assert_equal 1, count_pattern(
+      "GRAPH <#{submission.resource_id.value}> { #{van.resource_id.to_turtle} <http://www.w3.org/2000/01/rdf-schema#subClassOf> ?p . }")
     cargo = Term.new
     cargo.submission = submission
     cargo.resource_id = RDF::IRI.new "http://someiri.org/cargo"
     cargo.prefLabel = "cargo"
-    cargo.synonyms = ["cargo yy", "cargo xx"]
-    cargo.definitions = ["cargo def 1", "cargo def 2"]
+    cargo.synonym = ["cargo yy", "cargo xx"]
+    cargo.definition = ["cargo def 1", "cargo def 2"]
     cargo.parents = vehicle
     assert cargo.valid?
     cargo.save
@@ -204,8 +215,8 @@ class TestModelComplex < TestCase
     minivan.submission = submission
     minivan.resource_id = RDF::IRI.new "http://someiri.org/minivan"
     minivan.prefLabel = "minivan"
-    minivan.synonyms = ["mini-van", "syn minivan"]
-    minivan.definitions = ["minivan def 1", "minivan def 2"]
+    minivan.synonym = ["mini-van", "syn minivan"]
+    minivan.definition = ["minivan def 1", "minivan def 2"]
     minivan.parents = van
     assert minivan.valid?
     minivan.save
@@ -215,8 +226,8 @@ class TestModelComplex < TestCase
     cargovan.submission = submission
     cargovan.resource_id = RDF::IRI.new "http://someiri.org/cargovan"
     cargovan.prefLabel = "cargovan"
-    cargovan.synonyms = ["cargo van", "syn cargovan"]
-    cargovan.definitions = ["cargovan def 1", "cargovan def 2"]
+    cargovan.synonym = ["cargo van", "syn cargovan"]
+    cargovan.definition = ["cargovan def 1", "cargovan def 2"]
     cargovan.parents = [cargo, van]
     assert cargovan.valid?
     cargovan.save
@@ -227,6 +238,7 @@ class TestModelComplex < TestCase
     end
 
 
+    vehicle = Term.find(RDF::IRI.new("http://someiri.org/vehicle"), submission: submission)
     ch = vehicle.children
     assert ch.length == 2
     (ch.select { |c| c.resource_id.value == "http://someiri.org/van" }).length == 1
@@ -237,6 +249,51 @@ class TestModelComplex < TestCase
     assert cargovan.parents.length == 2
     #this is confussing
     assert cargovan.children == []
+
+    #preload attrs
+    terms = Term.where submission: Submission.find("submission1"), load_attrs: [:parents, :synonym ]
+    terms.each do |t|
+      if t.resource_id.value == "http://someiri.org/cargovan"
+        assert_instance_of Array, t.parents
+        t.synonym.sort!
+        assert t.synonym.first.value == "cargo van"
+        assert t.synonym[1].value == "syn cargovan"
+        assert (Set.new t.parents).length == t.parents.length
+        assert t.parents.length == 2
+        assert_raise Goo::Base::NotLoadedResourceError do
+          t.definition
+        end
+        assert t.parents[0].kind_of? SparqlRd::Resultset::IRI
+        assert t.parents[1].kind_of? SparqlRd::Resultset::IRI
+        assert (t.parents.select { |x| x.value == "http://someiri.org/cargo" }).length == 1
+        assert (t.parents.select { |x| x.value == "http://someiri.org/van" }).length == 1
+      end
+      if t.resource_id.value == "http://someiri.org/minivan"
+        assert_instance_of Array, t.parents
+        t.synonym.sort!
+        assert t.synonym.first.value == "mini-van"
+        assert t.synonym[1].value == "syn minivan"
+        assert_raise Goo::Base::NotLoadedResourceError do
+          t.definition
+        end
+        assert t.parents.length == 1
+        assert t.parents[0].kind_of? SparqlRd::Resultset::IRI
+        assert t.parents[0].value == "http://someiri.org/van"
+      end
+      if t.resource_id.value == "http://someiri.org/vehicle"
+        assert t.parents == []
+      end
+    end
+    assert terms.length == 5
+
+    terms = Term.where submission: submission
+    terms.each do |t|
+      t.load
+      t.delete
+      assert_equal 0, count_pattern("GRAPH <#{submission.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
+    end
+
+    submission.delete
   end
 
 

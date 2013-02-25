@@ -272,6 +272,7 @@ module Goo
         end
         store_attributes = Goo::Queries.get_resource_attributes(resource_id, self.class,
                                                          internals.store_name, graph_id)
+        store_attributes = alias_rename(store_attributes)
         internal_status = @attributes[:internals]
         @attributes = store_attributes
         @attributes[:internals] = internal_status
@@ -402,10 +403,11 @@ module Goo
         if !self.respond_to? attr
           shape_attribute(attr.to_s)
         end
-        if value
-          @attributes[attr] = value.value
-        else
-          @attributes[attr] = value
+        if !@attributes.include? attr
+          @attributes[attr] = []
+        end
+        unless value.nil?
+          @attributes[attr] << value unless @attributes[attr].include? value
         end
       end
 
@@ -575,6 +577,21 @@ module Goo
       end
 
       private
+
+      def alias_rename(atts)
+        return atts if self.class.goop_settings[:alias_table].nil? || (self.class.goop_settings[:alias_table].length == 0)
+        atts_out = {}
+        index_table = self.class.goop_settings[:alias_table]
+        atts.each do |k,v|
+          if not (self.class.goop_settings[:alias_table].include? k)
+            atts_out[k] = v
+          else
+            atts_out[index_table[k]] = v
+          end
+        end
+        return atts_out
+      end
+
       def new_objects_check
         #checking if there are new objects that already exist
         self.attributes.each do |att,att_options|

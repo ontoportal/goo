@@ -137,13 +137,18 @@ module Goo
           if att == :uuid
             return (namespace :default) + "uuid"
           end
+          att_fragment = att
+          if goop_settings[:attributes][att]
+            att_fragment = goop_settings[:attributes][att][:alias] || att
+          end
+          att_fragment = att_fragment.to_s
           if not goop_settings[:attributes].include? att
-            return prefix + att.to_s
+            return prefix + att_fragment.to_s
           end
           if not goop_settings[:attributes][att].include? :namespace
-            return prefix + att.to_s
+            return prefix + att_fragment.to_s
           end
-          return namespace( goop_settings[:attributes][att][:namespace] ) + att.to_s
+          return namespace( goop_settings[:attributes][att][:namespace] ) + att_fragment.to_s
         end
 
         def namespace(symb)
@@ -207,7 +212,7 @@ module Goo
                     Settings.set_default_options(self,attr_name,sub_options)
                 end
                 if opt_name == :inverse_of
-                    Settings.set_inverse_options(self,attr_name,sub_options)
+                  Settings.set_inverse_options(self,attr_name,sub_options)
                 end
                 if sub_options == false# things like :not_nil => false
                   next
@@ -234,6 +239,14 @@ module Goo
                     raise ArgumentError, "A Goo model only can contain one collection attribute"
                   end
                   self.goop_settings[:collection] = { attribute: attr_name, with: sub_options }
+                elsif opt_name == :alias
+                  self.goop_settings[:alias_table] = {} if self.goop_settings[:alias_table].nil?
+                  next if opt.include? :inverse_of
+                  if self.goop_settings[:alias_table].include? sub_options
+                    raise ArgumentError, "Configuration error. More than one :alias with name `#{sub_options}`"
+                  end
+                  self.goop_settings[:alias_table][sub_options] = attr_name
+                  goop_settings[:attributes][attr_name][opt_name]=sub_options
                 else
                   goop_settings[:attributes][attr_name][opt_name]=sub_options
                 end
