@@ -77,11 +77,11 @@ class TestModelComplex < TestCase
     #single term retrieval
     ts = Term.find(RDF::IRI.new("http://someiri.org/vehicle"), submission: submission)
     assert_instance_of Term, ts
-    assert "vehicle" == ts.prefLabel
+    assert "vehicle" == ts.prefLabel.value
     assert ts.synonym.length == 2
-    assert ts.synonym.include? "transport"
-    assert ts.synonym.include?  "vehicles"
-
+    assert (ts.synonym.select { |s| s.value == "transport"}).length == 1
+    assert (ts.synonym.select { |s| s.value == "vehicles"}).length == 1
+      #
     #all terms for a collection
     terms = Term.where submission: submission
     assert terms.length == 1
@@ -147,9 +147,9 @@ class TestModelComplex < TestCase
 
    t1x = Term.find(RDF::IRI.new("http://someiri.org/term"), submission: s1)
    assert t1x.loaded?
-   assert t1x.prefLabel ==  "label1"
+   assert t1x.prefLabel.value ==  "label1"
    t2x = Term.find(RDF::IRI.new("http://someiri.org/term"), submission: s2)
-   assert t2x.prefLabel ==  "label2"
+   assert t2x.prefLabel.value ==  "label2"
 
    termsS2 = Term.where submission: s2
    assert termsS2.length == 1
@@ -260,9 +260,7 @@ class TestModelComplex < TestCase
         assert t.synonym[1].value == "syn cargovan"
         assert (Set.new t.parents).length == t.parents.length
         assert t.parents.length == 2
-        assert_raise Goo::Base::NotLoadedResourceError do
-          t.definition
-        end
+        assert t.definition.length == 2
         assert t.parents[0].kind_of? SparqlRd::Resultset::IRI
         assert t.parents[1].kind_of? SparqlRd::Resultset::IRI
         assert (t.parents.select { |x| x.value == "http://someiri.org/cargo" }).length == 1
@@ -273,15 +271,12 @@ class TestModelComplex < TestCase
         t.synonym.sort!
         assert t.synonym.first.value == "mini-van"
         assert t.synonym[1].value == "syn minivan"
-        assert_raise Goo::Base::NotLoadedResourceError do
-          t.definition
-        end
         assert t.parents.length == 1
         assert t.parents[0].kind_of? SparqlRd::Resultset::IRI
         assert t.parents[0].value == "http://someiri.org/van"
       end
       if t.resource_id.value == "http://someiri.org/vehicle"
-        assert t.parents == []
+        assert t.parents.nil?
       end
     end
     assert terms.length == 5

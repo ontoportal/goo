@@ -11,6 +11,7 @@ module Goo
       attr_accessor :errors
       attr_accessor :loaded_attrs
       attr_accessor :collection
+      attr_accessor :graph_id
 
       alias :modified? :modified
 

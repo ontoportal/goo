@@ -89,17 +89,11 @@ class TestModelPersonPersistB < TestCase
     end
     assert_equal false, person.exist?(reload=true)
     person.save
-    begin
-    person_update = PersonPersist.new()
-    person_update.load(person.resource_id)
-    person_update.name = "changed name"
-    #unreachable
-    assert_equal 1, 0
-    rescue => e
-      assert_instance_of Goo::Base::KeyFieldUpdateError, e
+    assert_raise Goo::Base::KeyFieldUpdateError do
+      person_update = PersonPersist.new()
+      person_update.load(person.resource_id)
+      person_update.name = "changed name"
     end
-    person_update.delete
-    assert_equal false, person_update.exist?(reload=true)
   end
 
   def test_person_update_status
@@ -129,7 +123,7 @@ class TestModelPersonPersistB < TestCase
 
     person = PersonPersist.find("Goo Fernandez")
     person.status.load
-    assert_equal "married", person.status.description
+    assert_equal "married", person.status.description.parsed_value
 
     person.delete
     assert_equal false, person.exist?(reload=true)
@@ -157,10 +151,10 @@ class TestModelPersonPersistB < TestCase
     #default value is there
     created_time = person_update.created
     assert_equal 1, count_pattern("#{person_update.resource_id.to_turtle} <http://goo.org/default/created> ?value .")
-    assert_instance_of DateTime, created_time
+    assert_instance_of DateTime, created_time.parsed_value
 
     #update field
-    person_update.birth_date =  DateTime.parse("2013-01-01T07:00:00.000Z")
+    person_update.birth_date = DateTime.parse("2013-01-01T07:00:00.000Z")
 
     person_update.save
     assert_equal 1, count_pattern("#{person_update.resource_id.to_turtle} a ?type .")
@@ -168,11 +162,11 @@ class TestModelPersonPersistB < TestCase
     #reload
     person_update = PersonPersist.new()
     person_update.load(person.resource_id)
-    assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date
-    assert_equal "Goo Fernandez", person_update.name
+    assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date.parsed_value
+    assert_equal "Goo Fernandez", person_update.name.parsed_value
 
     #making sure default values do not change in an update
-    assert_equal created_time.xmlschema, person_update.created.xmlschema
+    assert_equal created_time.parsed_value.xmlschema, person_update.created.parsed_value.xmlschema
 
     person_update.delete
     assert_equal false, person_update.exist?(reload=true)
@@ -212,11 +206,12 @@ class TestModelPersonPersistB < TestCase
     person_update.some_date =  DateTime.parse("2013-01-01T07:00:00.000Z")
     assert_equal true, person_update.valid?
     person_update.save
+    assert_equal 1, count_pattern("#{person_update.resource_id.to_turtle} <#{person_update.class.uri_for_predicate(:some_date)}> ?type .")
     #reload
     person_update = PersonPersist.new()
     person_update.load(person.resource_id)
     assert_instance_of(PersonPersist, person_update)
-    assert_equal [DateTime.parse("2013-01-01T07:00:00.000Z")], person_update.some_date
+    assert_equal [DateTime.parse("2013-01-01T07:00:00.000Z")], person_update.some_date.map { |d| d.parsed_value}
     #equivalent to remove
     person_update.some_date = []
     x = person_update.save
@@ -250,7 +245,7 @@ class TestModelPersonPersistB < TestCase
     item = Goo::Base::Resource.load(resource_id)
     assert_instance_of person.class, item
     assert_equal person.resource_id.value, item.resource_id.value
-    assert_equal person.name, item.name
+    assert_equal person.name, item.name.value
     person.delete
     assert_equal false, item.exist?(reload=true)
 
@@ -397,20 +392,8 @@ class TestModelPersonPersistB < TestCase
     person.save
 
     PersonPersist.all.each do |p|
-      begin
-        x = p.name
-        assert(1 == 0, "Attribute exception missing on lazy load")
-      rescue => e
-        assert_instance_of Goo::Base::NotLoadedResourceError, e
-      end
-      begin
-        p.name= "aaa"
-        assert(1 == 0, "Attribute exception missing on lazy load")
-      rescue => e
-        assert_instance_of Goo::Base::NotLoadedResourceError, e
-      end
-      p.load
-      assert_instance_of(String, p.name)
+      x = p.name
+      assert_instance_of(String, p.name.parsed_value)
     end
     PersonPersist.all.each do |p|
       p.delete
@@ -423,6 +406,14 @@ class TestModelPersonPersistB < TestCase
       u.delete
     end
 
+    person1 = PersonPersist.new({:name => "person1",
+                         :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
+                         :some_stuff => [1]})
+
+    person2 = PersonPersist.new({:name => "person2",
+                         :birth_date => DateTime.parse("2013-10-04T07:00:00.000Z"),
+                         :some_stuff => [2,3]})
+
     locs = [ ["California", "US"], ["Boston", "US"], ["Oxford", "UK"] , ["Cambridge","UK"] ,["Soton","UK"] ]
     unis = ["Stanford", "Harvard", "Oxford", "Cambridge", "Southampton"]
     unis.each_index do |i|
@@ -434,6 +425,9 @@ class TestModelPersonPersistB < TestCase
       if (i == 2)
         u.bogus = "bla"
       end
+      if i == 0
+        u.students = [person1, person2]
+      end
       u.save
     end
 
@@ -441,44 +435,53 @@ class TestModelPersonPersistB < TestCase
     data = University.all :load_attrs => [:name => true, :bogus => :optional]
     assert_equal 5, data.length
     data.each do |u|
-      correct = ((!u.bogus.nil? and (u.name == "Oxford")) or (u.name != "Oxford"))
+      correct = ((!u.bogus.nil? and (u.name.value == "Oxford")) or (u.name.value != "Oxford"))
       assert(correct)
     end
-    begin
-      data[0].status
-      assert(1==0, "exception should be thrown here. not a loaded attr")
-    rescue => e
-      assert_instance_of Goo::Base::NotLoadedResourceError, e
-    end
+
+    #lazy loading here just this attribute
+    st = data[0].status
+    assert_instance_of Array, st
+    assert_instance_of StatusPersist, st[0]
+    desc = st[0].description
+    assert desc.value == "description for status"
 
     data = University.all :load_attrs => [:name => true]
     assert_equal 5, data.length
     data.each do |u|
-      assert ((unis.index u.name) != nil)
+      assert ((unis.index u.name.value) != nil)
     end
 
     data = University.all :load_attrs => [:name => true, :bogus => true]
-    assert_equal 1, data.length
-    u = data[0]
-    correct = (!u.bogus.nil? and (u.name == "Oxford"))
+    assert_equal 5, data.length
+    u =  (data.select { |u| !u.bogus.nil? })[0]
+    correct = (!u.bogus.nil? and (u.name.value == "Oxford"))
     assert correct
 
     data.each do |u|
-      assert ((unis.index u.name) != nil)
+      assert ((unis.index u.name.value) != nil)
     end
 
     data = University.where :name => "Oxford", :load_attrs => [:bogus => true]
     assert_equal 1, data.length
-    assert_equal "bla", data[0].bogus
+    assert_equal "bla", data[0].bogus[0].value
     assert !(data[0].attr_loaded? :name)
     assert (data[0].attr_loaded? :bogus)
     assert !(data[0].attr_loaded? :status)
 
     data = University.where :name => "Oxford", :load_attrs => [:name => true]
     assert_equal 1, data.length
-    assert_equal "Oxford", data[0].name
+    assert_equal "Oxford", data[0].name.value
 
 
+    data = University.where :name => "Stanford", :load_attrs => [:name => true]
+    assert_equal 1, data.length
+    assert_equal "Stanford", data[0].name.value
+    stanford = data[0]
+    students = stanford.students
+    students.each do |student|
+      assert_instance_of String , student.name.value
+    end
 
     University.all.each do |u|
       u.load
@@ -519,12 +522,12 @@ class TestModelPersonPersistB < TestCase
 
     x = University.find(name)
     x.load unless x.loaded?
-    assert x.name == name
+    assert x.name.parsed_value == name
 
     l = University.where name: name
     assert_equal 1, l.length
     x.load unless x.loaded?
-    assert x.name == name
+    assert x.name.parsed_value == name
 
   end
 

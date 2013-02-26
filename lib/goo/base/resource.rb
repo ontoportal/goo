@@ -60,6 +60,10 @@ module Goo
         prx = AttributeValueProxy.new(card_validator,
                                       @attributes[:internals])
         define_singleton_method("#{attr}=") do |*args|
+          if args[-1].kind_of? Hash
+            in_load = args[-1].include? :in_load
+            args = args[0,args.length-1]
+          end
           if self.class.goop_settings[:collection] and\
              self.class.goop_settings[:collection][:attribute] == attr
             if args.length > 1
@@ -68,7 +72,7 @@ module Goo
             value = args[0]
             self.internals.collection = value
           end
-          if internals.lazy_loaded? #and !(internals.loaded_attrs.include? attr.to_sym)
+          if !in_load and internals.lazy_loaded? and !(internals.loaded_attrs.include? attr.to_sym)
             raise NotLoadedResourceError,
               "Object has been lazy loaded. Call `load` to access/write attributes"
           end
@@ -87,13 +91,22 @@ module Goo
             if not internals.lazy_loaded? and
                self.class.goop_settings[:unique] and
                self.class.goop_settings[:unique][:fields] and
-               self.class.goop_settings[:unique][:fields].include? attr and
-               @table[attr] != tvalue
+               self.class.goop_settings[:unique][:fields].include? attr
                raise KeyFieldUpdateError,
                  "Attribute '#{attr}' cannot be changed in a persisted object."
             end
           end
-          if @table[attr] != tvalue and attr != :uuid
+          if attr != :uuid and @table[attr]
+            modified = false
+            if @table[attr].kind_of? SparqlRd::Resultset::Literal
+              modified = (@table[attr].parsed_value != tvalue)
+            elsif @table[attr].kind_of? SparqlRd::Resultset::Node
+              modified = (@table[attr].parsed != tvalue)
+            else
+              modified = (@table[attr] != tvalue)
+            end
+            internals.modified = modified
+          elsif attr != :uuid
             internals.modified = true
           end
           @table[attr] = tvalue
@@ -103,9 +116,14 @@ module Goo
              self.class.goop_settings[:collection][:attribute] == attr
             return self.internals.collection
           end
-          if internals.lazy_loaded?  and !(internals.loaded_attrs.include? attr.to_sym)
-            raise NotLoadedResourceError,
-              "Object has been lazy loaded. Call `load` to access/write attributes"
+          if internals.lazy_loaded? and !(internals.loaded_attrs.include? attr.to_sym)
+            if true || internals.loaded_attrs.length > 0
+              #lets load on demand
+              load_on_demand([attr])
+            else
+              raise NotLoadedResourceError,
+                "Object has been lazy loaded. Call `load` to access/write attributes"
+            end
           end
           attr_value = @table[attr]
 
@@ -116,7 +134,7 @@ module Goo
               #assume same collection
               where_opts[inv_cls.goop_settings[:collection][:attribute]] = self.internals.collection
             end
-            return inv_cls.where(where_opts) rescue binding.pry
+            return inv_cls.where(where_opts)
           end
 
           #returning default value
@@ -132,6 +150,7 @@ module Goo
             end
           end
 
+          #return attr_value.parsed_value if (attr_value.kind_of? SparqlRd::Resultset::Literal)
           return attr_value
         end
       end
@@ -152,7 +171,7 @@ module Goo
         #if attributes are set then set values for properties.
         @attributes.each_pair do |attr,value|
           next if attr == :internals
-          self.send("#{attr}=", *value)
+          self.send("#{attr}=", *value, :in_load => true)
         end
         internal_status = @attributes[:internals]
         @table[:internals] = internal_status
@@ -397,8 +416,13 @@ module Goo
         if !self.respond_to? attr
           shape_attribute(attr.to_s)
         end
+        return if value.nil?
         if !@attributes.include? attr
-          @attributes[attr] = []
+          send("#{attr}=",value,:in_load => true)
+          return
+        end
+        unless @attributes[attr].kind_of? Array
+          @attributes[attr] = [@attributes[attr]]
         end
         unless value.nil?
           @attributes[attr] << value unless @attributes[attr].include? value
@@ -449,6 +473,10 @@ module Goo
             items[resource_id.value] = item
             if collection
               item.internals.collection = collection
+              item.internals.graph_id = collection.resource_id.value
+            else
+              graph_id = Goo::Naming.get_graph_id(self)
+              item.internals.graph_id = graph_id
             end
           end
           item = items[resource_id.value]
@@ -571,6 +599,16 @@ module Goo
       end
 
       private
+      def load_on_demand(attrs)
+        graph_id = self.internals.graph_id
+        if graph_id.nil?
+          raise ArgumentError, "Graph ID must be known at this point"
+        end
+        loaded_attributes = Queries.get_resource_attributes(resource_id, self.class, store_name, graph_id,attributes=attrs)
+        attrs.each do |attr|
+          lazy_load_attr(attr,loaded_attributes[attr])
+        end
+      end
 
       def alias_rename(atts)
         return atts if self.class.goop_settings[:alias_table].nil? || (self.class.goop_settings[:alias_table].length == 0)

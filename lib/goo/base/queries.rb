@@ -34,7 +34,7 @@ eos
       return model
     end
 
-    def self.get_resource_attributes(resource_id, model_class, store_name, graph_id)
+    def self.get_resource_attributes(resource_id, model_class, store_name, graph_id,attributes=nil)
       if graph_id.nil?
         graph_id = Goo::Naming.get_graph_id(model_class)
       end
@@ -44,8 +44,19 @@ eos
       epr = Goo.store(store_name)
       graph = ""
       graph = " GRAPH <#{graph_id}> " unless resource_id.kind_of? SparqlRd::Resultset::BNode
+      unless attributes.nil?
+       filter = []
+        attributes.each do |attr|
+          pred_uri = model_class.uri_for_predicate(attr)
+          filter << "(?predicate = <#{pred_uri}>)"
+        end
+        filter = (filter.join " AND ")
+        filter = "FILTER (#{filter})"
+      end
       q = <<eos
-SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} ?predicate ?object } }
+SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} ?predicate ?object }
+#{filter}
+}
 eos
       rs = epr.query(q)
       attributes = Hash.new()
@@ -67,12 +78,13 @@ eos
               object_instance = object_class.new
               object_instance.lazy_loaded
               object_instance.resource_id= object
+              object_instance.internals.graph_id = Goo::Naming.get_graph_id(object_instance.class)
               attributes[attr_name] << object_instance
             else
               attributes[attr_name] << RDF::IRI.new(object.value)
             end
           else
-            attributes[attr_name] << object.parsed_value
+            attributes[attr_name] << object
           end
         end
       end
@@ -257,6 +269,7 @@ eos
 
     def self.get_resource_id_by_uuid(uuid, model_class, store_name)
       uuid_predicate = model_class.uri_for_predicate(:uuid)
+      uuid = uuid.parsed_value if uuid.kind_of? SparqlRd::Resultset::Literal
       q = <<eos
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 SELECT ?res WHERE {

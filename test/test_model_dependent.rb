@@ -56,14 +56,8 @@ class TestModelDependencies < TestCase
     assert_equal "m1", m1.prop
     assert_equal m2.resource_id.value, m1_copy.m2[0].resource_id.value
     assert_equal true, m1_copy.m2[0].internals.lazy_loaded?
-    begin
-      m1_copy.m2[0].prop
-      assert(1==0,"Exception on access lazy load attribute must be thrown here")
-    rescue => e
-      assert_instance_of Goo::Base::NotLoadedResourceError,e
-    end
     m1_copy.m2[0].load
-    assert_equal "m2", m1_copy.m2[0].prop
+    assert_equal "m2", m1_copy.m2[0].prop.value
     assert_equal false, m1_copy.m2[0].internals.lazy_loaded?
     m1.delete
     assert_equal false, m1.exist?(reload=true)

@@ -24,10 +24,14 @@ module Goo
           if value.nil?
             return #cardinality should take care of this.
           end
-          datetime = Goo::Utils.xsd_date_time_parse(value)
-          if not datetime
-            record.internals.errors[attribute] << \
-              (options[:message] || "#{attribute}=#{value} is not an XSD Datetime string")
+          value = [value] unless value.kind_of? Array
+          value.each do |v|
+            v = v.parsed_value if v.kind_of? SparqlRd::Resultset::Literal
+            datetime = Goo::Utils.xsd_date_time_parse(v)
+            if not datetime
+              record.internals.errors[attribute] << \
+                (options[:message] || "#{attribute}=#{value} is not an XSD Datetime string")
+            end
           end
         rescue ArgumentError => e
           record.internals.errors[attribute] << \
