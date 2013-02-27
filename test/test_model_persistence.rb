@@ -123,7 +123,7 @@ class TestModelPersonPersistB < TestCase
 
     person = PersonPersist.find("Goo Fernandez")
     person.status.load
-    assert_equal "married", person.status.description.parsed_value
+    assert_equal "married", person.status.description
 
     person.delete
     assert_equal false, person.exist?(reload=true)
@@ -162,8 +162,8 @@ class TestModelPersonPersistB < TestCase
     #reload
     person_update = PersonPersist.new()
     person_update.load(person.resource_id)
-    assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date.parsed_value
-    assert_equal "Goo Fernandez", person_update.name.parsed_value
+    assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date
+    assert_equal "Goo Fernandez", person_update.name
 
     #making sure default values do not change in an update
     assert_equal created_time.parsed_value.xmlschema, person_update.created.parsed_value.xmlschema
@@ -211,7 +211,7 @@ class TestModelPersonPersistB < TestCase
     person_update = PersonPersist.new()
     person_update.load(person.resource_id)
     assert_instance_of(PersonPersist, person_update)
-    assert_equal [DateTime.parse("2013-01-01T07:00:00.000Z")], person_update.some_date.map { |d| d.parsed_value}
+    assert_equal [DateTime.parse("2013-01-01T07:00:00.000Z")], person_update.some_date
     #equivalent to remove
     person_update.some_date = []
     x = person_update.save
