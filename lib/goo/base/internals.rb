@@ -106,7 +106,11 @@ module Goo
       end
 
       def loaded?
-        @loaded
+        return @loaded if @loaded
+        if @loaded_attrs and @loaded_attrs.length > 0
+          return @loaded_attrs.length == @_base_instance.class.goop_settings[:attributes].length
+        end
+        false
       end
 
       def persistent?

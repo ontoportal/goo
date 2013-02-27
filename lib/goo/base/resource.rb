@@ -111,10 +111,12 @@ module Goo
                  "Attribute '#{attr}' cannot be changed in a persisted object."
             end
           end
-          if attr != :uuid and @table[attr]
-            internals.modified = (@table[attr] != tvalue)
-          elsif attr != :uuid
-            internals.modified = true
+          if !in_load
+            if attr != :uuid and @table[attr]
+              internals.modified = (@table[attr] != tvalue)
+            elsif attr != :uuid
+              internals.modified = true
+            end
           end
           @table[attr] = tvalue
         end
@@ -458,6 +460,9 @@ module Goo
         only_known = (attributes.delete :only_known)
         only_known = true if only_known.nil?
         load_attrs = attributes.delete :load_attrs
+        if load_attrs == :defined
+          load_attrs = self.goop_settings[:attributes].keys
+        end
         query_options = attributes.delete :query_options
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
         attributes.delete(:ignore_inverse)

@@ -173,9 +173,9 @@ class TestModelwhere < TestCase
       assert c.name != nil
     end
 
-    toys = ToyObject.all
+    toys = ToyObject.all :load_attrs => :defined
     toys.each do |t|
-      t.load
+      assert t.loaded?
       t.delete
     end
     toys = ToyObject.all
