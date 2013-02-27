@@ -8,9 +8,14 @@ module Goo
     def self.value_to_rdf_object(value)
       raise StandardError, "hash not yet supported here" if value.kind_of? Hash
 
-      xsd_type = SparqlRd::Utils::Xsd.xsd_type_from_value(value)
+      xsd_type = nil
+      if value.kind_of? SparqlRd::Resultset::Literal
+        xsd_type = value.datatype
+      else
+        xsd_type = SparqlRd::Utils::Xsd.xsd_type_from_value(value)
+      end
       raise XsdTypeNotFoundForValue, "XSD Type not found for value `#{value}` `#{value.class}`" \
-        if xsd_type == nil
+        if xsd_type == nil or xsd_type.length == 0
       SparqlRd::Utils::Xsd.xsd_string_from_value(value,xsd_type)
       xsd_type_string = SparqlRd::Utils::Xsd.types[xsd_type]
       return "\"\"\"#{value}\"\"\"^^<#{xsd_type_string}>"
