@@ -48,6 +48,7 @@ module Goo
           end
           value = [value] unless value.kind_of? Array
           value.each do |v|
+            v = v.value if v.kind_of? SparqlRd::Resultset::Literal
             if !(SparqlRd::Utils::Http.valid_uri? v)
               record.internals.errors[attribute] << \
                 (options[:message] || "#{attribute}=#{v} is not a valid URI.")
@@ -99,6 +100,7 @@ module Goo
           registered_class = options[:with]
         end
         values.each do |v|
+          next if (v.kind_of? SparqlRd::Resultset::Literal) and (v.parsed_value.kind_of? registered_class)
           if not v.kind_of? registered_class
             record.internals.errors[attribute] << \
              (options[:message] || "#{attribute} contains instances that are not #{options[:with]}")

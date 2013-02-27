@@ -83,7 +83,17 @@ module Goo
           value = args.flatten
           if value and !value.instance_of? SparqlRd::Resultset::Literal
             if !value.respond_to? :goop_settings
-              value.map! { |v| SparqlRd::Resultset.get_literal_from_object(v) }
+              value.map! do |v|
+                if v.nil?
+                  nil
+                else
+                  if v.kind_of? Resource
+                    v
+                  else
+                    SparqlRd::Resultset.get_literal_from_object(v)
+                  end
+                end
+              end
             end
           end
           tvalue = prx.call({ :value => value, :attr => attr,
@@ -102,15 +112,7 @@ module Goo
             end
           end
           if attr != :uuid and @table[attr]
-            modified = false
-            if @table[attr].kind_of? SparqlRd::Resultset::Literal
-              modified = (@table[attr].parsed_value != tvalue)
-            elsif @table[attr].kind_of? SparqlRd::Resultset::Node
-              modified = (@table[attr].parsed != tvalue)
-            else
-              modified = (@table[attr] != tvalue)
-            end
-            internals.modified = modified
+            internals.modified = (@table[attr] != tvalue)
           elsif attr != :uuid
             internals.modified = true
           end

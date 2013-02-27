@@ -3,6 +3,7 @@ class String
   alias str_eql? eql?
   alias str_eql_sym ==
   alias cmp_str_orig <=>
+  alias plus_orig +
 
   def underscore
     self.gsub(/::/, '/').
@@ -33,6 +34,10 @@ class String
   def <=>(other)
     other = other.parsed_value if other.instance_of? SparqlRd::Resultset::StringLiteral
     return cmp_str_orig(other)
+  end
+  def +(other)
+    other = other.parsed_value if other.instance_of? SparqlRd::Resultset::StringLiteral
+    return plus_orig(other)
   end
 end
 
