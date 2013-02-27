@@ -315,6 +315,8 @@ eos
             else
               raise ArgumentError, "Nested search cannot be performed due to missing instance_of"
             end
+          elsif value.kind_of? SparqlRd::Resultset::Literal
+            rdf_object_string = value.to_turtle
           else
             rdf_object_string = value_to_rdf_object(value)
           end
