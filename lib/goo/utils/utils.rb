@@ -2,6 +2,9 @@ require 'date'
 require "uri"
 
 require_relative "string_utils"
+require_relative "datetime_utils"
+require_relative "fixnum_utils"
+require_relative "boolean_utils"
 require_relative "rdf"
 
 module Goo

@@ -81,6 +81,11 @@ module Goo
           end
           current_value = @table[attr]
           value = args.flatten
+          if value and !value.instance_of? SparqlRd::Resultset::Literal
+            if !value.respond_to? :goop_settings
+              value.map! { |v| SparqlRd::Resultset.get_literal_from_object(v) }
+            end
+          end
           tvalue = prx.call({ :value => value, :attr => attr,
                               :current_value => current_value })
           if attr == :uuid
