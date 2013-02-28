@@ -18,19 +18,34 @@ module Goo
         object_id = self.resource_id.value
         copy_to_index = self.attributes.dup
         copy_to_index.delete :internals
+
         copy_to_index[:resource_id] = object_id
+
+        copy_to_index[:termId] = copy_to_index[:id]
+        copy_to_index[:id] = copy_to_index[:id] + "_" + copy_to_index[:submission]
+
         document = JSON.dump copy_to_index
 
         #solr = RSolr.connect :url => SOLR_URL
         #solr.add document
 
-        self.class.solr.add document
+        puts document
+
+        puts copy_to_index
+
+   #     self.class.solr.add copy_to_index
 
       end
 
       def unindex
         self.class.solr.delete_by_id self.id
       end
+
+
+      def get_index_id
+        return self.attributes.id + "_" + self.attributes.submission
+      end
+
 
       module ClassMethods
         @@solr = RSolr.connect :url => SOLR_URL
