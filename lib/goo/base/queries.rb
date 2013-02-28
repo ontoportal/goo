@@ -50,7 +50,8 @@ eos
       graph = ""
       graph = " GRAPH <#{graph_id}> " unless resource_id.kind_of? SparqlRd::Resultset::BNode
       unless attributes.nil?
-       filter = []
+        filter = []
+        raise ArgumentError, "This is probably a schemaless object not declared as such `#{model_class.name}`" if attributes.length == 0
         attributes.each do |attr|
           pred_uri = model_class.uri_for_predicate(attr)
           filter << "(?predicate = <#{pred_uri}>)"

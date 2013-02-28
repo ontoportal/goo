@@ -21,7 +21,7 @@ class TwoUniquesWrong < Goo::Base::Resource
 end
 
 class StatusPersist < Goo::Base::Resource
-  model :status
+  model :status, :schemaless => :true
   attribute :description, :unique => true
 
   def initialize(attributes = {})
@@ -45,6 +45,7 @@ class PersonPersist < Goo::Base::Resource
 end
 
 class University < Goo::Base::Resource
+  model :university, :schemaless => :true
   attribute :name, :unique => true
   attribute :location,  :instance_of => { :with => :location }
   attribute :students,  :instance_of => { :with => :person_persist }
@@ -53,6 +54,7 @@ class University < Goo::Base::Resource
 end
 
 class Location < Goo::Base::Resource
+  model :location, :schemaless => :true
 end
 
 class TestModelPersonPersistB < TestCase

@@ -3,7 +3,7 @@ require_relative 'test_case'
 TestInit.configure_goo
 
 class Model1 < Goo::Base::Resource
-  model :model1
+  model :model1, :schemaless => true
   attribute :prop, :cardinality => { :max => 1, :min => 1 }
   unique :prop
 
@@ -13,7 +13,7 @@ class Model1 < Goo::Base::Resource
 end
 
 class Model2 < Goo::Base::Resource
-  model :model2
+  model :model2, :schemaless => true
   attribute :prop, :unique => true
 
   def initialize(attributes = {})

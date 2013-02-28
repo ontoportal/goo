@@ -28,6 +28,9 @@ module Goo
         #anon objects have an uuid property
         policy = self.class.goop_settings[:unique][:generator]
         if policy == :anonymous
+          if !self.respond_to? :uuid
+            shape_attribute :uuid
+          end
           if not @table.include? :uuid
             self.uuid = Goo.uuid.generate
           end
@@ -151,7 +154,7 @@ module Goo
 
           #returning default value
           if attr_value.nil?
-            return nil unless self.persisted?
+            return nil unless self.persistent?
             attrs = self.class.goop_settings[:attributes]
             if attrs.include? attr
               if attrs[attr].include? :default
@@ -191,7 +194,7 @@ module Goo
       end
 
       def method_missing(sym, *args, &block)
-        raise NoMethodError, "This Resource is defined as not schemaless" if !self.class.goop_settings[:schemaless]
+        raise NoMethodError, "This Resource is defined as not schemaless. Object cannot respond to `#{sym}`" if !self.class.goop_settings[:schemaless]
         if sym.to_s[-1] == "="
           shape_attribute(sym.to_s.chomp "=")
           return self.send(sym,args)
@@ -260,6 +263,7 @@ module Goo
         load_attrs = (opts.delete :load_attrs) || (self.class.goop_settings[:schemaless] ? nil : :defined)
         if load_attrs == :defined
           load_attrs = self.class.goop_settings[:attributes].keys
+          load_attrs << :uuid if self.respond_to? :uuid
         elsif load_attrs == :all
           load_attrs = nil
         end
@@ -471,6 +475,7 @@ module Goo
         load_attrs = attributes.delete :load_attrs
         if load_attrs == :defined
           load_attrs = self.goop_settings[:attributes].keys
+          load_attrs << :uuid if self.respond_to? :uuid
         end
         query_options = attributes.delete :query_options
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
@@ -620,7 +625,7 @@ module Goo
       end
 
       private
-      def load_on_demand(attrs)
+      def load_on_demand(attrs,store_name=nil)
         graph_id = self.internals.graph_id
         if graph_id.nil?
           raise ArgumentError, "Graph ID must be known at this point"

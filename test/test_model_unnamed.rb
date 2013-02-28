@@ -3,7 +3,7 @@ require_relative 'test_case'
 TestInit.configure_goo
 
 class Named < Goo::Base::Resource
-  model :named
+  model :named,  :schemaless => true
   attribute :name, :cardinality => { :max => 1, :min => 1 }
   attribute :has_unnammed, :instance_of => { :with => :unnamed }
 
@@ -15,7 +15,7 @@ class Named < Goo::Base::Resource
 end
 
 class Unnamed < Goo::Base::Resource
-  model :unnamed
+  model :unnamed, :schemaless => true
   attribute :name,  :cardinality => { :max => 1, :min => 1 }
 
   def initialize(attributes = {})

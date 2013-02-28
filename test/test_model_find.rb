@@ -33,6 +33,10 @@ end
 class ToyObject < Goo::Base::Resource
   attribute :part, :instance_of => { :with => :toy_part }
   attribute :name, :unique => true
+  attribute :all_prop
+  attribute :name_even
+  attribute :name_odd
+  attribute :name_x
 
   def initialize(attributes = {})
     super(attributes)
@@ -171,7 +175,12 @@ class TestModelwhere < TestCase
     with_names = ToyObject.where(:name_x => "x", :only_known => false, :load_attrs => [:name])
     with_names.each do |c|
       assert c.name != nil
+      assert_raise NoMethodError do
+        c.xxxxxx
+      end
     end
+
+
 
     toys = ToyObject.all :load_attrs => :defined
     toys.each do |t|
