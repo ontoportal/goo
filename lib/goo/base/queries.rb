@@ -8,9 +8,14 @@ module Goo
     def self.value_to_rdf_object(value)
       raise StandardError, "hash not yet supported here" if value.kind_of? Hash
 
-      xsd_type = SparqlRd::Utils::Xsd.xsd_type_from_value(value)
+      xsd_type = nil
+      if value.kind_of? SparqlRd::Resultset::Literal
+        xsd_type = value.datatype
+      else
+        xsd_type = SparqlRd::Utils::Xsd.xsd_type_from_value(value)
+      end
       raise XsdTypeNotFoundForValue, "XSD Type not found for value `#{value}` `#{value.class}`" \
-        if xsd_type == nil
+        if xsd_type == nil or xsd_type.length == 0
       SparqlRd::Utils::Xsd.xsd_string_from_value(value,xsd_type)
       xsd_type_string = SparqlRd::Utils::Xsd.types[xsd_type]
       return "\"\"\"#{value}\"\"\"^^<#{xsd_type_string}>"
@@ -34,10 +39,30 @@ eos
       return model
     end
 
-    def self.get_resource_attributes(resource_id, model_class, store_name)
+    def self.get_resource_attributes(resource_id, model_class, store_name, graph_id,attributes=nil)
+      if graph_id.nil?
+        graph_id = Goo::Naming.get_graph_id(model_class)
+      end
+      if graph_id.kind_of? SparqlRd::Resultset::Node
+        graph_id = graph_id.value
+      end
       epr = Goo.store(store_name)
+      graph = ""
+      graph = " GRAPH <#{graph_id}> " unless resource_id.kind_of? SparqlRd::Resultset::BNode
+      unless attributes.nil?
+        filter = []
+        raise ArgumentError, "This is probably a schemaless object not declared as such `#{model_class.name}`" if attributes.length == 0
+        attributes.each do |attr|
+          pred_uri = model_class.uri_for_predicate(attr)
+          filter << "(?predicate = <#{pred_uri}>)"
+        end
+        filter = (filter.join " || ")
+        filter = "FILTER (#{filter})"
+      end
       q = <<eos
-SELECT DISTINCT * WHERE { #{resource_id.to_turtle} ?predicate ?object }
+SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} ?predicate ?object }
+#{filter}
+}
 eos
       rs = epr.query(q)
       attributes = Hash.new()
@@ -59,12 +84,13 @@ eos
               object_instance = object_class.new
               object_instance.lazy_loaded
               object_instance.resource_id= object
+              object_instance.internals.graph_id = Goo::Naming.get_graph_id(object_instance.class)
               attributes[attr_name] << object_instance
             else
               attributes[attr_name] << RDF::IRI.new(object.value)
             end
           else
-            attributes[attr_name] << object.parsed_value
+            attributes[attr_name] << object
           end
         end
       end
@@ -156,14 +182,10 @@ eos
     def self.build_sparql_delete_query(models)
         queries = []
         #TODO: dangerous. Model [0] is the master, the others are bnodes.
-        graph_id_master = Goo::Naming.get_graph_id(models[0].class)
         models.each do |model|
           triples = model_to_triples(model,model.resource_id, expand_bnodes = false)
-          if model.resource_id.bnode?
-            graph_id = graph_id_master
-          else
-            graph_id = Goo::Naming.get_graph_id(model.class)
-          end
+          graph_id =  model.class.collection(model) || Goo::Naming.get_graph_id(model.class)
+          graph_id = graph_id.value if graph_id.kind_of? SparqlRd::Resultset::Node
           query = ["DELETE DATA { GRAPH <#{graph_id}> {"]
           triples.map! { |t| t + ' .' }
           query << triples
@@ -175,19 +197,28 @@ eos
 
     def self.build_sparql_update_query(modified_models)
       queries = []
+      triples = {}
       modified_models.each do |mmodel|
-        triples = model_to_triples(mmodel,mmodel.resource_id)
+        graph_id = mmodel.class.collection(mmodel) || Goo::Naming.get_graph_id(mmodel.class)
+        triples[graph_id] = [] unless triples.include? graph_id
+        triples[graph_id].concat(model_to_triples(mmodel,mmodel.resource_id))
         mmodel.each_linked_base do |attr_name, umodel|
+          next if umodel.persistent? and (not umodel.modified?)
+          graph_id = mmodel.class.collection(umodel) || Goo::Naming.get_graph_id(umodel.class)
+          triples[graph_id] = [] unless triples.include? graph_id
           if umodel.resource_id.bnode? and umodel.modified?
-            triples.concat(model_to_triples(umodel, umodel.resource_id))
+            triples[graph_id].concat(model_to_triples(umodel, umodel.resource_id))
           end
         end
-        triples.map! { |t| t + ' .' }
-        graph_id = Goo::Naming.get_graph_id(mmodel.class)
-        query = ["INSERT DATA { GRAPH <#{graph_id}> {"]
-        query << triples
-        query << "} }"
-        queries << (query.join "\n")
+      end
+      triples.each_key do |gid|
+        if triples[gid].length > 0
+          query = ["INSERT DATA {"]
+          query << " GRAPH <#{gid}> {"
+          query << ((triples[gid].map { |t| t + " ."}).join "\n")
+          query << "} }"
+          queries << (query.join "\n")
+        end
       end
       return queries
     end
@@ -244,6 +275,7 @@ eos
 
     def self.get_resource_id_by_uuid(uuid, model_class, store_name)
       uuid_predicate = model_class.uri_for_predicate(:uuid)
+      uuid = uuid.parsed_value if uuid.kind_of? SparqlRd::Resultset::Literal
       q = <<eos
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 SELECT ?res WHERE {
@@ -258,8 +290,10 @@ eos
       return nil
     end
 
-    def self.hash_to_triples_for_query(hash,model_class)
-      patterns = []
+    def self.hash_to_triples_for_query(hash,model_class,subject_var)
+      patterns = {}
+      graph_id = Goo::Naming.get_graph_id(model_class)
+      patterns[graph_id] = [] unless patterns.include? graph_id
       hash.each do |attr,v|
         predicate = model_class.uri_for_predicate(attr)
         [v].flatten.each do |value|
@@ -273,17 +307,24 @@ eos
                 raise ArgumentError, "Wrong configuration in instance_of makes nested search fail." +
                                      "`#{model_symbol}` has no associated model"
               end
-              rdf_object_string =  hash_to_triples_for_query(value,model_att)
+              sub_patterns =  hash_to_triples_for_query(value,model_att,attr.to_s)
+              sub_patterns.each_key do |graph_id|
+                patterns[graph_id] = [] unless patterns.include? graph_id
+                patterns[graph_id].concat(sub_patterns[graph_id])
+              end
+              rdf_object_string = "?#{attr.to_s}"
             else
               raise ArgumentError, "Nested search cannot be performed due to missing instance_of"
             end
+          elsif value.kind_of? SparqlRd::Resultset::Literal
+            rdf_object_string = value.to_turtle
           else
             rdf_object_string = value_to_rdf_object(value)
           end
-          patterns << " <#{predicate}> #{rdf_object_string};"
+          patterns[graph_id] << " ?#{subject_var} <#{predicate}> #{rdf_object_string} ."
         end
       end
-      return "[\n\t" + (patterns.join "\n") + " \n]"
+      return patterns
     end
 
     def self.attributes_for_query(attrs,var,model_class,attribute_patterns)
@@ -311,7 +352,6 @@ eos
           attribute_patterns << " ?#{var} <#{predicate}> ?#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s} ."
           if (nested.kind_of? Hash or nested.kind_of? Array) and (nested.length > 0)
             #TODO
-            binding.pry
           end
           if optional
             attribute_patterns << "}"
@@ -319,12 +359,26 @@ eos
         end
     end
 
+    #we need store name here
+    def self.get_exist_query(model)
+      graph_id = model.class.collection(model) || Goo::Naming.get_graph_id(model.class)
+      return "SELECT * WHERE { GRAPH <#{graph_id}> { <#{model.resource_id.value}> a ?t .} } LIMIT 1 "
+    end
+
     def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse, load_attrs, only_known)
-      patterns = []
-      graph_id = Goo::Naming.get_graph_id(model_class)
-      patterns << " ?subject a <#{ model_class.type_uri}> ."
+      #dictionary :named_graph => triple patterns
+      patterns = {}
+      graph_id = model_class.collection(nil,attributes) || Goo::Naming.get_graph_id(model_class)
+
+      patterns[graph_id] = []
+      patterns[graph_id] << " ?subject a <#{ model_class.type_uri}> ."
+
+      if attributes.include? :resource_id
+      end
+
       attributes.each do |attribute, value|
-        if only_known && model_class.attributes[attribute].nil?
+        next if model_class.collection_attribute? attribute
+        if only_known && model_class.attributes[attribute.to_sym].nil?
          mess =  "Attribute `#{attribute}` is not declared in `#{model_class.name}`. " +\
                  "To enable search on unknown attributes use :only_known => false"
          raise ArgumentError, mess
@@ -339,6 +393,10 @@ eos
           predicate = model_class.uri_for_predicate(attribute)
         end
         if value.kind_of? Goo::Base::Resource
+          if inverse
+            graph_id = Goo::Naming.get_graph_id(value.class)
+            patterns[graph_id] = []
+          end
           rdf_object_string = value.resource_id.to_turtle
         elsif value.kind_of? Hash
           if (!model_class.attributes[attribute].nil?) && (model_class.attributes[attribute][:validators].include? :instance_of)
@@ -348,7 +406,12 @@ eos
               raise ArgumentError, "Wrong configuration in instance_of makes nested search fail." +
                                    "`#{model_symbol}` has no associated model"
             end
-            rdf_object_string =  hash_to_triples_for_query(value,model_att)
+            sub_patterns =  hash_to_triples_for_query(value,model_att,attribute.to_s)
+            sub_patterns.each_key do |sub_graph_id|
+              patterns[sub_graph_id] = [] unless patterns.include? sub_graph_id
+              patterns[sub_graph_id].concat(sub_patterns[sub_graph_id])
+            end
+            rdf_object_string = "?#{attribute.to_s}"
           else
             raise ArgumentError, "Nested search cannot be performed due to missing instance_of in `#{attribute}`"
           end
@@ -356,20 +419,32 @@ eos
           rdf_object_string = value_to_rdf_object(value)
         end
         if not inverse
-          patterns << " ?subject <#{predicate}> #{rdf_object_string} ."
+          patterns[graph_id] << " ?subject <#{predicate}> #{rdf_object_string} ."
         else
-          patterns << " #{rdf_object_string} <#{predicate}> ?subject ."
+          patterns[graph_id] << " #{rdf_object_string} <#{predicate}> ?subject ."
         end
       end
+
       if load_attrs and load_attrs.length > 0
         attributes_patterns = []
         attributes_for_query(load_attrs,"subject",model_class, attributes_patterns)
-        patterns << attributes_patterns
+        patterns[graph_id] << attributes_patterns.map { |pattern| "OPTIONAL { #{pattern} }"}
       end
-      patterns = patterns.join "\n"
+
+      graph_patterns = []
+      from_clauses = []
+      patterns.each_key do |graph_id|
+        from_clauses << "FROM <#{graph_id}>"
+        graph_patterns << (patterns[graph_id].join "\n")
+      end
+
+      from_clauses = from_clauses.join "\n"
+      patterns_string = graph_patterns.join "\n"
       query = <<eos
-SELECT DISTINCT * WHERE {
-    #{patterns}
+SELECT DISTINCT *
+#{from_clauses}
+WHERE {
+    #{patterns_string}
 } ORDER BY ?subject
 eos
       return query

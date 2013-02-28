@@ -3,7 +3,7 @@ require_relative 'test_case'
 TestInit.configure_goo
 
 class Named < Goo::Base::Resource
-  model :named
+  model :named,  :schemaless => true
   attribute :name, :cardinality => { :max => 1, :min => 1 }
   attribute :has_unnammed, :instance_of => { :with => :unnamed }
 
@@ -15,7 +15,7 @@ class Named < Goo::Base::Resource
 end
 
 class Unnamed < Goo::Base::Resource
-  model :unnamed
+  model :unnamed, :schemaless => true
   attribute :name,  :cardinality => { :max => 1, :min => 1 }
 
   def initialize(attributes = {})
@@ -37,14 +37,15 @@ class TestModelUnnamed < TestCase
     assert_equal true, obj.exist?(reload=true)
     load_obj = Unnamed.new
     load_obj.load(obj.resource_id)
-    assert_equal obj.prop1, load_obj.prop1
-    assert_equal obj.name, load_obj.name
+    assert_equal obj.prop1[0], load_obj.prop1[0].parsed_value
+    assert obj.prop1.length == load_obj.prop1.length
+    assert_equal obj.name, load_obj.name.parsed_value
     load_obj.name= "changed value"
     load_obj.save
     load_obj = Unnamed.new
     load_obj.load(obj.resource_id)
-    assert_equal obj.prop1, load_obj.prop1
-    assert_equal "changed value", load_obj.name
+    assert_equal obj.prop1[0], load_obj.prop1[0].parsed_value
+    assert_equal "changed value", load_obj.name.parsed_value
     assert_equal obj.resource_id.value, load_obj.resource_id.value
     load_obj.delete
     assert_equal false, load_obj.exist?(reload=true)

@@ -33,6 +33,10 @@ end
 class ToyObject < Goo::Base::Resource
   attribute :part, :instance_of => { :with => :toy_part }
   attribute :name, :unique => true
+  attribute :all_prop
+  attribute :name_even
+  attribute :name_odd
+  attribute :name_x
 
   def initialize(attributes = {})
     super(attributes)
@@ -108,15 +112,17 @@ class TestModelwhere < TestCase
         white = Color.where(:code => "white")[0]
         white_wheel = ToyFeature.where(:description => "wheel" , :color => white)
         red_wheel = ToyFeature.where(:description => "wheel" , :color => { :code => "red"})
+        assert red_wheel.length > 0
         toy_part = ToyPart.new({:name => "toypart#{n}", :feature => [white_wheel[0],red_wheel[0]] })
         toy.part= toy_part
       else
         toy.name_odd = n
         engine_blue = ToyFeature.where(:color => { :code => "blue"})[0]
+        assert !engine_blue.nil?
         assert engine_blue.lazy_loaded?
         engine_blue.load
         #the only blue thing is an engine
-        assert_equal "engine", engine_blue.description
+        assert_equal "engine", engine_blue.description.value
 
         toy_part = ToyPart.new({:name => "toypart#{n}", :feature => [engine_blue] })
         toy.part = toy_part
@@ -146,12 +152,15 @@ class TestModelwhere < TestCase
       lits << t.name
     end
     (0..max-1).each do |n|
-      assert_equal true, (lits.include? "some value for #{n}")
+      assert_equal true, (lits.select { |l| l.value == "some value for #{n}"}).length > 0
     end
 
     #issue 75. Nil pointer with nested objects and unknown attributes
     assert_raise ArgumentError do
       ToyObject.where(:name_xxxx => { xxx: 1 } )
+    end
+    assert_raise ArgumentError do
+      ToyObject.where(:name_xxxx => nil )
     end
     assert_raise ArgumentError do
     ToyObject.where(:name_x => { xxx: 1 })
@@ -160,12 +169,22 @@ class TestModelwhere < TestCase
     assert_equal max/2, toys.length
     toys.each do |t|
       t.load
-      assert_instance_of Fixnum, t.name_even[0]
-      assert_equal 0, t.name_even[0] % 2
+      assert_instance_of Fixnum, t.name_even[0].parsed_value
+      assert_equal 0, t.name_even[0].parsed_value % 2
     end
-    toys = ToyObject.all
+    with_names = ToyObject.where(:name_x => "x", :only_known => false, :load_attrs => [:name])
+    with_names.each do |c|
+      assert c.name != nil
+      assert_raise NoMethodError do
+        c.xxxxxx
+      end
+    end
+
+
+
+    toys = ToyObject.all :load_attrs => :defined
     toys.each do |t|
-      t.load
+      assert t.loaded?
       t.delete
     end
     toys = ToyObject.all
@@ -192,14 +211,14 @@ class TestModelwhere < TestCase
     assert_equal 3, list.length
     list.each do |x|
       x.load
-      assert_equal "common", x.all_prop[0]
+      assert_equal "common", x.all_prop[0].parsed_value
       assert_equal 1, x.part.length
       x.part.each do |p|
         p.load
         assert_equal 1, p.feature.length
         p.feature.each do |f|
           f.load
-          assert_equal "engine", f.description
+          assert_equal "engine", f.description.value
         end
       end
     end
@@ -214,13 +233,13 @@ class TestModelwhere < TestCase
     white = Color.find("white")
     assert_instance_of Color, white
     assert white.resource_id.value.end_with? "white"
-    assert_equal "white", white.code
+    assert_equal "white", white.code.parsed_value
 
     iri_blue = Color.prefix + Color.goo_name.to_s + "/blue"
     blue = Color.find(RDF::IRI.new(iri_blue))
     assert_instance_of Color, blue
     assert blue.resource_id.value.end_with? "blue"
-    assert_equal "blue", blue.code
+    assert_equal "blue", blue.code.parsed_value
 
     not_exist = Color.find("xxxxxxxxx")
     assert not_exist.nil?

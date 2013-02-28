@@ -23,6 +23,12 @@ module Goo
         resource_id = AnonymousPolicy.getResourceId(model)
         return resource_id
       end
+      if policy == :resource_id
+        if model.attributes[:resource_id].nil?
+          raise ArgumentError, "Empty :resource_id error. Not possible to check for existance of the object."
+        end
+        return nil
+      end
       #TODO implement other policies
       raise PolicyNotSupported, "Policy '#{policy}' not supported"
     end
@@ -44,7 +50,7 @@ module Goo
         if field_value.kind_of? Array
           field_value = field_value[0]
         end
-        uri_last_fragment = CGI.escape(field_value)
+        uri_last_fragment = CGI.escape(field_value.value)
         return RDF::IRI.new(model.class.prefix + model.class.goo_name.to_s + '/' + uri_last_fragment)
        end
     end

@@ -64,8 +64,25 @@ class TestModelPersonA < TestCase
     assert_instance_of Hash, person.class.goop_settings
     assert_equal :PersonResource, person.class.goop_settings[:model]
     assert_equal "Goo Fernandez", person.name
+    assert_equal "Goo Fernandez", person.name.parsed_value
+    assert_equal "Goo Fernandez", person.name.value
+    assert person.name < "ZZZZ"
+    assert "ZZZZ" > person.name
     assert_equal [1], person.some_stuff
+    assert 1 ==  person.some_stuff[0]
+    assert person.some_stuff[0] == 1
+    assert_equal [(SparqlRd::Resultset::IntegerLiteral.new 1)], person.some_stuff
+    assert person.some_stuff[0] > 0
+    assert 0 <= person.some_stuff[0]
+    assert 1 >= person.some_stuff[0]
+    assert !(person.some_stuff[0] > 20)
     assert_equal DateTime.parse("2012-10-04T07:00:00.000Z"), person.birth_date
+    assert_equal DateTime.parse("2012-10-04T07:00:00.000Z"), person.birth_date.parsed_value
+    assert_equal DateTime.parse("2012-10-04T07:00:00.000Z").xmlschema, person.birth_date.value
+    assert person.birth_date > DateTime.parse("2011-10-04T07:00:00.000Z")
+    assert DateTime.parse("2011-10-04T07:00:00.000Z") < person.birth_date
+    assert person.birth_date >= DateTime.parse("2011-10-04T07:00:00.000Z")
+    assert DateTime.parse("2011-10-04T07:00:00.000Z") <= person.birth_date
     assert_equal true, person.valid?
   end
 

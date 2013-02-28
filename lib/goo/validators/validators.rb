@@ -24,10 +24,14 @@ module Goo
           if value.nil?
             return #cardinality should take care of this.
           end
-          datetime = Goo::Utils.xsd_date_time_parse(value)
-          if not datetime
-            record.internals.errors[attribute] << \
-              (options[:message] || "#{attribute}=#{value} is not an XSD Datetime string")
+          value = [value] unless value.kind_of? Array
+          value.each do |v|
+            v = v.parsed_value if v.kind_of? SparqlRd::Resultset::Literal
+            datetime = Goo::Utils.xsd_date_time_parse(v)
+            if not datetime
+              record.internals.errors[attribute] << \
+                (options[:message] || "#{attribute}=#{value} is not an XSD Datetime string")
+            end
           end
         rescue ArgumentError => e
           record.internals.errors[attribute] << \
@@ -44,6 +48,7 @@ module Goo
           end
           value = [value] unless value.kind_of? Array
           value.each do |v|
+            v = v.value if v.kind_of? SparqlRd::Resultset::Literal
             if !(SparqlRd::Utils::Http.valid_uri? v)
               record.internals.errors[attribute] << \
                 (options[:message] || "#{attribute}=#{v} is not a valid URI.")
@@ -95,6 +100,7 @@ module Goo
           registered_class = options[:with]
         end
         values.each do |v|
+          next if (v.kind_of? SparqlRd::Resultset::Literal) and (v.parsed_value.kind_of? registered_class)
           if not v.kind_of? registered_class
             record.internals.errors[attribute] << \
              (options[:message] || "#{attribute} contains instances that are not #{options[:with]}")
@@ -105,13 +111,13 @@ module Goo
 
     class UniqueValidator < Validator
       def validate_each(record, attribute, value)
-        if value.nil? or (value.kind_of? Array and value.length > 1) or
-          (value.kind_of? Array and value.length == 0)
-            #cardinality takes care of this.
-            return
+        unless attribute == :resource_id
+          if value.nil? or (value.kind_of? Array and value.length > 1) or
+            (value.kind_of? Array and value.length == 0)
+              #cardinality takes care of this.
+              return
+          end
         end
-        value = value[0]
-
         begin
           if (record.exist?(reload=true) and not record.internals.persistent)
               record.internals.errors[attribute] << \

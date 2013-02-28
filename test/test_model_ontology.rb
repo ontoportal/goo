@@ -85,7 +85,7 @@ class TestModelOntology < TestCase
       projects.each do |p|
         assert_instance_of Project, p
         p.load
-        assert_instance_of String, p.name
+        assert_instance_of String, p.name.value
       end
 
       ont_search = Ontology.where(:projects => p)
@@ -93,7 +93,7 @@ class TestModelOntology < TestCase
       assert_equal 1, ont_search.length
       ont_search.each do |o|
         o.load
-        assert_equal "SNOMED", o.acronym
+        assert_equal "SNOMED", o.acronym.value
       end
       flush()
       assert_equal 0, Project.all.length

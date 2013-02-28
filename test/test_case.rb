@@ -21,6 +21,9 @@ module TestInit
         conf[:stores] = [ { :name => :main , :host => "localhost", :port => 9000 , :options => { :rules => :NONE } } ]
         conf[:namespaces] = {
           :omv => "http://omv.org/ontology/",
+          :skos => "http://www.w3.org/2004/02/skos/core#",
+          :owl => "http://www.w3.org/2002/07/owl#",
+          :rdfs => "http://www.w3.org/2000/01/rdf-schema#",
           :goo => "http://goo.org/default/",
           :metadata => "http://goo.org/metadata/",
           :foaf => "http://xmlns.com/foaf/0.1/",

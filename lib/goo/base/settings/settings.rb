@@ -94,6 +94,35 @@ module Goo
           return prefix + goop_settings[:model].to_s.camelize
         end
 
+        def collection_attribute? attr
+          return false if goop_settings[:collection].nil?
+          return goop_settings[:collection][:attribute] == attr
+        end
+
+        def collection(instance,attributes=nil)
+          return nil if goop_settings[:collection].nil?
+          raise ArgumentError "Collection needs instance or attributes" if instance.nil? and attributes.nil?
+
+          id = nil
+          opts = goop_settings[:collection]
+          attr_name = opts[:attribute]
+          if instance
+            attr_value = instance.internals.collection
+            id = opts[:with].call(attr_value)
+          end
+          if id.nil? and attributes.include? attr_name
+            attr_value = attributes[attr_name]
+            unless attr_value.kind_of? Resource
+              raise ArgumentError, "Search on attribute `#{attr_name}` must use a Resource as value"
+            end
+            id = opts[:with].call(attr_value)
+          end
+          if id
+            return id.value if id.kind_of? SparqlRd::Resultset::IRI
+            return id
+          end
+          raise ArgumentError, "Unable to compute collection ID"
+        end
 
         def attr_for_predicate_uri(uri)
           return :rdf_type if RDF.rdf_type? uri
@@ -108,13 +137,18 @@ module Goo
           if att == :uuid
             return (namespace :default) + "uuid"
           end
+          att_fragment = att
+          if goop_settings[:attributes][att]
+            att_fragment = goop_settings[:attributes][att][:alias] || att
+          end
+          att_fragment = att_fragment.to_s
           if not goop_settings[:attributes].include? att
-            return prefix + att.to_s
+            return prefix + att_fragment.to_s
           end
           if not goop_settings[:attributes][att].include? :namespace
-            return prefix + att.to_s
+            return prefix + att_fragment.to_s
           end
-          return namespace( goop_settings[:attributes][att][:namespace] ) + att.to_s
+          return namespace( goop_settings[:attributes][att][:namespace] ) + att_fragment.to_s
         end
 
         def namespace(symb)
@@ -150,6 +184,7 @@ module Goo
           end
           Goo.models << self
           @goop_settings[:model] = type
+          @goop_settings[:schemaless] = false
           @goop_settings[:attributes] = {}
           @goop_settings[:graph_policy] =
             @goop_settings[:graph_policy] || :type_id_graph_policy
@@ -164,6 +199,13 @@ module Goo
           options = args.reverse
           attr_name = options.pop
           Settings.set_attribute_model(self,attr_name)
+          if attr_name == :resource_id
+            Settings.set_validator_options(self,attr_name,:unique,{})
+          end
+          if attr_name == :resource_id
+              goop_settings[:unique][:generator] = :resource_id
+              goop_settings[:unique][:fields] = []
+          end
           options.each do |opt|
             if opt.kind_of? Hash
               opt.each do |opt_name,sub_options|
@@ -171,7 +213,7 @@ module Goo
                     Settings.set_default_options(self,attr_name,sub_options)
                 end
                 if opt_name == :inverse_of
-                    Settings.set_inverse_options(self,attr_name,sub_options)
+                  Settings.set_inverse_options(self,attr_name,sub_options)
                 end
                 if sub_options == false# things like :not_nil => false
                   next
@@ -193,6 +235,21 @@ module Goo
                   end
                 elsif opt_name == :namespace
                   Settings.set_namespace_options(self,attr_name,sub_options)
+                elsif opt_name == :collection
+                  unless self.goop_settings[:collection].nil?
+                    raise ArgumentError, "A Goo model only can contain one collection attribute"
+                  end
+                  self.goop_settings[:collection] = { attribute: attr_name, with: sub_options }
+                elsif opt_name == :alias
+                  self.goop_settings[:alias_table] = {} if self.goop_settings[:alias_table].nil?
+                  next if opt.include? :inverse_of
+                  if self.goop_settings[:alias_table].include? sub_options
+                    raise ArgumentError, "Configuration error. More than one :alias with name `#{sub_options}`"
+                  end
+                  self.goop_settings[:alias_table][sub_options] = attr_name
+                  goop_settings[:attributes][attr_name][opt_name]=sub_options
+                else
+                  goop_settings[:attributes][attr_name][opt_name]=sub_options
                 end
               end
             end
