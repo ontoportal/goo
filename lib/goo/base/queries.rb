@@ -55,7 +55,7 @@ eos
           pred_uri = model_class.uri_for_predicate(attr)
           filter << "(?predicate = <#{pred_uri}>)"
         end
-        filter = (filter.join " AND ")
+        filter = (filter.join " || ")
         filter = "FILTER (#{filter})"
       end
       q = <<eos
