@@ -107,8 +107,10 @@ module Goo
                self.class.goop_settings[:unique] and
                self.class.goop_settings[:unique][:fields] and
                self.class.goop_settings[:unique][:fields].include? attr
-               raise KeyFieldUpdateError,
-                 "Attribute '#{attr}' cannot be changed in a persisted object."
+               unless value[0] == self.send("#{attr}")
+                 raise KeyFieldUpdateError,
+                   "Attribute '#{attr}' cannot be changed in a persisted object."
+               end
             end
           end
           if !in_load
