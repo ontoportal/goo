@@ -184,6 +184,7 @@ module Goo
           end
           Goo.models << self
           @goop_settings[:model] = type
+          @goop_settings[:schemaless] = false
           @goop_settings[:attributes] = {}
           @goop_settings[:graph_policy] =
             @goop_settings[:graph_policy] || :type_id_graph_policy

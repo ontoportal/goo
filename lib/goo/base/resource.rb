@@ -191,6 +191,7 @@ module Goo
       end
 
       def method_missing(sym, *args, &block)
+        raise NoMethodError, "This Resource is defined as not schemaless" if !self.class.goop_settings[:schemaless]
         if sym.to_s[-1] == "="
           shape_attribute(sym.to_s.chomp "=")
           return self.send(sym,args)
@@ -256,7 +257,12 @@ module Goo
         opts = {}
         opts = args[1] if args.length > 1
 
-        load_attributes = opts.delete :load_attributes
+        load_attrs = (opts.delete :load_attrs) || (self.class.goop_settings[:schemaless] ? nil : :defined)
+        if load_attrs == :defined
+          load_attrs = self.class.goop_settings[:attributes].keys
+        elsif load_attrs == :all
+          load_attrs = nil
+        end
         store_name = opts.delete :store_name
 
         if resource_id.nil? and internals.id(false).nil?
@@ -296,7 +302,7 @@ module Goo
           graph_id = lamb.call(self.internals.collection)
         end
         store_attributes = Goo::Queries.get_resource_attributes(resource_id, self.class,
-                                                         internals.store_name, graph_id)
+                                                         internals.store_name, graph_id,load_attrs)
         store_attributes = alias_rename(store_attributes)
         internal_status = @attributes[:internals]
         @attributes = store_attributes
@@ -391,7 +397,7 @@ module Goo
           end
         end
 
-        if not self.uuid.nil?
+        if self.respond_to?(:uuid)
           self.resource_id=
               Goo::Queries.get_resource_id_by_uuid(self.uuid, self.class, @store_name)
         end

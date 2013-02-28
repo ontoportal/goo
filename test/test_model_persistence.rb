@@ -30,6 +30,7 @@ class StatusPersist < Goo::Base::Resource
 end
 
 class PersonPersist < Goo::Base::Resource
+  model :person_persist, :schemaless => true
   attribute :name, :unique => true
   attribute :multiple_vals, :cardinality => { :maximum => 2 }
   attribute :birth_date, :date_time_xsd => true, :cardinality => { :max => 1, :min => 1  }
@@ -202,7 +203,7 @@ class TestModelPersonPersistB < TestCase
     assert_equal false, person.exist?(reload=true)
     person.save
     person_update = PersonPersist.new()
-    person_update.load(person.resource_id)
+    person_update.load(person.resource_id, :load_attrs => :defined)
     person_update.some_date =  DateTime.parse("2013-01-01T07:00:00.000Z")
     assert_equal true, person_update.valid?
     person_update.save
@@ -211,7 +212,7 @@ class TestModelPersonPersistB < TestCase
     person_update = PersonPersist.new()
     person_update.load(person.resource_id)
     assert_instance_of(PersonPersist, person_update)
-    assert_equal [DateTime.parse("2013-01-01T07:00:00.000Z")], person_update.some_date
+    assert [DateTime.parse("2013-01-01T07:00:00.000Z")] == person_update.some_date
     #equivalent to remove
     person_update.some_date = []
     x = person_update.save
