@@ -60,6 +60,7 @@ module Goo
         prx = AttributeValueProxy.new(card_validator,
                                       @attributes[:internals])
         define_singleton_method("#{attr}=") do |*args|
+          in_load = false
           if args[-1].kind_of? Hash
             in_load = args[-1].include? :in_load
             args = args[0,args.length-1]
@@ -115,7 +116,7 @@ module Goo
           end
           if !in_load
             if attr != :uuid and @table[attr]
-              internals.modified = (@table[attr] != tvalue)
+              internals.modified = internals.modified || (@table[attr] != tvalue)
             elsif attr != :uuid
               internals.modified = true
             end
