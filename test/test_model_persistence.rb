@@ -69,7 +69,7 @@ class TestModelPersonPersistB < TestCase
       p.load
       p.delete
     end
-    person = PersonPersist.new({:name => "Goo Fernandez",
+    person = PersonPersist.new({:name => 'Goo " Fernandez',
                          :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
                          :some_stuff => [1]})
     assert (person.valid?)
