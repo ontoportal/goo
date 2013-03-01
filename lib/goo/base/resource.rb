@@ -8,6 +8,7 @@ module Goo
       include Goo::Base::Settings
 
       attr_reader :attributes
+      attr_reader :inverse_atttributes
       attr_reader :errors
 
       def initialize(attributes = {})
@@ -18,6 +19,7 @@ module Goo
           unless self.class.goop_settings[:graph_policy] != nil
         super()
 
+        @inverse_atttributes = {}
         @attributes = attributes.dup
         @attributes[:internals] = Internals.new(self)
         @attributes[:internals].new_resource
@@ -143,13 +145,16 @@ module Goo
           attr_value = @table[attr]
 
           if self.class.inverse_attr? attr
+            return @inverse_atttributes[attr] if @inverse_atttributes.include? attr
             inv_cls, inv_attr = self.class.inverse_attr_options(attr)
             where_opts = { inv_attr => self, ignore_inverse: true }
             if inv_cls.goop_settings[:collection]
               #assume same collection
               where_opts[inv_cls.goop_settings[:collection][:attribute]] = self.internals.collection
             end
-            return inv_cls.where(where_opts)
+            values = inv_cls.where(where_opts)
+            @inverse_atttributes[attr] = values
+            return values
           end
 
           #returning default value
