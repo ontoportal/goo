@@ -9,6 +9,7 @@ module Goo
       include Goo::Search
 
       attr_reader :attributes
+      attr_reader :inverse_atttributes
       attr_reader :errors
 
       def initialize(attributes = {})
@@ -19,6 +20,7 @@ module Goo
           unless self.class.goop_settings[:graph_policy] != nil
         super()
 
+        @inverse_atttributes = {}
         @attributes = attributes.dup
         @attributes[:internals] = Internals.new(self)
         @attributes[:internals].new_resource
@@ -144,13 +146,16 @@ module Goo
           attr_value = @table[attr]
 
           if self.class.inverse_attr? attr
+            return @inverse_atttributes[attr] if @inverse_atttributes.include? attr
             inv_cls, inv_attr = self.class.inverse_attr_options(attr)
             where_opts = { inv_attr => self, ignore_inverse: true }
             if inv_cls.goop_settings[:collection]
               #assume same collection
               where_opts[inv_cls.goop_settings[:collection][:attribute]] = self.internals.collection
             end
-            return inv_cls.where(where_opts)
+            values = inv_cls.where(where_opts)
+            @inverse_atttributes[attr] = values
+            return values
           end
 
           #returning default value
@@ -166,7 +171,6 @@ module Goo
             end
           end
 
-          #return attr_value.parsed_value if (attr_value.kind_of? SparqlRd::Resultset::Literal)
           return attr_value
         end
       end
@@ -440,15 +444,10 @@ module Goo
           shape_attribute(attr.to_s)
         end
         return if value.nil?
-        if !@attributes.include? attr
-          send("#{attr}=",value,:in_load => true)
-          return
-        end
-        unless @attributes[attr].kind_of? Array
-          @attributes[attr] = [@attributes[attr]]
-        end
-        unless value.nil?
+        if @attributes[attr].kind_of? Array
           @attributes[attr] << value unless @attributes[attr].include? value
+        else
+          send("#{attr}=",value,:in_load => true)
         end
       end
 
