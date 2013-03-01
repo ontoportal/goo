@@ -19,7 +19,7 @@ module Goo
           unless self.class.goop_settings[:graph_policy] != nil
         super()
 
-        @inverse_atttributes = {}
+        @transient_attributes = {}
         @attributes = attributes.dup
         @attributes[:internals] = Internals.new(self)
         @attributes[:internals].new_resource
@@ -133,27 +133,33 @@ module Goo
              self.class.goop_settings[:collection][:attribute] == attr
             return self.internals.collection
           end
-          if internals.lazy_loaded? and !(internals.loaded_attrs.include? attr.to_sym)
-            if true || internals.loaded_attrs.length > 0
-              #lets load on demand
-              load_on_demand([attr])
-            else
-              raise NotLoadedResourceError,
-                "Object has been lazy loaded. Call `load` to access/write attributes"
-            end
+
+          origin_attr = attr
+          use_as_attr = self.class.use_as attr
+          attr = use_as_attr unless use_as_attr.nil?
+
+          unless use_as_attr.nil?
+            return @transient_attributes[origin_attr] if @transient_attributes.include? origin_attr
+          end
+
+          if (internals.lazy_loaded? or use_as_attr) and !(internals.loaded_attrs.include? attr.to_sym)
+            #lets load on demand
+            load_on_demand([attr],[origin_attr])
           end
           attr_value = @table[attr]
 
           if self.class.inverse_attr? attr
-            return @inverse_atttributes[attr] if @inverse_atttributes.include? attr
+            return @transient_attributes[origin_attr] if @transient_attributes.include? origin_attr
+            query_options = self.class.attr_query_options(attr)
             inv_cls, inv_attr = self.class.inverse_attr_options(attr)
             where_opts = { inv_attr => self, ignore_inverse: true }
             if inv_cls.goop_settings[:collection]
               #assume same collection
               where_opts[inv_cls.goop_settings[:collection][:attribute]] = self.internals.collection
             end
+            where_opts[:query_options] = query_options unless query_options.nil?
             values = inv_cls.where(where_opts)
-            @inverse_atttributes[attr] = values
+            @transient_attributes[origin_attr] = values
             return values
           end
 
@@ -265,8 +271,11 @@ module Goo
         opts = args[1] if args.length > 1
 
         load_attrs = (opts.delete :load_attrs) || (self.class.goop_settings[:schemaless] ? nil : :defined)
+        query_options = opts.delete :query_options
         if load_attrs == :defined
           load_attrs = self.class.goop_settings[:attributes].keys
+          #do not do load stuff with query options can break things
+          load_attrs.select! { |attr| self.class.attr_query_options(attr).nil? }
           load_attrs << :uuid if self.respond_to? :uuid
         elsif load_attrs == :all
           load_attrs = nil
@@ -298,19 +307,24 @@ module Goo
               "ResourceID '#{resource_id}' is an instance of type #{model_class} in the store"
         end
         graph_id = nil
+        collection = nil
         if self.class.goop_settings[:collection]
           unless self.internals.collection
-            raise ArgumentError, "Find method needs collection parameter `#{self.class.goop_settings[:collection][:attribute]}`"\
+            raise ArgumentError,
+              "Find method needs collection parameter `#{self.class.goop_settings[:collection][:attribute]}`"\
               if args.length < 2
-            raise ArgumentError, "Find method needs collection parameter `#{self.class.goop_settings[:collection][:attribute]}`"\
+            raise ArgumentError,
+              "Find method needs collection parameter `#{self.class.goop_settings[:collection][:attribute]}`"\
               unless args[1].include? self.class.goop_settings[:collection][:attribute]
             self.internals.collection = args[1][self.class.goop_settings[:collection][:attribute]]
           end
           lamb = self.class.goop_settings[:collection][:with]
           graph_id = lamb.call(self.internals.collection)
         end
+        self.internals.graph_id = graph_id
         store_attributes = Goo::Queries.get_resource_attributes(resource_id, self.class,
-                                                         internals.store_name, graph_id,load_attrs)
+                                                         internals.store_name, graph_id,
+                                                         load_attrs,query_options,self.internals.collection)
         store_attributes = alias_rename(store_attributes)
         internal_status = @attributes[:internals]
         @attributes = store_attributes
@@ -534,7 +548,8 @@ module Goo
 
         unless goop_settings[:collection].nil?
           unless opts.nil? || (opts.include? goop_settings[:collection][:attribute])
-            raise ArgumentError, "This is a collection model that needs the attribute `#{goop_settings[:collection][:attribute]}` to run find."
+            raise ArgumentError,
+              "This is a collection model that needs the attribute `#{goop_settings[:collection][:attribute]}` to run find."
           end
         end
 
@@ -624,14 +639,31 @@ module Goo
       end
 
       private
-      def load_on_demand(attrs,store_name=nil)
+      def load_on_demand(attrs,original_attrs=nil,store_name=nil)
         graph_id = self.internals.graph_id
         if graph_id.nil?
           raise ArgumentError, "Graph ID must be known at this point"
         end
-        loaded_attributes = Queries.get_resource_attributes(resource_id, self.class, store_name, graph_id,attributes=attrs)
-        attrs.each do |attr|
-          lazy_load_attr(attr,loaded_attributes[attr])
+        query_options = {}
+        unless original_attrs.nil?
+          original_attrs.each do |attr|
+            att_opts = self.class.attr_query_options(attr)
+            query_options = query_options.merge(att_opts) if att_opts
+          end
+        end
+        loaded_attributes = Queries.get_resource_attributes(resource_id, self.class,
+                                                            store_name, graph_id,
+                                                            attributes=attrs,
+                                                            query_options=query_options)
+
+        if original_attrs
+          #I know these come one by one
+          lazy_load_attr(original_attrs[0],loaded_attributes.values[0])
+        else
+          attrs.each do |attr|
+            binding.pry
+            lazy_load_attr(attr,loaded_attributes[attr])
+          end
         end
       end
 

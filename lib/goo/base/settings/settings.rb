@@ -298,6 +298,25 @@ module Goo
                   (goop_settings[:attributes][attr].include? :inverse_of))
         end
 
+        def attr_query_options(attr)
+          attr = attr.to_sym
+          return ((goop_settings[:attributes].include? attr) ?
+                  (goop_settings[:attributes][attr][:query_options]) : nil)
+        end
+
+        def use_as(attr)
+          return goop_settings[:attributes][attr][:use]
+        end
+
+        def defined_attribute?(attr)
+          return !goop_settings[:attributes][attr].nil?
+        end
+
+        def defined_attributes
+          return goop_settings[:attributes].keys
+        end
+
+
         def inverse_attr_options(attr)
           attr = attr.to_sym
           options = goop_settings[:attributes][attr][:inverse_of]
