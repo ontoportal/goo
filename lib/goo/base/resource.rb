@@ -165,7 +165,6 @@ module Goo
             end
           end
 
-          #return attr_value.parsed_value if (attr_value.kind_of? SparqlRd::Resultset::Literal)
           return attr_value
         end
       end
