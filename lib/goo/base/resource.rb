@@ -438,15 +438,10 @@ module Goo
           shape_attribute(attr.to_s)
         end
         return if value.nil?
-        if !@attributes.include? attr
-          send("#{attr}=",value,:in_load => true)
-          return
-        end
-        unless @attributes[attr].kind_of? Array
-          @attributes[attr] = [@attributes[attr]]
-        end
-        unless value.nil?
+        if @attributes[attr].kind_of? Array
           @attributes[attr] << value unless @attributes[attr].include? value
+        else
+          send("#{attr}=",value,:in_load => true)
         end
       end
 
