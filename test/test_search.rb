@@ -21,12 +21,9 @@ end
 
 class TestModelSearch < TestCase
 
-  def initialize(*args)
-    super(*args)
-  end
 
-  def test_search
-    t = Term.new(
+  def setup
+    @term = Term.new(
         :id => "Melanoma",
         :prefLabel => "NCI Thesaurus",
         :synonym => ["Cutaneous Melanoma", "Skin Cancer", "Malignant Melanoma"],
@@ -35,12 +32,23 @@ class TestModelSearch < TestCase
         :semanticType => "Neoplastic Process",
         :umlsCui => "C0025202"
     )
+  end
+
+  def teardown
+  end
+
+
+  def initialize(*args)
+    super(*args)
+  end
+
+  def test_search
    # binding.pry
 
-    t.unindex
-    t.index
+    #@term.unindex
+    #@term.index
 
-    Term.search("nci")
+    Term.search("*:*")
 
     #terms = Term.where :ontology => Ontology.find("SNOMED")
     #terms.each do |t|
@@ -48,5 +56,14 @@ class TestModelSearch < TestCase
     #end
     #Terms.indexBatch terms
 
+  end
+
+
+  def test_unindex
+    @term.unindex
+  end
+
+  def test_index
+    @term.index
   end
 end
