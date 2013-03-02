@@ -1,19 +1,17 @@
 require 'rsolr'
 
-
-SOLR_URL = "http://ncbo-dev-app-02.stanford.edu:8080/solr/"
-
-
 module Goo
 
 
   module Search
 
-      def self.included(base)
+    def self.included(base)
         base.extend(ClassMethods)
       end
 
       def index
+
+
         object_id = self.resource_id.value
         copy_to_index = self.attributes.dup
         copy_to_index.delete :internals
@@ -26,10 +24,10 @@ module Goo
 
         #document = JSON.dump copy_to_index
 
-        self.class.solr.add copy_to_index
+        Goo.search_connection.add copy_to_index
 
 
-        self.class.solr.commit :commit_attributes => {}
+        Goo.search_connection.commit :commit_attributes => {}
 
         #puts copy_to_index
 
@@ -38,11 +36,11 @@ module Goo
       end
 
       def unindex
-        self.class.solr.delete_by_id get_index_id
+        Goo.search_connection.delete_by_id get_index_id
 
 
 
-        self.class.solr.commit :commit_attributes => {}
+        Goo.search_connection.commit :commit_attributes => {}
 
 
 
@@ -50,23 +48,19 @@ module Goo
 
 
       def get_index_id
-        return self.attributes[:id] + "_" + self.attributes[:submission]
+        return self.class.goop_settings[:search_options][:name_with].call(self)
       end
 
 
       module ClassMethods
-        @@solr = RSolr.connect :url => SOLR_URL
 
-        def solr
-          @@solr
-        end
 
         def search(q)
-          response = @@solr.get 'select', :params => {:q => '*:*'}
+          response = Goo.search_connection.get 'select', :params => {:q => '*:*'}
 
 
 
-          response["response"]["docs"].each{|doc| puts doc["id"] }
+          response["response"]["docs"].each{|doc| puts doc }
 
 
 

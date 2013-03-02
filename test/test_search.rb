@@ -14,6 +14,8 @@ class Term < Goo::Base::Resource
   attribute :semanticType
   attribute :umlsCui
 
+  search_options :name_with => lambda { |t| t.attributes[:id] + "_" + t.attributes[:submission] }
+
   def initialize(attributes = {})
     super(attributes)
   end

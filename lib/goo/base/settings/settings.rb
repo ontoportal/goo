@@ -86,6 +86,10 @@ module Goo
           return {}
         end
 
+        def search_options(*args)
+          self.goop_settings[:search_options] = args.first
+        end
+
         def attributes(*args)
           return self.goop_settings[:attributes].clone
         end

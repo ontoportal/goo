@@ -19,6 +19,8 @@ module Goo
   @@_uuid_generator = nil
   @@_support_skolem = false
   @@_validators = {}
+  @@_search_conf = nil
+  @@_search_connection = nil
 
   def self.models
     @@_models
@@ -49,9 +51,15 @@ module Goo
     stores = @@_configuration[:stores]
     stores.each do |store|
       SparqlRd::Repository.configuration(store)
+
       if store.has_key? :default and store[:default]
         @@_default_store  = SparqlRd::Repository.endpoint(store[:name])
       end
+    end
+
+    if @@_configuration.include? :search_conf
+      @@_search_conf = @@_configuration[:search_conf]
+      @@_search_connection = RSolr.connect :url => @@_search_conf[:solr_server]
     end
 
     @@_default_store = SparqlRd::Repository.endpoint(stores[0][:name]) \
@@ -61,6 +69,14 @@ module Goo
     #somehow this upsets 4store
     #@@_support_skolem = Goo::Naming::Skolem.detect
     @@_support_skolem = false
+  end
+
+  def self.search_conf
+    return @@_search_conf
+  end
+
+  def self.search_connection
+    return @@_search_connection
   end
 
   def self.uuid
