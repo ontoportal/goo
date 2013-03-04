@@ -100,14 +100,18 @@ eos
             else
               if predicate == RDF.RDFS_SUB_CLASS # they are both classes
                 object_class = model_class
+              else
+                object_class = self.get_resource_class(object.value, store_name)
               end
             end
             if not object.nil? and not object_class.nil?
               object_instance = object_class.new
               if collection
                 object_instance.internals.collection = collection
+                object_instance.internals.graph_id = graph_id
+              else
+                object_instance.internals.graph_id = Goo::Naming.get_graph_id(object_instance.class)
               end
-              object_instance.internals.graph_id = graph_id
               object_instance.lazy_loaded
               object_instance.resource_id= object
               attributes[attr_name] << object_instance
@@ -401,11 +405,6 @@ eos
 
       patterns[graph_id] = []
 
-      #an optimization. can we apply this to every model ?
-      unless model_class.type_uri == RDF.OWL_CLASS
-        patterns[graph_id] << " ?subject a <#{model_class.type_uri}> ."
-      end
-
       if attributes.include? :resource_id
       end
 
@@ -456,6 +455,11 @@ eos
         else
           patterns[graph_id] << " #{rdf_object_string} <#{predicate}> ?subject ."
         end
+      end
+
+      #an optimization. can we apply this to every model ?
+      if model_class.type_uri != RDF.OWL_CLASS or patterns[graph_id].length == 0
+        patterns[graph_id] << " ?subject a <#{model_class.type_uri}> ."
       end
 
       if load_attrs and load_attrs.length > 0

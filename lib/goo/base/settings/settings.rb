@@ -305,6 +305,7 @@ module Goo
         end
 
         def use_as(attr)
+          return nil if goop_settings[:attributes][attr].nil?
           return goop_settings[:attributes][attr][:use]
         end
 

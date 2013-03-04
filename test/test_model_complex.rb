@@ -146,7 +146,6 @@ class TestModelComplex < TestCase
     t2.save
 
    t1x = Term.find(RDF::IRI.new("http://someiri.org/term"), submission: s1)
-   assert t1x.loaded?
    assert t1x.prefLabel.value ==  "label1"
    t2x = Term.find(RDF::IRI.new("http://someiri.org/term"), submission: s2)
    assert t2x.prefLabel.value ==  "label2"
@@ -330,6 +329,7 @@ class TestModelComplex < TestCase
     term = Term.find RDF::IRI.new("http://someiri.org/vehicle"), :submission => submission, :load_attrs => [:synonym, :definition]
     assert term.synonym.sort ==  ["transport", "vehicles"]
     assert term.definition ==  []
+    assert term.prefLabel == "vehicle"
 
   end
 
