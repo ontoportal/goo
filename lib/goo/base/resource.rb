@@ -274,6 +274,7 @@ module Goo
           load_attrs = self.class.goop_settings[:attributes].keys
           #do not do load stuff with query options can break things
           load_attrs.select! { |attr| self.class.attr_query_options(attr).nil? }
+          load_attrs.select! { |attr| !self.class.inverse_attr?(attr) }
           load_attrs << :uuid if self.respond_to? :uuid
         elsif load_attrs == :all
           load_attrs = nil
@@ -496,6 +497,8 @@ module Goo
         if load_attrs == :defined
           load_attrs = self.goop_settings[:attributes].keys
           load_attrs << :uuid if self.respond_to? :uuid
+          load_attrs.select! { |attr| self.attr_query_options(attr).nil? }
+          load_attrs.select! { |attr| !self.inverse_attr?(attr) }
         end
         query_options = attributes.delete :query_options
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
