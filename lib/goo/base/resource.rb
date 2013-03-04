@@ -465,7 +465,7 @@ module Goo
           @attributes[attr] << value unless @attributes[attr].include? value
         else
           value = [] if value.nil?
-          send("#{attr}=",value,:in_load => true)
+          return send("#{attr}=",value,:in_load => true)
         end
       end
 
@@ -670,7 +670,7 @@ module Goo
         else
           attrs.each do |attr|
             #actually we only use one value
-            lazy_load_attr(attr,loaded_attributes.values[0])
+            return lazy_load_attr(attr,loaded_attributes.values[0])
           end
         end
         return loaded_attributes.values[0]
