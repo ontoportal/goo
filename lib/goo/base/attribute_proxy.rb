@@ -17,6 +17,8 @@ module Goo
         end
         if value.kind_of? Array
           if @validator.options[:max] and value.length > @validator.options[:max]
+            #TODO review this
+            return value[0] if attr == :prefLabel
             raise ArgumentError, "Attribute '#{attr}' does not satisfy max cardinality."
           end
           if @validator.options[:min] and value.length < @validator.options[:min]
