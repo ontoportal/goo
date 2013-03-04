@@ -456,10 +456,11 @@ module Goo
         if !self.respond_to? attr
           shape_attribute(attr.to_s)
         end
-        return if value.nil?
         if @attributes[attr].kind_of? Array
+          return if value.nil?
           @attributes[attr] << value unless @attributes[attr].include? value
         else
+          value = [] if value.nil?
           send("#{attr}=",value,:in_load => true)
         end
       end

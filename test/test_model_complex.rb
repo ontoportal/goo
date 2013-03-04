@@ -276,7 +276,7 @@ class TestModelComplex < TestCase
         assert t.parents[0].value == "http://someiri.org/van"
       end
       if t.resource_id.value == "http://someiri.org/vehicle"
-        assert t.parents.nil?
+        assert t.parents == []
       end
     end
     assert terms.length == 5
@@ -289,6 +289,43 @@ class TestModelComplex < TestCase
     end
 
     submission.delete
+  end
+
+  def test_empty_attributes
+    submission = Submission.new(name: "submission1")
+    unless submission.exist?
+      submission.save
+    else
+      submission = Submission.find("submission1")
+    end
+
+    terms = Term.where submission: submission
+    terms.each do |t|
+      t.load
+      t.delete
+      assert_equal 0, count_pattern("GRAPH <#{t.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
+    end
+
+    vehicle = Term.new
+    vehicle.resource_id = RDF::IRI.new "http://someiri.org/vehicle"
+    vehicle.submission = submission
+    vehicle.prefLabel = "vehicle"
+    vehicle.synonym = ["transport", "vehicles"]
+    assert vehicle.valid?
+    vehicle.save
+
+    #on demand
+    terms = Term.where submission: submission
+    assert terms.length == 1
+    assert terms.first.synonym.sort ==  ["transport", "vehicles"]
+    assert terms.first.definition ==  []
+
+    #preload
+    terms = Term.where submission: submission, :load_attrs => [:synonym, :definition]
+    assert terms.length == 1
+    assert terms.first.synonym.sort ==  ["transport", "vehicles"]
+    assert terms.first.definition ==  []
+
   end
 
 

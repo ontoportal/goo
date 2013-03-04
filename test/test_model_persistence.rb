@@ -457,8 +457,8 @@ class TestModelPersonPersistB < TestCase
 
     data = University.all :load_attrs => [:name => true, :bogus => true]
     assert_equal 5, data.length
-    u =  (data.select { |u| !u.bogus.nil? })[0]
-    correct = (!u.bogus.nil? and (u.name.value == "Oxford"))
+    u =  (data.select { |u| !u.bogus.empty? })[0]
+    correct = (!u.bogus.empty? and (u.name.value == "Oxford"))
     assert correct
 
     data.each do |u|
