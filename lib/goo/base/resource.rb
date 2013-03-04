@@ -280,6 +280,7 @@ module Goo
         elsif load_attrs == :all
           load_attrs = nil
         end
+        load_attrs.delete :resource_id if load_attrs
         store_name = opts.delete :store_name
 
         if resource_id.nil? and internals.id(false).nil?
@@ -329,8 +330,14 @@ module Goo
         internal_status = @attributes[:internals]
         @attributes = store_attributes
         @attributes[:internals] = internal_status
-
         shape_me
+        if load_attrs
+          load_attrs.each do |a|
+            if !@attributes.include? a and !self.class.inverse_attr?(a)
+              send("#{a}=",[],:in_load => true)
+            end
+          end
+        end
         internals.id=resource_id
         internals.loaded
         return self

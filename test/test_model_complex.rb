@@ -243,7 +243,7 @@ class TestModelComplex < TestCase
     assert ch.length == 2
     (ch.select { |c| c.resource_id.value == "http://someiri.org/van" }).length == 1
     (ch.select { |c| c.resource_id.value == "http://someiri.org/cargo" }).length == 1
-    assert vehicle.parents.nil?
+    assert vehicle.parents = []
 
 
     assert cargovan.parents.length == 2
@@ -325,6 +325,11 @@ class TestModelComplex < TestCase
     assert terms.length == 1
     assert terms.first.synonym.sort ==  ["transport", "vehicles"]
     assert terms.first.definition ==  []
+
+    #with find
+    term = Term.find RDF::IRI.new("http://someiri.org/vehicle"), :submission => submission, :load_attrs => [:synonym, :definition]
+    assert term.synonym.sort ==  ["transport", "vehicles"]
+    assert term.definition ==  []
 
   end
 
