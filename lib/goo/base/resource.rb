@@ -19,7 +19,6 @@ module Goo
           unless self.class.goop_settings[:graph_policy] != nil
         super()
 
-        @transient_attributes = {}
         @attributes = attributes.dup
         @attributes[:internals] = Internals.new(self)
         @attributes[:internals].new_resource
@@ -142,8 +141,7 @@ module Goo
 
           if (not self.class.inverse_attr? attr_cpy) and
             internals.lazy_loaded? and (!internals.loaded_attrs.include?(attr_cpy.to_sym) or use_as_attr)
-            load_on_demand([attr_cpy], use_as_attr.nil? ? nil : [origin_attr])
-            return @transient_attributes[origin_attr] if use_as_attr
+            return load_on_demand([attr_cpy], use_as_attr.nil? ? nil : [origin_attr])
           end
 
           if self.class.inverse_attr? attr_cpy
@@ -156,7 +154,6 @@ module Goo
             end
             where_opts[:query_options] = query_options unless query_options.nil?
             values = inv_cls.where(where_opts)
-            @transient_attributes[origin_attr] = values
             return values.dup
           end
 
@@ -669,13 +666,14 @@ module Goo
                                                             collection=self.internals.collection)
 
         if original_attrs
-          @transient_attributes[original_attrs[0]] = loaded_attributes.values[0]
+          return loaded_attributes.values[0]
         else
           attrs.each do |attr|
             #actually we only use one value
             lazy_load_attr(attr,loaded_attributes.values[0])
           end
         end
+        return loaded_attributes.values[0]
       end
 
       def alias_rename(atts)
