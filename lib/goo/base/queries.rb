@@ -490,6 +490,9 @@ eos
         fitems = items.keys.map { |i| "?subject = <#{i}>" }
         filter = "FILTER (%s)"%(fitems.join (" || "))
       end
+      if page == ""
+        page = "ORDER BY ?subject"
+      end
 
       query = <<eos
 SELECT DISTINCT #{vars}
