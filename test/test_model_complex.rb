@@ -300,6 +300,7 @@ class TestModelComplex < TestCase
 
     terms = Term.where submission: submission
     terms.each do |t|
+      assert t.internals.collection.kind_of? Submission
       t.load
       t.delete
       assert_equal 0, count_pattern("GRAPH <#{t.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")

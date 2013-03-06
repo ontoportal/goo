@@ -398,7 +398,9 @@ eos
       return "SELECT * WHERE { GRAPH <#{graph_id}> { <#{model.resource_id.value}> a ?t .} } LIMIT 1 "
     end
 
-    def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse, load_attrs, only_known)
+    def self.search_by_attributes(attributes, model_class, store_name,
+                                  ignore_inverse, load_attrs, only_known,
+                                  offset_page, size_page, count, items)
       #dictionary :named_graph => triple patterns
       patterns = {}
       graph_id = model_class.collection(nil,attributes) || Goo::Naming.get_graph_id(model_class)
@@ -459,7 +461,7 @@ eos
         patterns[graph_id] << " ?subject a <#{model_class.type_uri}> ."
       end
 
-      if load_attrs and load_attrs.length > 0
+      if load_attrs and load_attrs.length > 0 and !offset_page and !count
         attributes_patterns = []
         attributes_for_query(load_attrs,"subject",model_class, attributes_patterns)
         patterns[graph_id] << attributes_patterns.map { |pattern| "OPTIONAL { #{pattern} }"}
@@ -474,12 +476,28 @@ eos
 
       from_clauses = from_clauses.join "\n"
       patterns_string = graph_patterns.join "\n"
+      page = ""
+      vars = " * "
+      if count
+        vars = "(COUNT(?subject) as ?count)"
+      elsif offset_page
+        page = "OFFSET #{offset_page} LIMIT #{size_page}"
+        vars = "?subject"
+      end
+
+      filter = ""
+      if items
+        fitems = items.keys.map { |i| "?subject = <#{i}>" }
+        filter = "FILTER (%s)"%(fitems.join (" || "))
+      end
+
       query = <<eos
-SELECT DISTINCT *
+SELECT DISTINCT #{vars}
 #{from_clauses}
 WHERE {
     #{patterns_string}
-} ORDER BY ?subject
+    #{filter}
+} #{page}
 eos
       return query
     end

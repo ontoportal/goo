@@ -37,6 +37,7 @@ class ToyObject < Goo::Base::Resource
   attribute :name_even
   attribute :name_odd
   attribute :name_x
+  attribute :category
 
   def initialize(attributes = {})
     super(attributes)
@@ -115,6 +116,7 @@ class TestModelwhere < TestCase
         assert red_wheel.length > 0
         toy_part = ToyPart.new({:name => "toypart#{n}", :feature => [white_wheel[0],red_wheel[0]] })
         toy.part= toy_part
+        toy.category = "even"
       else
         toy.name_odd = n
         engine_blue = ToyFeature.where(:color => { :code => "blue"})[0]
@@ -126,6 +128,7 @@ class TestModelwhere < TestCase
 
         toy_part = ToyPart.new({:name => "toypart#{n}", :feature => [engine_blue] })
         toy.part = toy_part
+        toy.category = "odd"
       end
       if toy.exist?
         toy_copy = ToyObject.new
@@ -243,8 +246,61 @@ class TestModelwhere < TestCase
 
     not_exist = Color.find("xxxxxxxxx")
     assert not_exist.nil?
+
+
     delete_toys()
   end
+
+  def test_search_pages
+    max = 16
+    create_toys(max)
+
+    nums_even = [0,2,4,6,8,10,12,14]
+    page_to_load = 1
+    load_iterations = 0
+    load_nums = []
+    while page_to_load do
+      page = ToyObject.page category: "even", page: page_to_load, size: 3
+      load_iterations += 1
+      assert page.length == 3 || (page.page == 3 && page.length == 2)
+      assert page.page_count == 3
+      page.each do |t|
+        i = t.name.value[-2..-1].to_i
+        load_nums << i
+        assert i % 2 == 0
+      end
+      page_to_load = page.next_page
+    end
+    assert load_nums.sort == nums_even
+
+    #one big page
+    page = ToyObject.page category: "even", page: 1, size: 100
+    load_nums = []
+    assert page.length == nums_even.length
+    assert !page.next_page
+    assert page.page_count == 1
+    page.each do |t|
+      i = t.name.value[-2..-1].to_i
+      load_nums << i
+      assert i % 2 == 0
+    end
+    assert load_nums.sort == nums_even
+
+    #next page empty
+    page = ToyObject.page category: "even", page: 2, size: 100
+    assert !page.next_page
+    assert page.length == 0
+    assert page.page_count == 1
+
+    #page with no data
+    page = ToyObject.page category: "NO DATA", page: 1, size: 100
+    assert !page.next_page
+    assert page.length == 0
+    assert page.page_count == 0
+
+    delete_toys()
+  end
+
 end
 
 

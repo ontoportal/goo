@@ -267,15 +267,8 @@ module Goo
 
         load_attrs = (opts.delete :load_attrs) || (self.class.goop_settings[:schemaless] ? nil : :defined)
         query_options = opts.delete :query_options
-        if load_attrs == :defined
-          load_attrs = self.class.goop_settings[:attributes].keys
-          #do not do load stuff with query options can break things
-          load_attrs.select! { |attr| self.class.attr_query_options(attr).nil? }
-          load_attrs.select! { |attr| !self.class.inverse_attr?(attr) }
-          load_attrs << :uuid if self.respond_to? :uuid
-        elsif load_attrs == :all
-          load_attrs = nil
-        end
+        load_attrs = self.class.defined_attributes_not_transient if load_attrs == :defined
+        load_attrs = nil if load_attrs == :all
         load_attrs.delete :resource_id if load_attrs
         store_name = opts.delete :store_name
 
@@ -474,6 +467,34 @@ module Goo
         return self.where(*args)
       end
 
+      def self.page(*args)
+        page_n = args[0].delete(:page) || 1
+        size = args[0].delete(:size) || 20
+        load_attrs = args.delete(:load_attrs)
+
+        offset = (page_n-1) * size
+
+        #first query gets the count
+        count = self.where(args[-1].merge({count: true}))
+        page_count = ((count+0.0)/size).ceil
+
+        #second query gets the page
+        items_hash = self.where(args[-1].merge({offset: offset, size: size + 1}))
+
+        #third fills the collection with the attributes
+        if items_hash.length > 0 and count > 0
+          items = self.where(args[-1].merge({ items: items_hash }))
+        else
+          items = []
+        end
+
+        next_page = items.size > size
+        items = items[0..-2] if items.length > size
+
+        return Goo::Base::Page.new(page_n,next_page,page_count,items)
+      end
+
+      public
       def self.where(*args)
         if (args.length == 0) or (args.length > 1) or (not args[0].kind_of? Hash)
           raise ArgumentError,
@@ -488,28 +509,36 @@ module Goo
         if attributes.include? :resource_id
           raise ArgumentError, ":resource_id is not an attribute. It cannot be used in :where"
         end
-        only_known = (attributes.delete :only_known)
-        only_known = true if only_known.nil?
-        load_attrs = attributes.delete :load_attrs
-        if load_attrs == :defined
-          load_attrs = self.goop_settings[:attributes].keys
-          load_attrs << :uuid if self.respond_to? :uuid
-          load_attrs.select! { |attr| self.attr_query_options(attr).nil? }
-          load_attrs.select! { |attr| !self.inverse_attr?(attr) }
-        end
+
+        items = attributes.delete(:items)
+        offset = attributes.delete(:offset)
+        size = attributes.delete(:size)
+        count = attributes.delete(:count)
+        only_known = (attributes.delete :only_known) || true
+        load_attrs = (attributes.delete :load_attrs) || :defined
+        load_attrs = defined_attributes_not_transient if load_attrs == :defined
+        load_attrs << :uuid if anonymous?
+
         query_options = attributes.delete :query_options
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
         attributes.delete(:ignore_inverse)
-        epr = Goo.store(@store_name)
-        collection = nil
-        unless self.goop_settings[:collection].nil?
-          collection = args[0][self.goop_settings[:collection][:attribute]]
-        end
+        collection = collection_from_args(*args)
+        collection_attr = collection_attribute
+
         search_query = Goo::Queries.search_by_attributes(
                           attributes, self, @store_name,
-                          ignore_inverse, load_attrs,only_known)
+                          ignore_inverse, load_attrs,only_known,
+                          offset, size, count, items)
+
+        epr = Goo.store(@store_name)
         rs = epr.query(search_query,options = (query_options || {}))
-        items = Hash.new
+
+        if count
+          rs.each_solution do |sol|
+            return sol.get(:count).parsed_value
+          end
+        end
+        items = items || Hash.new
         rs.each_solution do |sol|
           resource_id = sol.get(:subject)
           if !items[resource_id.value]
@@ -534,7 +563,9 @@ module Goo
               value = (sol.get var.to_sym)
               (sol_attr, sol_model) = var.split "_onmodel_"
               if self.goop_settings[:model].to_s == sol_model
-                item.lazy_load_attr(sol_attr.to_sym, value)
+                unless sol_attr.to_sym == collection_attr
+                  item.lazy_load_attr(sol_attr.to_sym, value)
+                end
               else
                 #something nested
                 #TODO
@@ -542,7 +573,7 @@ module Goo
             end
           end
         end
-        return items.values
+        return offset ? items : items.values
       end
 
       def self.find(*args)
