@@ -405,9 +405,6 @@ eos
 
       patterns[graph_id] = []
 
-      if attributes.include? :resource_id
-      end
-
       attributes.each do |attribute, value|
         next if model_class.collection_attribute? attribute
         if only_known && model_class.attributes[attribute.to_sym].nil?
