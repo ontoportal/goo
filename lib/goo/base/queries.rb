@@ -490,7 +490,7 @@ eos
         fitems = items.keys.map { |i| "?subject = <#{i}>" }
         filter = "FILTER (%s)"%(fitems.join (" || "))
       end
-      if page == ""
+      if page == "" and !count
         page = "ORDER BY ?subject"
       end
 
