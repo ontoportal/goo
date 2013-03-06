@@ -350,6 +350,7 @@ module Goo
         objects_to_delete = [self]
         #find those extra bnodes as objects and load them.
         self.each_linked_base do |attr_name, linked_obj|
+          next if !linked_obj.resource_id.bnode? #disable dependent
           next if in_update and not linked_obj.loaded?
           if to_delete.include? linked_obj.resource_id
             unless linked_obj.loaded?
@@ -566,7 +567,12 @@ module Goo
                range = range_class(sol_attr.to_sym)
                unless range.nil?
                  #PERFORMANCE -- CHEAPER ? for embed load the stuff that is needed.
-                 value = range.find RDF::IRI.new(value.value)
+                 begin
+                   value = range.find RDF::IRI.new(value.value)
+                 rescue
+                   #temporal
+                   #IMPLEMENT CONSTRAINTS FOR DELETE
+                 end
                end
               end
               if self.goop_settings[:model].to_s == sol_model
