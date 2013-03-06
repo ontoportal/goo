@@ -562,6 +562,13 @@ module Goo
               next if var == "subject"
               value = (sol.get var.to_sym)
               (sol_attr, sol_model) = var.split "_onmodel_"
+              if value.kind_of? SparqlRd::Resultset::IRI
+               range = range_class(sol_attr.to_sym)
+               unless range.nil?
+                 #PERFORMANCE -- CHEAPER ? for embed load the stuff that is needed.
+                 value = range.find RDF::IRI.new(value.value)
+               end
+              end
               if self.goop_settings[:model].to_s == sol_model
                 unless sol_attr.to_sym == collection_attr
                   item.lazy_load_attr(sol_attr.to_sym, value)
