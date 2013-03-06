@@ -563,7 +563,7 @@ module Goo
               next if var == "subject"
               value = (sol.get var.to_sym)
               (sol_attr, sol_model) = var.split "_onmodel_"
-              if value.kind_of? SparqlRd::Resultset::IRI
+              if value.kind_of? SparqlRd::Resultset::IRI || value.kind_of? SparqlRd::Resultset::BNode
                range = range_class(sol_attr.to_sym)
                unless range.nil?
                  #PERFORMANCE -- CHEAPER ? for embed load the stuff that is needed.
