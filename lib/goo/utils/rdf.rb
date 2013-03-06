@@ -29,4 +29,11 @@ module RDF
   def self.rdf_type?(k)
     (@@TYPE_VARIATIONS.index(k) != nil)
   end
+
+  def self.OWL_CLASS
+    return "http://www.w3.org/2002/07/owl#Class"
+  end
+  def self.RDFS_SUB_CLASS
+    return "http://www.w3.org/2000/01/rdf-schema#subClassOf"
+  end
 end

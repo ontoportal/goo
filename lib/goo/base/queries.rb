@@ -39,7 +39,9 @@ eos
       return model
     end
 
-    def self.get_resource_attributes(resource_id, model_class, store_name, graph_id,attributes=nil)
+    def self.get_resource_attributes(resource_id, model_class, store_name, graph_id,
+                                     attributes=nil,query_options=nil,collection=nil)
+      query_options = query_options || {}
       if graph_id.nil?
         graph_id = Goo::Naming.get_graph_id(model_class)
       end
@@ -49,9 +51,12 @@ eos
       epr = Goo.store(store_name)
       graph = ""
       graph = " GRAPH <#{graph_id}> " unless resource_id.kind_of? SparqlRd::Resultset::BNode
-      unless attributes.nil?
+      if !attributes.nil? and attributes.length > 1
         filter = []
-        raise ArgumentError, "This is probably a schemaless object not declared as such `#{model_class.name}`" if attributes.length == 0
+        if attributes.length == 0
+          raise ArgumentError,
+                "This is probably a schemaless object not declared as such `#{model_class.name}`"
+        end
         attributes.each do |attr|
           pred_uri = model_class.uri_for_predicate(attr)
           filter << "(?predicate = <#{pred_uri}>)"
@@ -59,15 +64,25 @@ eos
         filter = (filter.join " || ")
         filter = "FILTER (#{filter})"
       end
-      q = <<eos
+      q = nil
+      predicate = nil
+      if attributes.nil? or attributes.length > 1
+       q = <<eos
 SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} ?predicate ?object }
 #{filter}
 }
 eos
-      rs = epr.query(q)
+      else
+       predicate = model_class.uri_for_predicate(attributes[0])
+       q = <<eos
+SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} <#{predicate}> ?object } }
+eos
+      end
+
+      rs = epr.query(q,query_options=query_options)
       attributes = Hash.new()
       rs.each_solution do |sol|
-        pvalue = sol.get(:predicate).value
+        pvalue = predicate || sol.get(:predicate).value
         attr_name = model_class.attr_for_predicate_uri(pvalue)
         if attr_name == :rdf_type
           next
@@ -79,15 +94,33 @@ eos
           attributes[attr_name] = [] if attributes[attr_name].nil?
           object = sol.get(:object)
           if object.iri? or object.bnode?
-            object_class = self.get_resource_class(object.value, store_name)
+            object_class = nil
+            if predicate.nil?
+              object_class = self.get_resource_class(object.value, store_name)
+            else
+              if predicate == RDF.RDFS_SUB_CLASS # they are both classes
+                object_class = model_class
+              else
+                object_class = self.get_resource_class(object.value, store_name)
+              end
+            end
             if not object.nil? and not object_class.nil?
               object_instance = object_class.new
+              if collection
+                object_instance.internals.collection = collection
+                object_instance.internals.graph_id = graph_id
+              else
+                object_instance.internals.graph_id = Goo::Naming.get_graph_id(object_instance.class)
+              end
               object_instance.lazy_loaded
               object_instance.resource_id= object
-              object_instance.internals.graph_id = Goo::Naming.get_graph_id(object_instance.class)
               attributes[attr_name] << object_instance
             else
-              attributes[attr_name] << RDF::IRI.new(object.value)
+              if !object.bnode?
+                attributes[attr_name] << RDF::IRI.new(object.value)
+              else
+                attributes[attr_name] << RDF::BNode.new(object.value)
+              end
             end
           else
             attributes[attr_name] << object
@@ -365,16 +398,14 @@ eos
       return "SELECT * WHERE { GRAPH <#{graph_id}> { <#{model.resource_id.value}> a ?t .} } LIMIT 1 "
     end
 
-    def self.search_by_attributes(attributes, model_class, store_name, ignore_inverse, load_attrs, only_known)
+    def self.search_by_attributes(attributes, model_class, store_name,
+                                  ignore_inverse, load_attrs, only_known,
+                                  offset_page, size_page, count, items)
       #dictionary :named_graph => triple patterns
       patterns = {}
       graph_id = model_class.collection(nil,attributes) || Goo::Naming.get_graph_id(model_class)
 
       patterns[graph_id] = []
-      patterns[graph_id] << " ?subject a <#{ model_class.type_uri}> ."
-
-      if attributes.include? :resource_id
-      end
 
       attributes.each do |attribute, value|
         next if model_class.collection_attribute? attribute
@@ -425,7 +456,12 @@ eos
         end
       end
 
-      if load_attrs and load_attrs.length > 0
+      #an optimization. can we apply this to every model ?
+      if model_class.type_uri != RDF.OWL_CLASS or patterns[graph_id].length == 0
+        patterns[graph_id] << " ?subject a <#{model_class.type_uri}> ."
+      end
+
+      if load_attrs and load_attrs.length > 0 and !offset_page and !count
         attributes_patterns = []
         attributes_for_query(load_attrs,"subject",model_class, attributes_patterns)
         patterns[graph_id] << attributes_patterns.map { |pattern| "OPTIONAL { #{pattern} }"}
@@ -440,12 +476,31 @@ eos
 
       from_clauses = from_clauses.join "\n"
       patterns_string = graph_patterns.join "\n"
+      page = ""
+      vars = " * "
+      if count
+        vars = "(COUNT(?subject) as ?count)"
+      elsif offset_page
+        page = "OFFSET #{offset_page} LIMIT #{size_page}"
+        vars = "?subject"
+      end
+
+      filter = ""
+      if items
+        fitems = items.keys.map { |i| "?subject = <#{i}>" }
+        filter = "FILTER (%s)"%(fitems.join (" || "))
+      end
+      if page == ""
+        page = "ORDER BY ?subject"
+      end
+
       query = <<eos
-SELECT DISTINCT *
+SELECT DISTINCT #{vars}
 #{from_clauses}
 WHERE {
     #{patterns_string}
-} ORDER BY ?subject
+    #{filter}
+} #{page}
 eos
       return query
     end

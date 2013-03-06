@@ -302,6 +302,49 @@ module Goo
                   (goop_settings[:attributes][attr].include? :inverse_of))
         end
 
+        def attr_query_options(attr)
+          attr = attr.to_sym
+          return ((goop_settings[:attributes].include? attr) ?
+                  (goop_settings[:attributes][attr][:query_options]) : nil)
+        end
+
+        def use_as(attr)
+          return nil if goop_settings[:attributes][attr].nil?
+          return goop_settings[:attributes][attr][:use]
+        end
+
+        def defined_attribute?(attr)
+          return !goop_settings[:attributes][attr].nil?
+        end
+
+        def defined_attributes
+          return goop_settings[:attributes].keys
+        end
+
+        def defined_attributes_not_transient
+          attrs = defined_attributes
+          attrs.select! { |attr| self.attr_query_options(attr).nil? }
+          attrs.select! { |attr| !self.inverse_attr?(attr) }
+          attrs.delete :resource_id
+          return attrs
+        end
+
+        def collection_attribute
+          return nil unless self.goop_settings.include? :collection
+          return self.goop_settings[:collection][:attribute]
+        end
+        def collection_from_args(*args)
+          return nil if self.goop_settings[:collection].nil?
+          return nil if (args.length == 0) || (!args[0].kind_of? Hash)
+          return args[0][self.goop_settings[:collection][:attribute]]
+        end
+
+        def anonymous?
+          return false if !goop_settings.include? :unique
+          return false if !goop_settings[:unique].include? :generator
+          return goop_settings[:unique][:generator] == :anonymous
+        end
+
         def inverse_attr_options(attr)
           attr = attr.to_sym
           options = goop_settings[:attributes][attr][:inverse_of]

@@ -146,7 +146,6 @@ class TestModelComplex < TestCase
     t2.save
 
    t1x = Term.find(RDF::IRI.new("http://someiri.org/term"), submission: s1)
-   assert t1x.loaded?
    assert t1x.prefLabel.value ==  "label1"
    t2x = Term.find(RDF::IRI.new("http://someiri.org/term"), submission: s2)
    assert t2x.prefLabel.value ==  "label2"
@@ -243,7 +242,7 @@ class TestModelComplex < TestCase
     assert ch.length == 2
     (ch.select { |c| c.resource_id.value == "http://someiri.org/van" }).length == 1
     (ch.select { |c| c.resource_id.value == "http://someiri.org/cargo" }).length == 1
-    assert vehicle.parents.nil?
+    assert vehicle.parents = []
 
 
     assert cargovan.parents.length == 2
@@ -276,7 +275,7 @@ class TestModelComplex < TestCase
         assert t.parents[0].value == "http://someiri.org/van"
       end
       if t.resource_id.value == "http://someiri.org/vehicle"
-        assert t.parents.nil?
+        assert t.parents == []
       end
     end
     assert terms.length == 5
@@ -289,6 +288,50 @@ class TestModelComplex < TestCase
     end
 
     submission.delete
+  end
+
+  def test_empty_attributes
+    submission = Submission.new(name: "submission1")
+    unless submission.exist?
+      submission.save
+    else
+      submission = Submission.find("submission1")
+    end
+
+    terms = Term.where submission: submission
+    terms.each do |t|
+      assert t.internals.collection.kind_of? Submission
+      t.load
+      t.delete
+      assert_equal 0, count_pattern("GRAPH <#{t.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
+    end
+
+    vehicle = Term.new
+    vehicle.resource_id = RDF::IRI.new "http://someiri.org/vehicle"
+    vehicle.submission = submission
+    vehicle.prefLabel = "vehicle"
+    vehicle.synonym = ["transport", "vehicles"]
+    assert vehicle.valid?
+    vehicle.save
+
+    #on demand
+    terms = Term.where submission: submission
+    assert terms.length == 1
+    assert terms.first.synonym.sort ==  ["transport", "vehicles"]
+    assert terms.first.definition ==  []
+
+    #preload
+    terms = Term.where submission: submission, :load_attrs => [:synonym, :definition]
+    assert terms.length == 1
+    assert terms.first.synonym.sort ==  ["transport", "vehicles"]
+    assert terms.first.definition ==  []
+
+    #with find
+    term = Term.find RDF::IRI.new("http://someiri.org/vehicle"), :submission => submission, :load_attrs => [:synonym, :definition]
+    assert term.synonym.sort ==  ["transport", "vehicles"]
+    assert term.definition ==  []
+    assert term.prefLabel == "vehicle"
+
   end
 
 

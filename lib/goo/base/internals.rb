@@ -46,7 +46,7 @@ module Goo
 #                  "Cannot set up resource_ID #{resource_id} in a persistent obj."
 #          end
 #        end
-        if not SparqlRd::Utils::Http.valid_uri?(resource_id.value)
+        if not resource_id.bnode? and not SparqlRd::Utils::Http.valid_uri?(resource_id.value)
           raise ArgumentError, "resource_id '#{resource_id}' must be a valid IRI."
         end
         @_id = resource_id
@@ -118,7 +118,10 @@ module Goo
       end
 
       def lazy_loaded?
-        return (@persistent and not @loaded)
+        return false if !@persistent
+        return true if !@loaded
+        return false if @loaded_attrs.nil? or @loaded_attrs.length == 0
+        return @loaded_attrs.length != @_base_instance.class.goop_settings[:attributes].length
       end
 
       def lazy_loaded
