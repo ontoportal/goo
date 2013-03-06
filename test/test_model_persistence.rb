@@ -440,14 +440,16 @@ class TestModelPersonPersistB < TestCase
     data.each do |u|
       correct = ((!u.bogus.nil? and (u.name.value == "Oxford")) or (u.name.value != "Oxford"))
       assert(correct)
+      if u.name == "Stanford" || u.name == "Cambridge"
+        #lazy loading here just this attribute
+        st = u.status
+        assert_instance_of Array, st
+        assert_instance_of StatusPersist, st[0]
+        desc = st[0].description
+        assert desc.value == "description for status"
+      end
     end
 
-    #lazy loading here just this attribute
-    st = data[0].status
-    assert_instance_of Array, st
-    assert_instance_of StatusPersist, st[0]
-    desc = st[0].description
-    assert desc.value == "description for status"
 
     data = University.all :load_attrs => [:name => true]
     assert_equal 5, data.length

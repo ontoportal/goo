@@ -110,7 +110,6 @@ class TestModelOntology < TestCase
      ps = Project.where name: "Great Project"
      assert ps.length == 1
      ps = ps[0]
-     assert !ps.loaded?
      ps.delete
      assert_equal 0, count_pattern("#{ps.resource_id.to_turtle} ?p ?o .")
      flush()
