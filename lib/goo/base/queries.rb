@@ -72,11 +72,13 @@ SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} ?predicate ?object
 #{filter}
 }
 eos
-      else
+      elsif attributes.length == 1
        predicate = model_class.uri_for_predicate(attributes[0])
        q = <<eos
 SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} <#{predicate}> ?object } }
 eos
+      else
+        return Hash.new
       end
 
       rs = epr.query(q,query_options=query_options)
@@ -360,7 +362,7 @@ eos
       return patterns
     end
 
-    def self.attributes_for_query(attrs,var,model_class,attribute_patterns)
+    def self.attributes_for_query(attrs,var,model_class,attribute_patterns,nested_graphs)
         if attrs.kind_of? Array and attrs.length == 1 and attrs[0].kind_of? Hash
           attrs = attrs[0]
         end
@@ -382,10 +384,17 @@ eos
             attribute_patterns << " OPTIONAL {"
           end
           predicate = model_class.uri_for_predicate(attr)
-          attribute_patterns << " ?#{var} <#{predicate}> ?#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s} ."
-          if (nested.kind_of? Hash or nested.kind_of? Array) and (nested.length > 0)
-            #TODO
-          end
+          _obj_var = "#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s}"
+          attribute_patterns << " ?#{var} <#{predicate}> ?#{_obj_var} ."
+          #if (nested.kind_of? Hash or nested.kind_of? Array) and (nested.length > 0)
+          #  range_class_predicate = model_class.range_class(attr)
+          #  if range_class_predicate
+          #    nested_graphs << range_class_predicate.type_uri
+          #    attributes_for_query(nested,_obj_var,range_class_predicate,attribute_patterns,nested_graphs)
+          #  else
+          #    raise ArgumentError, "Trying to do nested loading on a predicate `#{attr}` without a range/instance_of"
+          #  end
+          #end
           if optional
             attribute_patterns << "}"
           end
@@ -461,9 +470,11 @@ eos
         patterns[graph_id] << " ?subject a <#{model_class.type_uri}> ."
       end
 
+      nested_graphs = nil
       if load_attrs and load_attrs.length > 0 and !offset_page and !count
         attributes_patterns = []
-        attributes_for_query(load_attrs,"subject",model_class, attributes_patterns)
+        nested_graphs = Set.new
+        attributes_for_query(load_attrs,"subject",model_class, attributes_patterns,nested_graphs)
         patterns[graph_id] << attributes_patterns.map { |pattern| "OPTIONAL { #{pattern} }"}
       end
 
@@ -472,6 +483,11 @@ eos
       patterns.each_key do |graph_id|
         from_clauses << "FROM <#{graph_id}>"
         graph_patterns << (patterns[graph_id].join "\n")
+      end
+      if nested_graphs and model_class.collection_attribute.nil?
+        nested_graphs.each do |g|
+          from_clauses << "FROM <#{g}>"
+        end
       end
 
       from_clauses = from_clauses.join "\n"
