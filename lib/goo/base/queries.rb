@@ -416,8 +416,14 @@ eos
 
       patterns[graph_id] = []
 
+      unbound = []
       attributes.each do |attribute, value|
         next if model_class.collection_attribute? attribute
+        if value == :unbound
+          unbound << attribute
+          next
+        end
+
         if only_known && model_class.attributes[attribute.to_sym].nil?
          mess =  "Attribute `#{attribute}` is not declared in `#{model_class.name}`. " +\
                  "To enable search on unknown attributes use :only_known => false"
@@ -478,6 +484,17 @@ eos
         patterns[graph_id] << attributes_patterns.map { |pattern| "OPTIONAL { #{pattern} }"}
       end
 
+      filter = ""
+      if unbound.length > 0
+        fitems = []
+        unbound.each_index do |ib|
+          predicate = model_class.uri_for_predicate(unbound[ib])
+          patterns[graph_id] << "OPTIONAL { ?subject <#{predicate}> ?#{unbound[ib]}#{ib} }"
+          fitems << "!bound(?#{unbound[ib]}#{ib})"
+        end
+        filter =  "FILTER (%s)"%(fitems.join (" && "))
+      end
+
       graph_patterns = []
       from_clauses = []
       patterns.each_key do |graph_id|
@@ -501,10 +518,11 @@ eos
         vars = "?subject"
       end
 
-      filter = ""
       if items
         fitems = items.keys.map { |i| "?subject = <#{i}>" }
-        filter = "FILTER (%s)"%(fitems.join (" || "))
+        filter = filter + "FILTER (%s)"%(fitems.join (" || "))
+      end
+      if unbound.length > 0
       end
       if page == "" and !count
         page = "ORDER BY ?subject"

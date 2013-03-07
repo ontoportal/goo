@@ -183,6 +183,13 @@ class TestModelwhere < TestCase
       end
     end
 
+    without_names = ToyObject.where(name_x: :unbound, load_attrs: { name: true, part: { name: true } })
+    without_names.each do |t|
+      assert !t.attributes[:name].nil?
+      assert t.attributes[:name_x].nil?
+      assert !t.attributes[:part].nil?
+      assert !t.attributes[:part].first.attributes[:name].nil?
+    end
 
 
     toys = ToyObject.all :load_attrs => :defined
