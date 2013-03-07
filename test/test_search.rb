@@ -25,15 +25,26 @@ class TestModelSearch < TestCase
 
 
   def setup
-    @term = Term.new(
-        :id => "Melanoma",
-        :prefLabel => "NCI Thesaurus",
+    @terms = [
+      Term.new(
+        :id => "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Melanoma",
+        :prefLabel => "Melanoma",
         :synonym => ["Cutaneous Melanoma", "Skin Cancer", "Malignant Melanoma"],
         :definition => "Melanoma refers to a malignant skin cancer",
         :submission => "NCIT",
         :semanticType => "Neoplastic Process",
         :umlsCui => "C0025202"
-    )
+      ),
+      Term.new(
+          :id => "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Neoplasm",
+          :prefLabel => "Neoplasm",
+          :synonym => ["tumor", "Neoplasms", "NEOPLASMS BENIGN", "MALIGNANT AND UNSPECIFIED (INCL CYSTS AND POLYPS)", "Neoplasia", "Neoplastic Growth"],
+          :definition => "A benign or malignant tissue growth resulting from uncontrolled cell proliferation. Benign neoplastic cells resemble normal cells without exhibiting significant cytologic atypia, while malignant cells exhibit overt signs such as dysplastic features, atypical mitotic figures, necrosis, nuclear pleomorphism, and anaplasia. Representative examples of benign neoplasms include papillomas, cystadenomas, and lipomas; malignant neoplasms include carcinomas, sarcomas, lymphomas, and leukemias.",
+          :submission => "NCIT",
+          :semanticType => "Neoplastic Process",
+          :umlsCui => "C0375111"
+      )
+    ]
   end
 
   def teardown
@@ -62,10 +73,18 @@ class TestModelSearch < TestCase
 
 
   def test_unindex
-    @term.unindex
+    @terms[0].unindex
   end
 
   def test_index
-    @term.index
+    @terms[0].index
+  end
+
+  def test_indexBatch
+    Term.indexBatch(@terms)
+  end
+
+  def test_unindexBatch
+    Term.unindexBatch(@terms)
   end
 end

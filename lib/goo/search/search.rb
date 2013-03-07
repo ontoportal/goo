@@ -12,15 +12,11 @@ module Goo
       def index
 
 
-        object_id = self.resource_id.value
-        copy_to_index = self.attributes.dup
-        copy_to_index.delete :internals
 
-        copy_to_index[:resource_id] = object_id
 
-        copy_to_index[:termId] = copy_to_index[:id]
 
-        copy_to_index[:id] = get_index_id
+
+        copy_to_index = get_indexable_object
 
         #document = JSON.dump copy_to_index
 
@@ -52,6 +48,22 @@ module Goo
       end
 
 
+      def get_indexable_object
+        object_id = self.resource_id.value
+        copy_to_index = self.attributes.dup
+        copy_to_index.delete :internals
+
+        copy_to_index[:resource_id] = object_id
+
+        copy_to_index[:termId] = copy_to_index[:id]
+
+        copy_to_index[:id] = get_index_id
+
+        return copy_to_index
+      end
+
+
+
       module ClassMethods
 
 
@@ -68,6 +80,29 @@ module Goo
         end
 
         def indexBatch(collection)
+          docs = Array.new
+          collection.each do |c|
+             docs << c.get_indexable_object
+          end
+
+          Goo.search_connection.add docs
+
+
+          Goo.search_connection.commit :commit_attributes => {}
+        end
+
+
+        def unindexBatch(collection)
+          docs = Array.new
+          collection.each do |c|
+            docs << c.get_index_id
+          end
+
+          Goo.search_connection.delete_by_id docs
+
+
+          Goo.search_connection.commit :commit_attributes => {}
+
         end
       end
   end
