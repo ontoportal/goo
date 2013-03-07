@@ -321,6 +321,7 @@ module Goo
         shape_me
         if load_attrs
           load_attrs.each do |a|
+            a=a.class == Array ? a[0] : a
             if !@attributes.include? a and !self.class.inverse_attr?(a) and\
               !(self.class.goop_settings[:collection] and self.class.goop_settings[:collection][:attribute] == a)
               send("#{a}=",[],:in_load => true)

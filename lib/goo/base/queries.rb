@@ -9,7 +9,9 @@ module Goo
       raise StandardError, "hash not yet supported here" if value.kind_of? Hash
 
       xsd_type = nil
-      if value.kind_of? SparqlRd::Resultset::Literal
+      if (value.kind_of? SparqlRd::Resultset::IRI) || (value.kind_of? SparqlRd::Resultset::BNode)
+        return  "<#{value.value}>"
+      elsif value.kind_of? SparqlRd::Resultset::Literal
         xsd_type = value.datatype
       else
         xsd_type = SparqlRd::Utils::Xsd.xsd_type_from_value(value)
