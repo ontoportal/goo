@@ -237,6 +237,7 @@ eos
       triples = {}
       modified_models.each do |mmodel|
         graph_id = mmodel.class.collection(mmodel) || Goo::Naming.get_graph_id(mmodel.class)
+        mmodel.internals.graph_id = graph_id
         triples[graph_id] = [] unless triples.include? graph_id
         triples[graph_id].concat(model_to_triples(mmodel,mmodel.resource_id))
         mmodel.each_linked_base do |attr_name, umodel|
