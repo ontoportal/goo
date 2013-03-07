@@ -311,7 +311,7 @@ module Goo
           lamb = self.class.goop_settings[:collection][:with]
           graph_id = lamb.call(self.internals.collection)
         end
-        self.internals.graph_id = graph_id
+        self.internals.graph_id = graph_id || self.class.type_uri
         store_attributes = Goo::Queries.get_resource_attributes(resource_id, self.class,
                                                          internals.store_name, graph_id,
                                                          load_attrs,query_options,self.internals.collection)
@@ -322,6 +322,7 @@ module Goo
         shape_me
         if load_attrs
           load_attrs.each do |a|
+            a=a.class == Array ? a[0] : a
             if !@attributes.include? a and !self.class.inverse_attr?(a) and\
               !(self.class.goop_settings[:collection] and self.class.goop_settings[:collection][:attribute] == a)
               send("#{a}=",[],:in_load => true)
@@ -330,7 +331,11 @@ module Goo
           end
         end
         internals.id=resource_id
-        internals.loaded
+        if load_attrs == []
+          internals.lazy_loaded
+        else
+          internals.loaded
+        end
         return self
       end
 
@@ -517,9 +522,11 @@ module Goo
         size = attributes.delete(:size)
         count = attributes.delete(:count)
         only_known = (attributes.delete :only_known) || true
+        extra_filter = attributes.delete :filter
         load_attrs = (attributes.delete :load_attrs) || :defined
         load_attrs = defined_attributes_not_transient if load_attrs == :defined
-        load_attrs << :uuid if anonymous?
+        load_attrs << :uuid if anonymous? and load_attrs.class == Array
+        load_attrs[:uuid]=true if anonymous? and load_attrs.class == Hash
 
         query_options = attributes.delete :query_options
         ignore_inverse = attributes.include?(:ignore_inverse) and attributes[:ignore_inverse]
@@ -530,7 +537,7 @@ module Goo
         search_query = Goo::Queries.search_by_attributes(
                           attributes, self, @store_name,
                           ignore_inverse, load_attrs,only_known,
-                          offset, size, count, items)
+                          offset, size, count, items,extra_filter)
 
         epr = Goo.store(@store_name)
         rs = epr.query(search_query,options = (query_options || {}))
@@ -541,6 +548,7 @@ module Goo
           end
         end
         items = items || Hash.new
+        dependent_items = Hash.new
         rs.each_solution do |sol|
           resource_id = sol.get(:subject)
           if !items[resource_id.value]
@@ -564,26 +572,49 @@ module Goo
               next if var == "subject"
               value = (sol.get var.to_sym)
               (sol_attr, sol_model) = var.split "_onmodel_"
-              if value.kind_of? SparqlRd::Resultset::IRI
-               range = range_class(sol_attr.to_sym)
-               unless range.nil?
-                 #PERFORMANCE -- CHEAPER ? for embed load the stuff that is needed.
-                 begin
-                   value = range.find RDF::IRI.new(value.value)
-                 rescue
-                   #temporal
-                   #IMPLEMENT CONSTRAINTS FOR DELETE
-                 end
-               end
-              end
-              if self.goop_settings[:model].to_s == sol_model
+              next if sol_model.nil?
+              if self.goo_name == sol_model.to_sym
+                if (value.kind_of? SparqlRd::Resultset::IRI) ||
+                   (value.kind_of? SparqlRd::Resultset::BNode)
+                  #create nested stuff or find
+                  range = range_class(sol_attr.to_sym)
+                  unless range.nil?
+                    if dependent_items.include? value
+                      value = dependent_items[value]
+                    else
+                      value = range.find value, load_attrs: []
+                      value.internals.graph_id = range.type_uri
+                      dependent_items[value.resource_id]= value
+                    end
+                  end
+                end
                 unless sol_attr.to_sym == collection_attr
                   item.lazy_load_attr(sol_attr.to_sym, value)
                 end
-              else
-                #something nested
-                #TODO
               end
+            end
+          end
+        end
+        if dependent_items.length > 0 && (load_attrs.kind_of? Hash)
+          types = dependent_items.map { |k,v| v.class }.uniq
+          by_types = Hash.new
+          types.each do |t| by_types[t] = Hash.new end
+          dependent_items.each do |k,v|
+            by_types[v.class][v.resource_id.value] = v
+          end
+          by_types.each do |t,ts|
+            #do I need more stuff for type t
+            #yes if there is a hash for a property where the range is t
+            nested_attr_to_load = Hash.new
+            load_attrs.each do |k,v|
+              if v.kind_of? Hash
+                if self.range_class(k) == t
+                  v.each do |sk,sv| nested_attr_to_load[sk] = sv end
+                end
+              end
+            end
+            if nested_attr_to_load.length > 0
+              t.where(load_attrs: nested_attr_to_load, items: ts )
             end
           end
         end
@@ -612,7 +643,7 @@ module Goo
              self.goop_settings[:unique][:fields].length != 1)
             mess = "The call #{self.name}.find cannot be used " +
                    " if the model has no `:unique => true` attributes"
-            raise ArgumentError, mess
+            #raise ArgumentError, mess
           end
         end
 
@@ -627,11 +658,11 @@ module Goo
           return nil if ins.length == 0
           ins[0].load if load_attributes
           return ins[0]
-        elsif param.kind_of? RDF::IRI
+        elsif ((param.kind_of? SparqlRd::Resultset::BNode) || (param.kind_of? SparqlRd::Resultset::IRI))
           iri = param
         else
           raise ArgumentError,
-            "#{self.class.name}.find only accepts RDF::IRI as input or String if accessing :unique fields."
+            "#{self.class.name}.find only accepts IRIs as input or String if accessing :unique fields."
         end
         opts = opts.merge(store_name: store_name, load_attributes: load_attributes)
         return self.load(iri,opts)

@@ -183,6 +183,13 @@ class TestModelwhere < TestCase
       end
     end
 
+    without_names = ToyObject.where(name_x: :unbound, load_attrs: { name: true, part: { name: true } })
+    without_names.each do |t|
+      assert !t.attributes[:name].nil?
+      assert t.attributes[:name_x].nil?
+      assert !t.attributes[:part].nil?
+      assert !t.attributes[:part].first.attributes[:name].nil?
+    end
 
 
     toys = ToyObject.all :load_attrs => :defined
@@ -255,6 +262,30 @@ class TestModelwhere < TestCase
     max = 16
     create_toys(max)
 
+    #preload options in page
+    ld = { :name => true, :part => true }
+    page = ToyObject.page category: "even", page: 1, size: 4, load_attrs: ld
+    assert page.length == 4
+    assert page.next_page
+    page.each do |t|
+      assert t.attributes[:name].class == SparqlRd::Resultset::StringLiteral
+      assert t.attributes.keys.sort == [:name, :part, :internals].sort
+      assert t.attributes[:part].first.class == ToyPart
+      #nothing is loaded
+      assert t.attributes[:part].first.attributes.keys.sort == [:uuid, :internals].sort
+    end
+
+    ld = { :name => true, :part => { :name => true } }
+    page = ToyObject.page category: "even", page: 1, size: 4, load_attrs: ld
+    assert page.length == 4
+    assert page.next_page
+    page.each do |t|
+      assert t.attributes[:name].class == SparqlRd::Resultset::StringLiteral
+      assert t.attributes.keys.sort == [:name, :part, :internals].sort
+      assert t.attributes[:part].first.class == ToyPart
+      assert t.attributes[:part].first.attributes.keys.sort == [:name, :uuid, :internals].sort
+    end
+
     nums_even = [0,2,4,6,8,10,12,14]
     page_to_load = 1
     load_iterations = 0
@@ -297,6 +328,9 @@ class TestModelwhere < TestCase
     assert !page.next_page
     assert page.length == 0
     assert page.page_count == 0
+
+
+
 
     delete_toys()
   end

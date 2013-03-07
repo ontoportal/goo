@@ -9,7 +9,9 @@ module Goo
       raise StandardError, "hash not yet supported here" if value.kind_of? Hash
 
       xsd_type = nil
-      if value.kind_of? SparqlRd::Resultset::Literal
+      if (value.kind_of? SparqlRd::Resultset::IRI) || (value.kind_of? SparqlRd::Resultset::BNode)
+        return  "<#{value.value}>"
+      elsif value.kind_of? SparqlRd::Resultset::Literal
         xsd_type = value.datatype
       else
         xsd_type = SparqlRd::Utils::Xsd.xsd_type_from_value(value)
@@ -72,11 +74,13 @@ SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} ?predicate ?object
 #{filter}
 }
 eos
-      else
+      elsif attributes.length == 1
        predicate = model_class.uri_for_predicate(attributes[0])
        q = <<eos
 SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} <#{predicate}> ?object } }
 eos
+      else
+        return Hash.new
       end
 
       rs = epr.query(q,query_options=query_options)
@@ -360,7 +364,7 @@ eos
       return patterns
     end
 
-    def self.attributes_for_query(attrs,var,model_class,attribute_patterns)
+    def self.attributes_for_query(attrs,var,model_class,attribute_patterns,nested_graphs)
         if attrs.kind_of? Array and attrs.length == 1 and attrs[0].kind_of? Hash
           attrs = attrs[0]
         end
@@ -382,10 +386,17 @@ eos
             attribute_patterns << " OPTIONAL {"
           end
           predicate = model_class.uri_for_predicate(attr)
-          attribute_patterns << " ?#{var} <#{predicate}> ?#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s} ."
-          if (nested.kind_of? Hash or nested.kind_of? Array) and (nested.length > 0)
-            #TODO
-          end
+          _obj_var = "#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s}"
+          attribute_patterns << " ?#{var} <#{predicate}> ?#{_obj_var} ."
+          #if (nested.kind_of? Hash or nested.kind_of? Array) and (nested.length > 0)
+          #  range_class_predicate = model_class.range_class(attr)
+          #  if range_class_predicate
+          #    nested_graphs << range_class_predicate.type_uri
+          #    attributes_for_query(nested,_obj_var,range_class_predicate,attribute_patterns,nested_graphs)
+          #  else
+          #    raise ArgumentError, "Trying to do nested loading on a predicate `#{attr}` without a range/instance_of"
+          #  end
+          #end
           if optional
             attribute_patterns << "}"
           end
@@ -400,15 +411,21 @@ eos
 
     def self.search_by_attributes(attributes, model_class, store_name,
                                   ignore_inverse, load_attrs, only_known,
-                                  offset_page, size_page, count, items)
+                                  offset_page, size_page, count, items, extra_filter)
       #dictionary :named_graph => triple patterns
       patterns = {}
       graph_id = model_class.collection(nil,attributes) || Goo::Naming.get_graph_id(model_class)
 
       patterns[graph_id] = []
 
+      unbound = []
       attributes.each do |attribute, value|
         next if model_class.collection_attribute? attribute
+        if value == :unbound
+          unbound << attribute
+          next
+        end
+
         if only_known && model_class.attributes[attribute.to_sym].nil?
          mess =  "Attribute `#{attribute}` is not declared in `#{model_class.name}`. " +\
                  "To enable search on unknown attributes use :only_known => false"
@@ -461,10 +478,23 @@ eos
         patterns[graph_id] << " ?subject a <#{model_class.type_uri}> ."
       end
 
+      nested_graphs = nil
       if load_attrs and load_attrs.length > 0 and !offset_page and !count
         attributes_patterns = []
-        attributes_for_query(load_attrs,"subject",model_class, attributes_patterns)
+        nested_graphs = Set.new
+        attributes_for_query(load_attrs,"subject",model_class, attributes_patterns,nested_graphs)
         patterns[graph_id] << attributes_patterns.map { |pattern| "OPTIONAL { #{pattern} }"}
+      end
+
+      filter = ""
+      if unbound.length > 0
+        fitems = []
+        unbound.each_index do |ib|
+          predicate = model_class.uri_for_predicate(unbound[ib])
+          patterns[graph_id] << "OPTIONAL { ?subject <#{predicate}> ?#{unbound[ib]}#{ib} }"
+          fitems << "!bound(?#{unbound[ib]}#{ib})"
+        end
+        filter =  "FILTER (%s)"%(fitems.join (" && "))
       end
 
       graph_patterns = []
@@ -472,6 +502,11 @@ eos
       patterns.each_key do |graph_id|
         from_clauses << "FROM <#{graph_id}>"
         graph_patterns << (patterns[graph_id].join "\n")
+      end
+      if nested_graphs and model_class.collection_attribute.nil?
+        nested_graphs.each do |g|
+          from_clauses << "FROM <#{g}>"
+        end
       end
 
       from_clauses = from_clauses.join "\n"
@@ -485,13 +520,17 @@ eos
         vars = "?subject"
       end
 
-      filter = ""
       if items
         fitems = items.keys.map { |i| "?subject = <#{i}>" }
-        filter = "FILTER (%s)"%(fitems.join (" || "))
+        filter = filter + "FILTER (%s)"%(fitems.join (" || "))
       end
-      if page == ""
+      if unbound.length > 0
+      end
+      if page == "" and !count
         page = "ORDER BY ?subject"
+      end
+      if extra_filter
+        filter = filter + "\n#{extra_filter}"
       end
 
       query = <<eos
