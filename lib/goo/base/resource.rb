@@ -520,6 +520,7 @@ module Goo
         size = attributes.delete(:size)
         count = attributes.delete(:count)
         only_known = (attributes.delete :only_known) || true
+        extra_filter = attributes.delete :filter
         load_attrs = (attributes.delete :load_attrs) || :defined
         load_attrs = defined_attributes_not_transient if load_attrs == :defined
         load_attrs << :uuid if anonymous? and load_attrs.class == Array
@@ -534,7 +535,7 @@ module Goo
         search_query = Goo::Queries.search_by_attributes(
                           attributes, self, @store_name,
                           ignore_inverse, load_attrs,only_known,
-                          offset, size, count, items)
+                          offset, size, count, items,extra_filter)
 
         epr = Goo.store(@store_name)
         rs = epr.query(search_query,options = (query_options || {}))

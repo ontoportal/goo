@@ -409,7 +409,7 @@ eos
 
     def self.search_by_attributes(attributes, model_class, store_name,
                                   ignore_inverse, load_attrs, only_known,
-                                  offset_page, size_page, count, items)
+                                  offset_page, size_page, count, items, extra_filter)
       #dictionary :named_graph => triple patterns
       patterns = {}
       graph_id = model_class.collection(nil,attributes) || Goo::Naming.get_graph_id(model_class)
@@ -526,6 +526,9 @@ eos
       end
       if page == "" and !count
         page = "ORDER BY ?subject"
+      end
+      if extra_filter
+        filter = filter + "\n#{extra_filter}"
       end
 
       query = <<eos
