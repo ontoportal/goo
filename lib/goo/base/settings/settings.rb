@@ -321,6 +321,7 @@ module Goo
           attrs = defined_attributes
           attrs.select! { |attr| self.attr_query_options(attr).nil? }
           attrs.select! { |attr| !self.inverse_attr?(attr) }
+          attrs.select! { |attr| !self.aggregate?(attr) }
           attrs.delete :resource_id
           return attrs
         end
@@ -346,6 +347,17 @@ module Goo
           options = goop_settings[:attributes][attr][:inverse_of]
           return Goo.find_model_by_name(options[:with]), options[:attribute]
         end
+
+        def aggregate?(attr)
+          return false if !goop_settings[:attributes].include? attr
+          return !goop_settings[:attributes][attr][:aggregate].nil?
+        end
+
+        def aggregate_options(attr)
+          return nil if !goop_settings[:attributes].include? attr
+          return goop_settings[:attributes][attr][:aggregate]
+        end
+
       end
     end
   end

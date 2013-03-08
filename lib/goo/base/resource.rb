@@ -135,6 +135,8 @@ module Goo
             return self.internals.collection
           end
 
+          return aggregate(attr) if self.class.aggregate? attr
+
           origin_attr = attr_cpy
           use_as_attr = self.class.use_as attr_cpy
           attr_cpy = use_as_attr unless use_as_attr.nil?
@@ -144,18 +146,7 @@ module Goo
             return load_on_demand([attr_cpy], use_as_attr.nil? ? nil : [origin_attr])
           end
 
-          if self.class.inverse_attr? attr_cpy
-            query_options = self.class.attr_query_options(origin_attr)
-            inv_cls, inv_attr = self.class.inverse_attr_options(attr_cpy)
-            where_opts = { inv_attr => self, ignore_inverse: true }
-            if inv_cls.goop_settings[:collection]
-              #assume same collection
-              where_opts[inv_cls.goop_settings[:collection][:attribute]] = self.internals.collection
-            end
-            where_opts[:query_options] = query_options unless query_options.nil?
-            values = inv_cls.where(where_opts)
-            return values.dup
-          end
+          return inverse_attr_values(attr_cpy,origin_attr) if self.class.inverse_attr? attr_cpy
 
           attr_value = @table[origin_attr]
           #returning default value
@@ -519,6 +510,7 @@ module Goo
         items = attributes.delete(:items)
         offset = attributes.delete(:offset)
         size = attributes.delete(:size)
+        in_aggregate = attributes.delete(:in_aggregate)
         count = attributes.delete(:count)
         only_known = (attributes.delete :only_known) || true
         extra_filter = attributes.delete :filter
@@ -536,10 +528,13 @@ module Goo
         search_query = Goo::Queries.search_by_attributes(
                           attributes, self, @store_name,
                           ignore_inverse, load_attrs,only_known,
-                          offset, size, count, items,extra_filter)
+                          offset, size, count, items, extra_filter, in_aggregate)
 
         epr = Goo.store(@store_name)
         rs = epr.query(search_query,options = (query_options || {}))
+
+        aggs = load_attrs.select { |x,v| aggregate?(x) }
+        load_attrs = load_attrs.select { |x,v| !aggregate?(x) }
 
         if count
           rs.each_solution do |sol|
@@ -550,6 +545,11 @@ module Goo
         dependent_items = Hash.new
         rs.each_solution do |sol|
           resource_id = sol.get(:subject)
+          if in_aggregate
+            agg_value = sol.get(:agg_value)
+            items[resource_id.value].instance_variable_set("@#{aggs.keys.first.to_s}",agg_value)
+            next
+          end
           if !items[resource_id.value]
             item = self.new
             item.internals.lazy_loaded
@@ -592,6 +592,20 @@ module Goo
                 end
               end
             end
+          end
+        end
+        if in_aggregate
+          items.values.each do |v|
+            value = v.instance_variable_get("@#{aggs.keys.first.to_s}")
+            v.instance_variable_set("@#{aggs.keys.first.to_s}",SparqlRd::Resultset::IntegerLiteral.new(0)) if value.nil?
+          end
+        end
+        if aggs.length > 0 and !in_aggregate
+          aggs.each do |agg,opts|
+            #only know how to do one at a time
+            options = { load_attrs:{ agg => opts}, items: items, in_aggregate: true }
+            options[collection_attr]=collection if collection
+            self.where options
           end
         end
         if dependent_items.length > 0 && (load_attrs.kind_of? Hash)
@@ -781,6 +795,46 @@ module Goo
               end
             end
           end
+        end
+      end
+
+      def inverse_attr_values(attr,origin_attr=nil,load_attrs=nil)
+        query_options = self.class.attr_query_options(origin_attr)
+        inv_cls, inv_attr = self.class.inverse_attr_options(attr)
+        where_opts = { inv_attr => self, ignore_inverse: true }
+        if inv_cls.goop_settings[:collection]
+          #assume same collection
+          where_opts[inv_cls.goop_settings[:collection][:attribute]] = self.internals.collection
+        end
+        where_opts[:query_options] = query_options unless query_options.nil?
+        where_opts[:load_attrs] = load_attrs if !load_attrs.nil?
+        values = inv_cls.where(where_opts)
+        return values
+      end
+
+      def aggregate(attr)
+        #try to see if it is in the attribute hash
+        value = instance_variable_get("@#{attr}")
+        return value unless value.nil?
+
+        aggregate_opts = self.class.aggregate_options(attr)
+
+        #only count is supported
+        aggregate_operation = aggregate_opts[:with]
+        on_attribute = aggregate_opts[:attribute]
+        if !self.attributes[on_attribute].nil?
+          value = self.attributes[on_attribute].count
+          instance_variable_set("@#{attr}",value)
+          return value
+        end
+
+        if self.class.inverse_attr? on_attribute
+          values = inverse_attr_values(on_attribute,on_attribute,load_attrs=[])
+          instance_variable_set("@#{attr}",values.count)
+          return values.count
+        else
+          load_on_demand([on_attribute], nil)
+          return self.attributes[on_attribute].count
         end
       end
     end
