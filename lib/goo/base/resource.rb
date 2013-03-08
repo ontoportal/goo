@@ -640,7 +640,7 @@ module Goo
         opts = args[1] if args.length > 1 and args[1]
 
         load_attributes = opts.delete :load_attributes
-        load_attributes = true if load_attributes.nil? #default
+        load_attributes = false if load_attributes.nil? #default
         store_name = opts.delete :store_name
 
         unless goop_settings[:collection].nil?
@@ -663,7 +663,8 @@ module Goo
 
         if (param.kind_of? String) && goop_settings[:unique][:fields]
           key_attribute = goop_settings[:unique][:fields][0]
-          raise ArgumentError, "Find should receive a IRI in a collection model." if key_attribute.nil? && !args[0].kind_of?(SparqlRd::Resultset::IRI)
+          raise ArgumentError, "Find should receive a IRI in a collection model."\
+            if key_attribute.nil? && !args[0].kind_of?(SparqlRd::Resultset::IRI)
           where_opts = key_attribute.nil? ? Hash.new : { key_attribute => param }
           where_opts.merge! args[1] if args[1]
           ins = self.where where_opts

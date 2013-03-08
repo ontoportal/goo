@@ -124,7 +124,7 @@ class TestModelPersonPersistB < TestCase
     person.status = StatusPersist.find("married")
     person.save
 
-    person = PersonPersist.find("Goo Fernandez")
+    person = PersonPersist.find("Goo Fernandez",load_attributes: true)
     person.status.load
     assert_equal "married", person.status.description
 
