@@ -16,14 +16,15 @@ module Goo
 
 
 
-        copy_to_index = get_indexable_object
+        doc = get_indexable_object
+
 
         #document = JSON.dump copy_to_index
 
-        Goo.search_connection.add copy_to_index
+        Goo.search_connection.add doc
 
 
-        Goo.search_connection.commit :commit_attributes => {}
+        #Goo.search_connection.commit :commit_attributes => {}
 
         #puts copy_to_index
 
@@ -44,22 +45,15 @@ module Goo
 
 
       def get_index_id
-        return self.class.goop_settings[:search_options][:name_with].call(self)
+        return self.class.goop_settings[:search_options][:index_id].call(self)
       end
 
 
       def get_indexable_object
-        object_id = self.resource_id.value
-        copy_to_index = self.attributes.dup
-        copy_to_index.delete :internals
 
-        copy_to_index[:resource_id] = object_id
-
-        copy_to_index[:termId] = copy_to_index[:id]
-
-        copy_to_index[:id] = get_index_id
-
-        return copy_to_index
+        doc = self.class.goop_settings[:search_options][:document].call(self)
+        doc[:id] = get_index_id
+        return doc
       end
 
 
@@ -83,7 +77,16 @@ module Goo
           docs = Array.new
           collection.each do |c|
              docs << c.get_indexable_object
+
+
+            binding.pry
+
+
+
           end
+
+
+
 
           Goo.search_connection.add docs
 
@@ -104,6 +107,18 @@ module Goo
           Goo.search_connection.commit :commit_attributes => {}
 
         end
+
+        def commit
+
+        end
+
+        def optimize
+
+
+        end
+
+
+
       end
   end
 end

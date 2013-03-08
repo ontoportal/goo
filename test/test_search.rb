@@ -2,19 +2,40 @@ require_relative 'test_case'
 
 TestInit.configure_goo
 
+
+def get_doc(res)
+  attrs = {
+      :submissionAcronym => res.submissionAcronym,
+      :submissionId => res.submissionId
+  }
+
+  object_id = res.resource_id.value
+  doc = res.attributes.dup
+  doc.delete :internals
+  doc.delete :uuid
+
+  doc = doc.merge(attrs)
+
+  doc[:resource_id] = object_id
+
+  return doc
+end
+
 class Term < Goo::Base::Resource
   model :term
-  attribute :id, :unique => true
+  attribute :id
   attribute :prefLabel, :not_nil => true, :single_value => true
   attribute :synonym  #array of strings
   attribute :definition  #array of strings
-  attribute :submission, :not_nil => true, :single_value => true
+  attribute :submissionAcronym, :not_nil => true, :single_value => true
+  attribute :submissionId, :not_nil => true, :single_value => true
 
   # dummy attributes to validate non-searchable fileds
   attribute :semanticType
   attribute :umlsCui
 
-  search_options :name_with => lambda { |t| t.attributes[:id] + "_" + t.attributes[:submission] }
+  search_options :index_id => lambda { |t| "#{t.resource_id.value}_#{t.submissionAcronym}_#{t.submissionId}" },
+                 :document => lambda { |t| get_doc(t) }
 
   def initialize(attributes = {})
     super(attributes)
@@ -31,7 +52,8 @@ class TestModelSearch < TestCase
         :prefLabel => "Melanoma",
         :synonym => ["Cutaneous Melanoma", "Skin Cancer", "Malignant Melanoma"],
         :definition => "Melanoma refers to a malignant skin cancer",
-        :submission => "NCIT",
+        :submissionAcronym => "NCIT",
+        :submissionId => 2,
         :semanticType => "Neoplastic Process",
         :umlsCui => "C0025202"
       ),
@@ -40,7 +62,8 @@ class TestModelSearch < TestCase
           :prefLabel => "Neoplasm",
           :synonym => ["tumor", "Neoplasms", "NEOPLASMS BENIGN", "MALIGNANT AND UNSPECIFIED (INCL CYSTS AND POLYPS)", "Neoplasia", "Neoplastic Growth"],
           :definition => "A benign or malignant tissue growth resulting from uncontrolled cell proliferation. Benign neoplastic cells resemble normal cells without exhibiting significant cytologic atypia, while malignant cells exhibit overt signs such as dysplastic features, atypical mitotic figures, necrosis, nuclear pleomorphism, and anaplasia. Representative examples of benign neoplasms include papillomas, cystadenomas, and lipomas; malignant neoplasms include carcinomas, sarcomas, lymphomas, and leukemias.",
-          :submission => "NCIT",
+          :submissionAcronym => "NCIT",
+          :submissionId => 2,
           :semanticType => "Neoplastic Process",
           :umlsCui => "C0375111"
       )
