@@ -23,6 +23,7 @@ class Term < Goo::Base::Resource
   attribute :parents, :namespace => :rdfs, :alias => :subClassOf
   attribute :children, :namespace => :rdfs, :alias => :subClassOf, :inverse_of => { :with => :class , :attribute => :parents }
 
+  attribute :children_count, :aggregate => { :attribute => :children, :with => :count }
 end
 
 class TestModelComplex < TestCase
@@ -334,6 +335,117 @@ class TestModelComplex < TestCase
 
   end
 
+  def test_aggregate
+    submission = Submission.new(name: "submission1")
+    unless submission.exist?
+      submission.save
+    else
+      submission = Submission.find("submission1")
+    end
+    terms = Term.where submission: submission
+    terms.each do |t|
+      assert t.internals.collection.kind_of? Submission
+      t.load
+      t.delete
+      assert_equal 0, count_pattern("GRAPH <#{t.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
+    end
+    terms = []
+    10.times do |i|
+      term = Term.new
+      term.resource_id = RDF::IRI.new "http://someiri.org/term/#{i}"
+      term.submission = submission
+      term.prefLabel = "term #{i}"
+      term.synonym = ["syn A #{i}", "syn B #{i}"]
+      if i > 1 && i < 5
+        term.parents = [terms[0]]
+      elsif i == 5
+        term.parents = [terms[1]]
+      elsif i > 5 && i < 9
+        term.parents = [terms[2], terms[3]]
+      else
+        term.parents = [terms[5]]
+      end
+      assert term.valid?
+      term.save
+      terms << term
+    end
+
+    assert terms[0].children_count == 3
+    assert terms[1].children_count == 1
+    assert terms[2].children_count == 3
+    assert terms[3].children_count == 3
+    assert terms[-1].children_count == 0
+
+    page = Term.page submission: submission, load_attrs: { children_count: true, synonym: true, prefLabel: true }
+    page.each do |t|
+      if t.resource_id.value.include? "term/0"
+        assert t.children_count == 3
+      elsif t.resource_id.value.include? "term/1"
+        assert t.children_count == 1
+      elsif t.resource_id.value.include? "term/2"
+        assert t.children_count == 3
+      elsif t.resource_id.value.include? "term/3"
+        assert t.children_count == 3
+      elsif t.resource_id.value.include? "term/9"
+        assert t.children_count == 0
+      end
+    end
+
+    #with a parent
+    page = Term.page submission: submission, parents: terms[0], load_attrs: { children_count: true, synonym: true, prefLabel: true }
+    assert page.count == 3
+    page.each do |t|
+      if t.resource_id.value.include? "term/2"
+        assert t.children_count == 3
+      elsif t.resource_id.value.include? "term/3"
+        assert t.children_count == 3
+      elsif t.resource_id.value.include? "term/4"
+        assert t.children_count == 0
+      else
+        assert 1==0
+      end
+    end
+
+    #with parent and query options
+    page = Term.page submission: submission, parents: terms[0],
+                     load_attrs: { children_count: true, synonym: true, prefLabel: true },
+                     query_options: { rules: :SUBC }
+
+    assert page.count == 6
+    page.each do |t|
+      if t.resource_id.value.include? "term/2"
+        assert t.children_count == 3
+      elsif t.resource_id.value.include? "term/3"
+        assert t.children_count == 3
+      elsif t.resource_id.value.include? "term/4"
+        assert t.children_count == 0
+      elsif t.resource_id.value.include? "term/6"
+        assert t.children_count == 0
+      elsif t.resource_id.value.include? "term/7"
+        assert t.children_count == 0
+      elsif t.resource_id.value.include? "term/8"
+        assert t.children_count == 0
+      else
+        assert 1==0
+      end
+    end
+
+    #the other direction UP and query options
+    page = Term.page submission: submission, children: terms[9],
+                     load_attrs: { children_count: true, synonym: true, prefLabel: true },
+                     query_options: { rules: :SUBC }
+
+    assert page.count == 2
+    page.each do |t|
+      if t.resource_id.value.include? "term/5"
+        assert t.children_count == 1
+      elsif t.resource_id.value.include? "term/1"
+        assert t.children_count == 1
+      else
+        assert 1==0
+      end
+    end
+  end
 
 end
 
