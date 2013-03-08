@@ -663,7 +663,8 @@ module Goo
 
         if (param.kind_of? String) && goop_settings[:unique][:fields]
           key_attribute = goop_settings[:unique][:fields][0]
-          where_opts = { key_attribute => param }
+          raise ArgumentError, "Find should receive a IRI in a collection model." if key_attribute.nil? && !args[0].kind_of?(SparqlRd::Resultset::IRI)
+          where_opts = key_attribute.nil? ? Hash.new : { key_attribute => param }
           where_opts.merge! args[1] if args[1]
           ins = self.where where_opts
           if ins.length > 1
