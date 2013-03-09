@@ -23,7 +23,7 @@ module Goo
 
         Goo.search_connection.add doc
 
-
+        self.class.commit
         #Goo.search_connection.commit :commit_attributes => {}
 
         #puts copy_to_index
@@ -33,12 +33,17 @@ module Goo
       end
 
       def unindex
+
+        id = get_index_id
+
+        puts id
+
         Goo.search_connection.delete_by_id get_index_id
 
 
 
-        Goo.search_connection.commit :commit_attributes => {}
 
+        self.class.commit
 
 
       end
@@ -62,7 +67,7 @@ module Goo
 
 
         def search(q)
-          response = Goo.search_connection.get 'select', :params => {:q => '*:*'}
+          response = Goo.search_connection.get 'select', :params => {:q => q}
 
 
 
@@ -79,7 +84,7 @@ module Goo
              docs << c.get_indexable_object
 
 
-            binding.pry
+            #binding.pry
 
 
 
@@ -90,8 +95,7 @@ module Goo
 
           Goo.search_connection.add docs
 
-
-          Goo.search_connection.commit :commit_attributes => {}
+          commit
         end
 
 
@@ -104,21 +108,27 @@ module Goo
           Goo.search_connection.delete_by_id docs
 
 
-          Goo.search_connection.commit :commit_attributes => {}
-
-        end
-
-        def commit
-
-        end
-
-        def optimize
-
+          commit
 
         end
 
 
+        def unindexByQuery(query)
+          Goo.search_connection.delete_by_query query
 
+
+          commit
+
+        end
+
+
+        def commit(attrs=nil)
+          Goo.search_connection.commit :commit_attributes => attrs || {}
+        end
+
+        def optimize(attrs=nil)
+          Goo.search_connection.optimize :optimize_attributes => attrs || {}
+        end
       end
   end
 end

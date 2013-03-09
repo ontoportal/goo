@@ -23,7 +23,7 @@ end
 
 class Term < Goo::Base::Resource
   model :term
-  attribute :id
+  attribute :id, :single_value => true
   attribute :prefLabel, :not_nil => true, :single_value => true
   attribute :synonym  #array of strings
   attribute :definition  #array of strings
@@ -34,7 +34,7 @@ class Term < Goo::Base::Resource
   attribute :semanticType
   attribute :umlsCui
 
-  search_options :index_id => lambda { |t| "#{t.resource_id.value}_#{t.submissionAcronym}_#{t.submissionId}" },
+  search_options :index_id => lambda { |t| "#{t.id}_#{t.submissionAcronym}_#{t.submissionId}" },
                  :document => lambda { |t| get_doc(t) }
 
   def initialize(attributes = {})
@@ -97,6 +97,11 @@ class TestModelSearch < TestCase
 
   def test_unindex
     @terms[0].unindex
+  end
+
+  def test_unindexByQuery
+    query = "submissionAcronym:" + @terms[0].submissionAcronym
+    Term.unindexByQuery query
   end
 
   def test_index
