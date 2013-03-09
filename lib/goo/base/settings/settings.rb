@@ -282,6 +282,9 @@ module Goo
         end
 
         def range_class(attr)
+          if inverse_attr?(attr)
+            return inverse_attr_options(attr)[0]
+          end
           attr = attr.to_sym
           vals = attribute_validators(attr)
           if vals.include? :instance_of
@@ -356,6 +359,10 @@ module Goo
         def aggregate_options(attr)
           return nil if !goop_settings[:attributes].include? attr
           return goop_settings[:attributes][attr][:aggregate]
+        end
+
+        def schemaless?
+          return @goop_settings[:schemaless]
         end
 
       end

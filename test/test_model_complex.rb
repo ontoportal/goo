@@ -328,7 +328,7 @@ class TestModelComplex < TestCase
     assert terms.first.definition ==  []
 
     #with find
-    term = Term.find RDF::IRI.new("http://someiri.org/vehicle"), :submission => submission, :load_attrs => [:synonym, :definition]
+    term = Term.find RDF::IRI.new("http://someiri.org/vehicle"), :submission => submission, :load_attrs => [:prefLabel, :synonym, :definition]
     assert term.synonym.sort ==  ["transport", "vehicles"]
     assert term.definition ==  []
     assert term.prefLabel == "vehicle"

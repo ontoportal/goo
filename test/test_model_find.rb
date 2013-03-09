@@ -53,26 +53,27 @@ class TestModelwhere < TestCase
     list = ToyObject.all
     list.each do |c|
       assert c.lazy_loaded?
-      c.load
+      c.load(nil,load_attrs: :all)
       c.delete
     end
     list = ToyPart.all
     list.each do |c|
       assert c.lazy_loaded?
-      c.load
+      c.load(nil,load_attrs: :all)
       c.delete
     end
     list = ToyFeature.all
     list.each do |f|
-      f.load
+      f.load(nil,load_attrs: :all)
       f.delete
     end
     list = Color.all
     list.each do |c|
       assert c.lazy_loaded?
-      c.load
+      c.load(nil,load_attrs: :all)
       c.delete
     end
+
   end
 
   def create_toy_parts()
@@ -171,7 +172,6 @@ class TestModelwhere < TestCase
     toys = ToyObject.where(:name_x => "x", :only_known => false)
     assert_equal max/2, toys.length
     toys.each do |t|
-      t.load
       assert_instance_of Fixnum, t.name_even[0].parsed_value
       assert_equal 0, t.name_even[0].parsed_value % 2
     end
@@ -220,7 +220,6 @@ class TestModelwhere < TestCase
                             :all_prop => "common" , :only_known => false)
     assert_equal 3, list.length
     list.each do |x|
-      x.load
       assert_equal "common", x.all_prop[0].parsed_value
       assert_equal 1, x.part.length
       x.part.each do |p|

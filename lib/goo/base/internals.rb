@@ -23,6 +23,7 @@ module Goo
       def new_resource(store_name = nil)
         @persistent = false
         @loaded = false
+        @lazy_loaded = false
         @modified = @_base_instance.contains_data?
         @loaded_dependencies = false
         @store_name = store_name
@@ -74,6 +75,7 @@ module Goo
         @persistent = true
         @modified = false
         @loaded = true
+        @lazy_loaded = false
       end
 
       def update?
@@ -119,13 +121,12 @@ module Goo
 
       def lazy_loaded?
         return false if !@persistent
-        return true if !@loaded
-        return false if @loaded_attrs.nil? or @loaded_attrs.length == 0
-        return @loaded_attrs.length != @_base_instance.class.goop_settings[:attributes].length
+        return @lazy_loaded
       end
 
       def lazy_loaded
         @persistent = true
+        @lazy_loaded = true
         @loaded = false
       end
     end

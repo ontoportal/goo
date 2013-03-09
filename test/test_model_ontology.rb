@@ -92,9 +92,19 @@ class TestModelOntology < TestCase
       assert_instance_of Array, ont_search
       assert_equal 1, ont_search.length
       ont_search.each do |o|
-        o.load
         assert_equal "SNOMED", o.acronym.value
       end
+
+
+      #preloading inverse attributes in instance variables
+      onts = Ontology.where(acronym: "SNOMED", submissionId: 1, load_attrs: { projects: { name: true }, acronym: true })
+      project_names = onts.first.projects.map { |p| p.attributes[:name] }
+      assert project_names.sort == ['Great Project','Not So Great'].sort
+
+      iri = Ontology.all.first.resource_id
+      ont = Ontology.find(iri, load_attrs: { projects: { name: true }, acronym: true })
+      project_names = ont.projects.map { |p| p.attributes[:name] }
+      assert project_names.sort == ['Great Project','Not So Great'].sort
       flush()
       assert_equal 0, Project.all.length
       assert_equal 0, Ontology.all.length
