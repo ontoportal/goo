@@ -156,6 +156,7 @@ eos
       end
 
       model.attributes.each_pair do |name,value|
+        next if model.class.aggregate? name
         if model.class.inverse_attr? name
           next
         end
@@ -237,6 +238,7 @@ eos
       triples = {}
       modified_models.each do |mmodel|
         graph_id = mmodel.class.collection(mmodel) || Goo::Naming.get_graph_id(mmodel.class)
+        mmodel.internals.graph_id = graph_id
         triples[graph_id] = [] unless triples.include? graph_id
         triples[graph_id].concat(model_to_triples(mmodel,mmodel.resource_id))
         mmodel.each_linked_base do |attr_name, umodel|
@@ -375,7 +377,7 @@ eos
           end
           attrs = attr_hash
         end
-        attrs = attrs.dup
+        return if attrs.class == Symbol
         attrs.each_entry do |attr, nested|
           if (nested.kind_of? Hash or nested.kind_of? Array)
             optional = nested.delete :optional
@@ -385,11 +387,20 @@ eos
           if optional
             attribute_patterns << " OPTIONAL {"
           end
-          predicate = model_class.uri_for_predicate(attr)
-          _obj_var = "#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s}"
-          attribute_patterns << " ?#{var} <#{predicate}> ?#{_obj_var} ."
+          inv_cls, inv_attr = nil, nil
+          if model_class.inverse_attr? attr
+            inv_cls, inv_attr = model_class.inverse_attr_options(attr)
+            nested_graphs << inv_cls.type_uri
+            predicate = model_class.uri_for_predicate(inv_attr)
+            _obj_var = "#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s}"
+            attribute_patterns << " ?#{_obj_var} <#{predicate}> ?#{var} ."
+          else
+            predicate = model_class.uri_for_predicate(attr)
+            _obj_var = "#{attr.to_s}_onmodel_#{model_class.goop_settings[:model].to_s}"
+            attribute_patterns << " ?#{var} <#{predicate}> ?#{_obj_var} ."
+          end
           #if (nested.kind_of? Hash or nested.kind_of? Array) and (nested.length > 0)
-          #  range_class_predicate = model_class.range_class(attr)
+          #  range_class_predicate = inv_cls ? inv_cls :  model_class.range_class(attr)
           #  if range_class_predicate
           #    nested_graphs << range_class_predicate.type_uri
           #    attributes_for_query(nested,_obj_var,range_class_predicate,attribute_patterns,nested_graphs)
@@ -411,7 +422,7 @@ eos
 
     def self.search_by_attributes(attributes, model_class, store_name,
                                   ignore_inverse, load_attrs, only_known,
-                                  offset_page, size_page, count, items, extra_filter)
+                                  offset_page, size_page, count, items, extra_filter,in_aggregate,all_attributes)
       #dictionary :named_graph => triple patterns
       patterns = {}
       graph_id = model_class.collection(nil,attributes) || Goo::Naming.get_graph_id(model_class)
@@ -474,16 +485,38 @@ eos
       end
 
       #an optimization. can we apply this to every model ?
-      if model_class.type_uri != RDF.OWL_CLASS or patterns[graph_id].length == 0
+      if (model_class.type_uri != RDF.OWL_CLASS or patterns[graph_id].length == 0) and !in_aggregate
         patterns[graph_id] << " ?subject a <#{model_class.type_uri}> ."
       end
 
+      vars = " * "
+      group_by = ""
+      if in_aggregate
+        agg_options = model_class.aggregate_options(load_attrs.keys.first)
+        agg_attr = agg_options[:attribute]
+        operation = agg_options[:with]
+        if model_class.inverse_attr? agg_attr
+          inv_cls, inv_attr = model_class.inverse_attr_options(agg_attr)
+          predicate = inv_cls.uri_for_predicate(inv_attr)
+          patterns[graph_id] << " ?agg_var <#{predicate}> ?subject ."
+        else
+          predicate = model_class.uri_for_predicate(agg_attr)
+          patterns[graph_id] << " ?subject <#{predicate}> ?agg_var ."
+        end
+        vars = "?subject (#{operation.to_s}(?agg_var) as ?agg_value)"
+        group_by = "GROUP BY ?subject"
+      end
+
       nested_graphs = nil
-      if load_attrs and load_attrs.length > 0 and !offset_page and !count
+      if load_attrs and load_attrs.length > 0 and !offset_page and !count and !in_aggregate and !all_attributes
         attributes_patterns = []
         nested_graphs = Set.new
         attributes_for_query(load_attrs,"subject",model_class, attributes_patterns,nested_graphs)
         patterns[graph_id] << attributes_patterns.map { |pattern| "OPTIONAL { #{pattern} }"}
+      end
+
+      if all_attributes
+        patterns[graph_id] << "?subject ?predicate ?object ."
       end
 
       filter = ""
@@ -512,7 +545,6 @@ eos
       from_clauses = from_clauses.join "\n"
       patterns_string = graph_patterns.join "\n"
       page = ""
-      vars = " * "
       if count
         vars = "(COUNT(?subject) as ?count)"
       elsif offset_page
@@ -524,9 +556,8 @@ eos
         fitems = items.keys.map { |i| "?subject = <#{i}>" }
         filter = filter + "FILTER (%s)"%(fitems.join (" || "))
       end
-      if unbound.length > 0
-      end
-      if page == "" and !count
+
+      if page == "" and !count and !in_aggregate
         page = "ORDER BY ?subject"
       end
       if extra_filter
@@ -539,7 +570,7 @@ SELECT DISTINCT #{vars}
 WHERE {
     #{patterns_string}
     #{filter}
-} #{page}
+} #{page} #{group_by}
 eos
       return query
     end

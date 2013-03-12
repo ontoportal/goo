@@ -37,7 +37,7 @@ class PersonPersist < Goo::Base::Resource
   attribute :created, :date_time_xsd => true, :cardinality => { :min => 1  },
             :single_value=> true, :default => lambda { |record| DateTime.now }
   attribute :friends, :not_nil => false
-  attribute :status ,  :default => lambda { |record| StatusPersist.find("single") }, :single_value=> true
+  attribute :status ,  :default => lambda { |record| StatusPersist.find("single") }, :single_value=> true, :instance_of => { :with => :status }
 
   def initialize(attributes = {})
     super(attributes)
@@ -66,7 +66,7 @@ class TestModelPersonPersistB < TestCase
   def test_person_save
     data = PersonPersist.all
     data.each do |p|
-      p.load
+      p.load(nil,load_attrs: :all)
       p.delete
     end
     person = PersonPersist.new({:name => 'Goo " Fernandez',
@@ -87,16 +87,20 @@ class TestModelPersonPersistB < TestCase
                         :some_stuff => [1]})
     if person.exist?
       person_copy = PersonPersist.new
-      person_copy.load(person.resource_id)
+      person_copy.load(person.resource_id,load_attrs: :all)
       person_copy.delete
+      no_triples_for_subject(person.resource_id)
     end
     assert_equal false, person.exist?(reload=true)
     person.save
     assert_raise Goo::Base::KeyFieldUpdateError do
       person_update = PersonPersist.new()
-      person_update.load(person.resource_id)
+      person_update.load(person.resource_id, load_attrs: :all)
       person_update.name = "changed name"
     end
+    person = PersonPersist.find( "Goo Fernandez",  load_attrs: :all)
+    person.delete
+    no_triples_for_subject(person.resource_id)
   end
 
   def test_person_update_status
@@ -124,13 +128,13 @@ class TestModelPersonPersistB < TestCase
     person.status = StatusPersist.find("married")
     person.save
 
-    person = PersonPersist.find("Goo Fernandez")
+    person = PersonPersist.find("Goo Fernandez", load_attrs: :all)
     person.status.load
     assert_equal "married", person.status.description
 
     person.delete
     assert_equal false, person.exist?(reload=true)
-    assert_equal 0, count_pattern("#{person.resource_id.to_turtle} a ?type .")
+    no_triples_for_subject(person.resource_id)
   end
 
   def test_person_update_date
@@ -149,7 +153,7 @@ class TestModelPersonPersistB < TestCase
     assert_equal false, person.exist?(reload=true)
     person.save
     person_update = PersonPersist.new()
-    person_update.load(person.resource_id)
+    person_update.load(person.resource_id, load_attrs: :all)
 
     #default value is there
     created_time = person_update.created
@@ -164,7 +168,7 @@ class TestModelPersonPersistB < TestCase
     assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date
     #reload
     person_update = PersonPersist.new()
-    person_update.load(person.resource_id)
+    person_update.load(person.resource_id, load_attrs: :all)
     assert_equal DateTime.parse("2013-01-01T07:00:00.000Z"), person_update.birth_date
     assert_equal "Goo Fernandez", person_update.name
 
@@ -174,9 +178,7 @@ class TestModelPersonPersistB < TestCase
     person_update.delete
     assert_equal false, person_update.exist?(reload=true)
     assert_equal 0, count_pattern("#{person_update.resource_id.to_turtle} a ?type .")
-  end
-
-  def test_uri_validation
+    no_triples_for_subject(person_update.resource_id)
   end
 
   def test_person_default_value_and_validation
@@ -190,6 +192,7 @@ class TestModelPersonPersistB < TestCase
     end
     assert(person.valid?)
     assert(person.errors[:created].nil?)
+    no_triples_for_subject(person.resource_id)
   end
 
   def test_person_add_remove_property
@@ -205,14 +208,14 @@ class TestModelPersonPersistB < TestCase
     assert_equal false, person.exist?(reload=true)
     person.save
     person_update = PersonPersist.new()
-    person_update.load(person.resource_id, :load_attrs => :defined)
+    person_update.load(person.resource_id, :load_attrs => :all)
     person_update.some_date =  DateTime.parse("2013-01-01T07:00:00.000Z")
     assert_equal true, person_update.valid?
     person_update.save
     assert_equal 1, count_pattern("#{person_update.resource_id.to_turtle} <#{person_update.class.uri_for_predicate(:some_date)}> ?type .")
     #reload
     person_update = PersonPersist.new()
-    person_update.load(person.resource_id)
+    person_update.load(person.resource_id, load_attrs: :all)
     assert_instance_of(PersonPersist, person_update)
     assert [DateTime.parse("2013-01-01T07:00:00.000Z")] == person_update.some_date
     #equivalent to remove
@@ -221,39 +224,13 @@ class TestModelPersonPersistB < TestCase
     assert_instance_of(PersonPersist, x)
     assert_equal(x, person_update)
     person_update = PersonPersist.new()
-    same_inst = person_update.load(person.resource_id)
+    same_inst = person_update.load(person.resource_id, :load_attrs => :all)
     assert_equal(same_inst, person_update)
     assert_equal nil, person_update.some_date
     xx = person_update.delete
     assert(xx.nil?)
     assert_equal false, person_update.exist?(reload=true)
     no_triples_for_subject(person_update.resource_id)
-  end
-
-  def test_static_load
-    person = PersonPersist.new({:name => "Goo Fernandez",
-                        :birth_date => DateTime.parse("2012-10-04T07:00:00.000Z"),
-                        :some_stuff => [1]})
-    if person.exist?
-      person_copy = PersonPersist.new
-      person_copy.load(person.resource_id)
-      person_copy.delete
-    end
-    assert_equal false, person.exist?(reload=true)
-    person.save
-    assert_equal true, person.exist?(reload=true)
-    resource_id = person.resource_id
-
-    #static load
-    item = Goo::Base::Resource.load(resource_id)
-    assert_instance_of person.class, item
-    assert_equal person.resource_id.value, item.resource_id.value
-    assert_equal person.name, item.name.value
-    person.delete
-    assert_equal false, item.exist?(reload=true)
-
-    item = Goo::Base::Resource.load(resource_id)
-    assert_equal nil, item
   end
 
   def init_status
@@ -300,11 +277,11 @@ class TestModelPersonPersistB < TestCase
     assert_equal 0, count_pattern("#{person.resource_id.to_turtle} a ?type .")
     sts = StatusPersist.where({})
     sts.each do |t|
-      t.load
       rid = t.resource_id
       t.delete
       assert_equal 0, count_pattern("#{rid.to_turtle} a ?type .")
     end
+    no_triples_for_subject(person.resource_id)
   end
 
   def test_model_by_def_name
@@ -376,8 +353,9 @@ class TestModelPersonPersistB < TestCase
     models = [University, PersonPersist, StatusPersist]
     models.each do |m|
       m.all.each do |i|
-        i.load
+        i.load(nil, load_attrs: :all)
         i.delete
+        no_triples_for_subject(i.resource_id)
       end
     end
   end
@@ -388,7 +366,7 @@ class TestModelPersonPersistB < TestCase
                         :some_stuff => [1]})
     if person.exist?
       person_copy = PersonPersist.new
-      person_copy.load(person.resource_id)
+      person_copy.load(person.resource_id,load_attrs: :all)
       person_copy.delete
     end
     assert_equal false, person.exist?(reload=true)
@@ -399,6 +377,7 @@ class TestModelPersonPersistB < TestCase
       assert_instance_of(String, p.name.parsed_value)
     end
     PersonPersist.all.each do |p|
+      p.load(nil,load_attrs: :all)
       p.delete
     end
   end
@@ -429,13 +408,13 @@ class TestModelPersonPersistB < TestCase
         u.bogus = "bla"
       end
       if i == 0
-        u.students = [person1, person2]
+        u.students = [person1.exist? ? PersonPersist.find("person1") : person1, person2.exist? ? PersonPersist.find("person2") : person2]
       end
       u.save
     end
 
     #test with no nested attr
-    data = University.all :load_attrs => [:name => true, :bogus => :optional]
+    data = University.all :load_attrs => [:name => true, :bogus => :optional, :status => true]
     assert_equal 5, data.length
     data.each do |u|
       correct = ((!u.bogus.nil? and (u.name.value == "Oxford")) or (u.name.value != "Oxford"))
@@ -443,6 +422,7 @@ class TestModelPersonPersistB < TestCase
       if u.name == "Stanford" || u.name == "Cambridge"
         #lazy loading here just this attribute
         st = u.status
+        assert st.length == 1
         assert_instance_of Array, st
         assert_instance_of StatusPersist, st[0]
         desc = st[0].description
@@ -502,7 +482,7 @@ class TestModelPersonPersistB < TestCase
     end
 
     University.all.each do |u|
-      u.load
+      u.load(nil,load_attrs: :all)
       u.delete
     end
   end

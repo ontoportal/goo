@@ -36,14 +36,14 @@ class TestModelUnnamed < TestCase
     obj.save
     assert_equal true, obj.exist?(reload=true)
     load_obj = Unnamed.new
-    load_obj.load(obj.resource_id)
+    load_obj.load(obj.resource_id, :load_attrs => :all)
     assert_equal obj.prop1[0], load_obj.prop1[0].parsed_value
     assert obj.prop1.length == load_obj.prop1.length
     assert_equal obj.name, load_obj.name.parsed_value
     load_obj.name= "changed value"
     load_obj.save
     load_obj = Unnamed.new
-    load_obj.load(obj.resource_id)
+    load_obj.load(obj.resource_id, :load_attrs => :all)
     assert_equal obj.prop1[0], load_obj.prop1[0].parsed_value
     assert_equal "changed value", load_obj.name.parsed_value
     assert_equal obj.resource_id.value, load_obj.resource_id.value
