@@ -27,4 +27,4 @@ Gemfile.local
 Gemfile.lock
 
 .idea/*
-.projectFilesBackup/*
+projectFilesBackup/*
