@@ -9,125 +9,66 @@ module Goo
         base.extend(ClassMethods)
       end
 
-      def index
-
-
-
-
-
-
-        doc = get_indexable_object
-
-
-        #document = JSON.dump copy_to_index
-
-        Goo.search_connection.add doc
-
-        self.class.commit
-        #Goo.search_connection.commit :commit_attributes => {}
-
-        #puts copy_to_index
-
-   #     self.class.solr.add copy_to_index
-
+      def index()
+        doc = get_indexable_object()
+        Goo.search_connection.add(doc)
       end
 
-      def unindex
-
-        id = get_index_id
-
-        puts id
-
-        Goo.search_connection.delete_by_id get_index_id
-
-
-
-
-        self.class.commit
-
-
+      def unindex()
+        id = get_index_id()
+        Goo.search_connection.delete_by_id(id)
       end
 
-
-      def get_index_id
+      def get_index_id()
         return self.class.goop_settings[:search_options][:index_id].call(self)
       end
 
-
-      def get_indexable_object
-
+      def get_indexable_object()
         doc = self.class.goop_settings[:search_options][:document].call(self)
-        doc[:id] = get_index_id
+        doc[:id] = get_index_id()
         return doc
       end
 
-
-
       module ClassMethods
 
-
         def search(q)
-          response = Goo.search_connection.get 'select', :params => {:q => q}
-
-
-
-          response["response"]["docs"].each{|doc| puts doc }
-
-
-
-          #binding.pry
+          response = Goo.search_connection.get('select', :params => {:q => q})
+          return response
         end
 
         def indexBatch(collection)
           docs = Array.new
           collection.each do |c|
-             docs << c.get_indexable_object
-
-
-            #binding.pry
-
-
-
+             docs << c.get_indexable_object()
           end
 
-
-
-
-          Goo.search_connection.add docs
-
-          commit
+          Goo.search_connection.add(docs)
         end
-
 
         def unindexBatch(collection)
           docs = Array.new
           collection.each do |c|
-            docs << c.get_index_id
+            docs << c.get_index_id()
           end
 
-          Goo.search_connection.delete_by_id docs
-
-
-          commit
-
+          Goo.search_connection.delete_by_id(docs)
         end
-
 
         def unindexByQuery(query)
-          Goo.search_connection.delete_by_query query
-
-
-          commit
-
+          Goo.search_connection.delete_by_query(query)
         end
 
-
-        def commit(attrs=nil)
-          Goo.search_connection.commit :commit_attributes => attrs || {}
+        def indexCommit(attrs=nil)
+          Goo.search_connection.commit(:commit_attributes => attrs || {})
         end
 
-        def optimize(attrs=nil)
-          Goo.search_connection.optimize :optimize_attributes => attrs || {}
+        def indexOptimize(attrs=nil)
+          Goo.search_connection.optimize(:optimize_attributes => attrs || {})
+        end
+
+        def indexClear()
+          # WARNING: this deletes ALL data from the index
+          unindexByQuery("*:*")
         end
       end
   end

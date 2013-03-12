@@ -44,7 +44,6 @@ end
 
 class TestModelSearch < TestCase
 
-
   def setup
     @terms = [
       Term.new(
@@ -73,46 +72,81 @@ class TestModelSearch < TestCase
   def teardown
   end
 
-
   def initialize(*args)
     super(*args)
   end
 
   def test_search
-   # binding.pry
-
-    #@term.unindex
-    #@term.index
-
-    Term.search("*:*")
-
-    #terms = Term.where :ontology => Ontology.find("SNOMED")
-    #terms.each do |t|
-    #  t.index
-    #end
-    #Terms.indexBatch terms
-
+    Term.indexClear()
+    @terms[1].index()
+    Term.indexCommit()
+    resp = Term.search(@terms[1].prefLabel)
+    assert_equal(1, resp["response"]["docs"].length)
+    assert_equal @terms[1].prefLabel, resp["response"]["docs"][0]["prefLabel"]
   end
 
-
   def test_unindex
-    @terms[0].unindex
+    Term.indexClear()
+    @terms[1].index()
+    Term.indexCommit()
+    resp = Term.search(@terms[1].prefLabel)
+    assert_equal(1, resp["response"]["docs"].length)
+
+    @terms[1].unindex()
+    Term.indexCommit()
+    resp = Term.search(@terms[1].prefLabel)
+    assert_equal(0, resp["response"]["docs"].length)
   end
 
   def test_unindexByQuery
-    query = "submissionAcronym:" + @terms[0].submissionAcronym
-    Term.unindexByQuery query
+    Term.indexClear()
+    @terms[1].index()
+    Term.indexCommit()
+    resp = Term.search(@terms[1].prefLabel)
+    assert_equal(1, resp["response"]["docs"].length)
+
+    query = "submissionAcronym:" + @terms[1].submissionAcronym
+    Term.unindexByQuery(query)
+    Term.indexCommit()
+
+    resp = Term.search(@terms[1].prefLabel)
+    assert_equal(0, resp["response"]["docs"].length)
   end
 
   def test_index
-    @terms[0].index
+    Term.indexClear()
+    @terms[0].index()
+    Term.indexCommit()
+    resp = Term.search(@terms[0].prefLabel)
+    assert_equal(1, resp["response"]["docs"].length)
+    assert_equal @terms[0].prefLabel, resp["response"]["docs"][0]["prefLabel"]
   end
 
   def test_indexBatch
+    Term.indexClear()
     Term.indexBatch(@terms)
+    Term.indexCommit()
+    resp = Term.search("*:*")
+    assert_equal(2, resp["response"]["docs"].length)
   end
 
   def test_unindexBatch
+    Term.indexClear()
+    Term.indexBatch(@terms)
+    Term.indexCommit()
+    resp = Term.search("*:*")
+    assert_equal(2, resp["response"]["docs"].length)
+
     Term.unindexBatch(@terms)
+    Term.indexCommit()
+    resp = Term.search("*:*")
+    assert_equal(0, resp["response"]["docs"].length)
+  end
+
+  def test_indexClear
+    Term.indexClear()
+    Term.indexCommit()
+    resp = Term.search("*:*")
+    assert_equal(0, resp["response"]["docs"].length)
   end
 end

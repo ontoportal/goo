@@ -59,7 +59,7 @@ module Goo
 
     if @@_configuration.include? :search_conf
       @@_search_conf = @@_configuration[:search_conf]
-      @@_search_connection = RSolr.connect :url => @@_search_conf[:solr_server]
+      @@_search_connection = RSolr.connect :url => @@_search_conf[:search_server]
     end
 
     @@_default_store = SparqlRd::Repository.endpoint(stores[0][:name]) \

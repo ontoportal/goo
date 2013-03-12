@@ -30,7 +30,7 @@ module TestInit
           :rdf => "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
           :default => :goo,
         }
-        conf[:search_conf] = { :solr_server => 'http://ncbo-dev-app-02.stanford.edu:8080/solr/' }
+        conf[:search_conf] = { :search_server => 'http://ncbo-dev-app-02.stanford.edu:8080/solr/' }
       end
     end
   end
