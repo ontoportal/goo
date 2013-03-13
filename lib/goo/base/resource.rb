@@ -55,15 +55,22 @@ module Goo
       def shape_attribute(attr)
         return if attr == :resource_id
         attr = attr.to_sym
-        validators = self.class.attribute_validators(attr)
-        cardinality_opt = validators[:cardinality]
-        card_validator = nil
-        if cardinality_opt
-          card_validator = Goo::Validators::CardinalityValidator.new(cardinality_opt)
-        end
-        prx = AttributeValueProxy.new(card_validator,
-                                      @attributes[:internals])
+
+
+
         define_singleton_method("#{attr}=") do |*args|
+
+          #=====================
+          validators = self.class.attribute_validators(attr)
+          cardinality_opt = validators[:cardinality]
+          card_validator = nil
+          if cardinality_opt
+            card_validator = Goo::Validators::CardinalityValidator.new(cardinality_opt)
+          end
+          prx = AttributeValueProxy.new(card_validator,
+                                        @attributes[:internals])
+          #=====================
+
           in_load = false
           if args[-1].kind_of? Hash
             in_load = args[-1].include? :in_load
