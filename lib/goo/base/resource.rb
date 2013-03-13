@@ -6,6 +6,7 @@ module Goo
 
     class Resource < OpenStruct
       include Goo::Base::Settings
+      include Goo::Search
 
       attr_reader :attributes
       attr_reader :inverse_atttributes
