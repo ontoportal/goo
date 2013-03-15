@@ -95,7 +95,8 @@ module Goo
         end
 
         def type_uri
-          return prefix + goop_settings[:model].to_s.camelize
+          goop_settings[:model_prefix_camelize] ||= prefix + goop_settings[:model].to_s.camelize
+          return goop_settings[:model_prefix_camelize]
         end
 
         def collection_attribute? attr
@@ -173,7 +174,8 @@ module Goo
         end
 
         def goo_name
-          return @goop_settings[:model].to_s.underscore.to_sym
+          @goop_settings[:model_underscore] ||= @goop_settings[:model].to_s.underscore.to_sym
+          return @goop_settings[:model_underscore]
         end
 
         def model(*args)
