@@ -57,8 +57,6 @@ module Goo
         return if attr == :resource_id
         attr = attr.to_sym
 
-
-
         define_singleton_method("#{attr}=") do |*args|
 
           #=====================
@@ -468,6 +466,7 @@ module Goo
 
       def self.page(*args)
         page_n = args[0].delete(:page) || 1
+        raise ArgumentError, "page mush be a number > 0" if (page_n < 1 or !(page_n.kind_of? Fixnum))
         size = args[0].delete(:size) || 20
         load_attrs = args.delete(:load_attrs)
 
