@@ -41,6 +41,12 @@ Rake::TestTask.new do |t|
   t.test_files = FileList['test/test_model_find.rb']
 end
 
+Rake::TestTask.new do |t|
+  t.libs = []
+  t.name = "benchmark"
+  t.test_files = FileList['test/benchmark.rb']
+end
+
 desc "Run test coverage analysis"
 task :coverage do
   puts "Code coverage reports will be visible in the /coverage folder"
