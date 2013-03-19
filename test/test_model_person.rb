@@ -23,6 +23,8 @@ class ContactData < Goo::Base::Resource
   def initialize(attributes = {})
     super(attributes)
   end
+
+  model :contact_data, :schemaless => true
 end
 
 #zero conf model
@@ -34,8 +36,14 @@ class LambdaResourceId < Goo::Base::Resource
   end
 end
 
+begin
 class SomeTypeDef  < Goo::Base::Resource
   attribute :type, :namespace => :rdf
+end
+rescue Exception => e
+  unless e.kind_of? ArgumentError
+    raise e
+  end
 end
 
 class Person < Goo::Base::Resource
@@ -47,6 +55,7 @@ class Person < Goo::Base::Resource
   attribute :custom_values , :custom => { :with_max => 999 }
   attribute :numbers , :instance_of => { :with => Fixnum }
   attribute :email, :email => true
+  attribute :some_stuff
 
   def initialize(attributes = {})
     super(attributes)
@@ -140,7 +149,7 @@ class TestModelPersonA < TestCase
     begin
       person = Person.new({:name => "Unique", :some => 1 })
     rescue => e
-      assert_instance_of ArgumentError, e
+      assert_instance_of NoMethodError, e
     end
   end
 
@@ -212,22 +221,6 @@ class TestModelPersonA < TestCase
     resource_id = obj.resource_id
     assert_instance_of(RDF::IRI, resource_id)
     assert_equal(resource_id.value,'http://xxx/value1-value2')
-  end
-
-  def test_type_attr
-    begin
-      x = SomeTypeDef.new(:type => "a")
-      assert(1 == 0)
-    rescue => e
-      assert_instance_of(ArgumentError, e)
-    end
-    begin
-      x = SomeTypeDef.new
-      x.type = "a"
-      assert(1 == 0)
-    rescue => e
-      assert_instance_of(ArgumentError, e)
-    end
   end
 
   def test_email_validation

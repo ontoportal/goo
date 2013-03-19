@@ -260,6 +260,142 @@ module Goo
               end
             end
           end
+          check_rdftype_inconsistency(attr_name)
+          shape_attribute(attr_name)
+        end
+
+
+        def shape_attribute(attr)
+          return if attr == :resource_id
+          attr = attr.to_sym
+
+          define_method("#{attr}=") do |*args|
+
+
+            in_load = false
+            if args[-1].kind_of? Hash
+              in_load = args[-1].include? :in_load
+              args = args[0,args.length-1]
+            end
+            if self.class.goop_settings[:collection] and\
+               self.class.goop_settings[:collection][:attribute] == attr
+              if args.length > 1
+                raise ArgumentError, "#{attr} is a collection value and must have a single value"
+              end
+              value = args[0]
+              self.internals.collection = value
+              return self.instance_variable_set("@#{attr}",value)
+            end
+            if !in_load and internals.lazy_loaded? and !(internals.loaded_attrs.include? attr.to_sym)
+              raise NotLoadedResourceError,
+                "Object has been lazy loaded. Call `load` to access/write attributes"
+            end
+            if self.class.inverse_attr?(attr)
+              raise ArgumentError, "#{attr} is defined as inverse property and cannot be set."
+            end
+            current_value = @table[attr]
+            value = args.flatten
+            if value and !value.instance_of? SparqlRd::Resultset::Literal
+              if !value.respond_to? :goop_settings
+                value.map! do |v|
+                  next if v.kind_of? Hash and v.include? :in_load
+                  if v.nil?
+                    nil
+                  else
+                    if v.kind_of? Resource
+                      v
+                    else
+                      SparqlRd::Resultset.get_literal_from_object(v)
+                    end
+                  end
+                end
+              end
+            end
+
+            validators = self.class.attribute_validators(attr)
+            cardinality_opt = validators[:cardinality]
+            card_validator = nil
+            if cardinality_opt
+              card_validator = Goo::Validators::CardinalityValidator.new(cardinality_opt)
+            end
+
+            prx = AttributeValueProxy.new(card_validator,
+                                          @attributes[:internals])
+            tvalue = prx.call({ :value => value, :attr => attr,
+                                :current_value => current_value })
+            if attr == :uuid
+              #uuid forced to be unique
+              tvalue = tvalue[0]
+            end
+
+            if internals.persistent?
+              if not internals.lazy_loaded? and
+                 not in_load and
+                 self.class.goop_settings[:unique] and
+                 self.class.goop_settings[:unique][:fields] and
+                 self.class.goop_settings[:unique][:fields].include? attr
+                 unless value[0] == self.send("#{attr}")
+                   raise KeyFieldUpdateError,
+                     "Attribute '#{attr}' cannot be changed in a persisted object."
+                 end
+              end
+            end
+            if !in_load
+              if attr != :uuid and @table[attr]
+                internals.modified = internals.modified || (@table[attr] != tvalue)
+              elsif attr != :uuid
+                internals.modified = true
+              end
+            end
+            @table[attr] = tvalue
+          end
+
+          define_method("#{attr}") do |*args|
+            as_instance_val = self.instance_variable_get("@#{attr}")
+            return as_instance_val unless as_instance_val.nil?
+
+            attr_cpy = attr
+            if self.class.goop_settings[:collection] and\
+               self.class.goop_settings[:collection][:attribute] == attr_cpy
+              return self.internals.collection
+            end
+
+            return aggregate(attr) if self.class.aggregate? attr
+
+            origin_attr = attr_cpy
+            use_as_attr = self.class.use_as attr_cpy
+            attr_cpy = use_as_attr unless use_as_attr.nil?
+
+            if (not self.class.inverse_attr? attr_cpy) and
+              internals.lazy_loaded? and (!internals.loaded_attrs.include?(attr_cpy.to_sym) or use_as_attr)
+              return load_on_demand([attr_cpy], use_as_attr.nil? ? nil : [origin_attr])
+            end
+
+            return inverse_attr_values(attr_cpy,origin_attr) if self.class.inverse_attr? attr_cpy
+
+            attr_value = @table[origin_attr]
+            #returning default value
+            if attr_value.nil?
+              return nil unless self.persistent?
+              attrs = self.class.goop_settings[:attributes]
+              if attrs.include? attr_cpy
+                if attrs[attr_cpy].include? :default
+                  default_value = attrs[attr_cpy][:default].call(self)
+                  @table[attr_cpy] = default_value
+                  return default_value
+                end
+              end
+            end
+
+            return attr_value
+          end
+        end
+
+        def check_rdftype_inconsistency(k)
+          pred = uri_for_predicate(k)
+          if RDF.rdf_type?(pred)
+            raise ArgumentError, "A model cannot use the rdf:type predicate. This is a reserved predicate for internal use."
+          end
         end
 
         def unique(*args)
