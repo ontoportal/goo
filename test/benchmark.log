@@ -7,3 +7,15 @@ page some attrs:  0.210000   0.010000   0.220000 (  0.497934)
 page some attrs: 22.727 pages/sec.
 delete:  1.330000   0.090000   1.420000 ( 19.642753)
 delete: 70.423 instances/sec.
+
+After DSL done right. Define singleton ... gone.
+
+        user     system      total        real
+create:  0.650000   0.090000   0.740000 (  1.428368)
+create: 135.135 instances/sec.
+page all attrs:  0.420000   0.010000   0.430000 (  1.527965)
+page all attrs: 11.628 pages/sec.
+page some attrs:  0.130000   0.000000   0.130000 (  0.410254)
+page some attrs: 38.462 pages/sec.
+delete:  1.080000   0.100000   1.180000 ( 20.046395)
+delete: 84.746 instances/sec.
