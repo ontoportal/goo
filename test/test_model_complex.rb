@@ -448,7 +448,8 @@ class TestModelComplex < TestCase
   end
 
   def test_read_only_class
-    data = { prefLabel: "some label",
+    data = { resource_id: "http://example.org/term/1",
+             prefLabel: "some label",
              synonym: ["some syn 1", "some syn 2"],
     }
     read_only = Term.read_only("http://example.org/term/1", data)
