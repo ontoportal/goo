@@ -40,6 +40,11 @@ module Goo
       end
 
       def self.read_only(resource_id,data,model=nil)
+        if (data.include? :resource_id) or (data.include? "resource_id")
+          data = data.dup
+          data.delete :resource_id
+          data.delete "resource_id"
+        end
         if model.nil?
           model = self
         end
