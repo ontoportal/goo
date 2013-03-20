@@ -39,7 +39,10 @@ module Goo
         end
       end
 
-      def self.read_only(model,resource_id,data)
+      def self.read_only(resource_id,data,model=nil)
+        if model.nil?
+          model = self
+        end
         unless model.respond_to? :type_uri
           raise ArgumentError, "Model must be a Goo model"
         end

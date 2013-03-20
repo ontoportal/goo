@@ -245,7 +245,20 @@ class TestModelPersonA < TestCase
              multiple_vals: ["some mult vals", 100],
              birth_date: DateTime.now.xmlschema
     }
-    read_only = Goo::Base::Resource.read_only(Person, "http://example.org", data)
+    read_only = Goo::Base::Resource.read_only("http://example.org", data, Person)
+    assert read_only.resource_id.kind_of? SparqlRd::Resultset::IRI
+    assert read_only.resource_id.value == "http://example.org"
+    assert_raise Exception do
+      read_only.save
+    end
+    assert_raise Exception do
+      read_only.delete
+    end
+    assert read_only.name.kind_of? SparqlRd::Resultset::StringLiteral
+    assert read_only.attributes[:name].kind_of? SparqlRd::Resultset::StringLiteral
+    assert read_only.attributes[:name] == "some name"
+
+    read_only = Person.read_only("http://example.org", data)
     assert read_only.resource_id.kind_of? SparqlRd::Resultset::IRI
     assert read_only.resource_id.value == "http://example.org"
     assert_raise Exception do
