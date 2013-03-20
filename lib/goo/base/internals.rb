@@ -12,12 +12,14 @@ module Goo
       attr_accessor :loaded_attrs
       attr_accessor :collection
       attr_accessor :graph_id
+      attr_accessor :read_only
 
       alias :modified? :modified
 
       def initialize(base_instance)
         @_base_instance = base_instance
         @_id = nil
+        @read_only = false
       end
 
       def new_resource(store_name = nil)

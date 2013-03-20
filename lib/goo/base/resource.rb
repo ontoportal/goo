@@ -39,6 +39,19 @@ module Goo
         end
       end
 
+      def self.read_only(model,resource_id,data)
+        unless model.respond_to? :type_uri
+          raise ArgumentError, "Model must be a Goo model"
+        end
+        inst = model.new(data)
+        inst.internals.read_only = true
+        unless (resource_id.kind_of? SparqlRd::Resultset::IRI)
+          resource_id = SparqlRd::Resultset::IRI.new resource_id
+        end
+        inst.internals.id = resource_id
+        return inst
+      end
+
       def self.inherited(subclass)
         #hook to set up default configuration.
         subclass.model
@@ -184,6 +197,10 @@ module Goo
       end
 
       def delete(in_update=false)
+        if self.internals.read_only
+          raise Exception, "Read only objects cannot be deleted"
+        end
+
         self.load unless self.loaded?
         internals.delete? unless in_update
 
@@ -226,6 +243,9 @@ module Goo
       end
 
       def save()
+        if self.internals.read_only
+          raise Exception, "Read only objects cannot be saved"
+        end
         return nil if not self.modified?
         if not valid?
             exc = NotValidException.new
