@@ -447,5 +447,23 @@ class TestModelComplex < TestCase
     end
   end
 
+  def test_read_only_class
+    data = { prefLabel: "some label",
+             synonym: ["some syn 1", "some syn 2"],
+    }
+    read_only = Term.read_only("http://example.org/term/1", data)
+    assert read_only.resource_id.kind_of? SparqlRd::Resultset::IRI
+    assert read_only.resource_id.value == "http://example.org/term/1"
+    assert_raise Exception do
+      read_only.save
+    end
+    assert_raise Exception do
+      read_only.delete
+    end
+    assert read_only.prefLabel.kind_of? SparqlRd::Resultset::StringLiteral
+    assert read_only.attributes[:prefLabel].kind_of? SparqlRd::Resultset::StringLiteral
+    assert read_only.attributes[:prefLabel] == "some label"
+  end
+
 end
 
