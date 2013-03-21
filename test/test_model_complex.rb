@@ -9,7 +9,8 @@ end
 class Term < Goo::Base::Resource
   model :class,
         :on_initialize => lambda { |t| t.load_attributes([:prefLabel, :synonym, :definition]) },
-        :namespace => :owl
+        :namespace => :owl,
+        :schemaless => true
 
   attribute :resource_id #special attribute to name the object manually
 
@@ -464,6 +465,13 @@ class TestModelComplex < TestCase
     assert read_only.prefLabel.kind_of? SparqlRd::Resultset::StringLiteral
     assert read_only.attributes[:prefLabel].kind_of? SparqlRd::Resultset::StringLiteral
     assert read_only.attributes[:prefLabel] == "some label"
+  end
+
+
+  def test_nil_attributes
+    t = Term.new
+    t.my_new_attr = "bla"
+    assert t.my_new_attr == ["bla"]
   end
 
 end
