@@ -244,7 +244,7 @@ class TestModelComplex < TestCase
     assert ch.length == 2
     (ch.select { |c| c.resource_id.value == "http://someiri.org/van" }).length == 1
     (ch.select { |c| c.resource_id.value == "http://someiri.org/cargo" }).length == 1
-    assert vehicle.parents = []
+    assert vehicle.parents == []
 
 
     assert cargovan.parents.length == 2
