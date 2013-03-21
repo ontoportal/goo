@@ -31,8 +31,9 @@ module Goo
 
       module ClassMethods
 
-        def search(q)
-          response = Goo.search_connection.get('select', :params => {:q => q})
+        def search(q, params={})
+          params["q"] = q
+          response = Goo.search_connection.get('select', :params => params)
           return response
         end
 
