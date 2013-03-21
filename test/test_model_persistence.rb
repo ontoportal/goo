@@ -350,6 +350,14 @@ class TestModelPersonPersistB < TestCase
     u.save
     u = University.find("Stanford")
     assert (not u.nil?)
+
+    stanford = University.find("Stanford")
+    students = stanford.students
+    students.each do |s|
+      s.load
+      assert s.some_stuff.length == 1
+    end
+
     models = [University, PersonPersist, StatusPersist]
     models.each do |m|
       m.all.each do |i|
@@ -358,6 +366,7 @@ class TestModelPersonPersistB < TestCase
         no_triples_for_subject(i.resource_id)
       end
     end
+
   end
 
   def test_exception_on_get_lazy_load
