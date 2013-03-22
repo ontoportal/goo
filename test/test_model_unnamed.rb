@@ -54,7 +54,6 @@ class TestModelUnnamed < TestCase
   def test_named_new_from_hash
     list = Unnamed.where({})
     list.each do |u|
-      u.load
       u.delete
     end
     list = Unnamed.where({})
@@ -64,7 +63,6 @@ class TestModelUnnamed < TestCase
     list = Unnamed.where({})
     assert_equal 1, list.length
     list.each do |u|
-      u.load
       u.delete
     end
     list = Unnamed.where({})
