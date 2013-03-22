@@ -407,6 +407,7 @@ module Goo
         only_known = (attributes.delete :only_known) || true
         extra_filter = attributes.delete :filter
         load_attrs = (attributes.delete :load_attrs) || :defined
+        mark_as_loaded = (load_attrs == :defined)
         load_attrs = defined_attributes_not_transient if load_attrs == :defined
         load_attrs << :uuid if anonymous? and load_attrs.class == Array
         load_attrs[:uuid]=true if anonymous? and load_attrs.class == Hash
@@ -513,6 +514,11 @@ module Goo
                 end
               end
             end
+          end
+        end
+        if mark_as_loaded
+          items.values.each do |v|
+            v.internals.loaded
           end
         end
         if in_aggregate

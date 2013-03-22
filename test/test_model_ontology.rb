@@ -15,6 +15,7 @@ end
 class Project < Goo::Base::Resource
   attribute :name, :cardinality => { :max => 1, :min => 1 }
   attribute :ontologyUsed, :instance_of => { :with => :ontology }, :cardinality => { :min => 1 }
+  attribute :some_stuff
 end
 
 
@@ -59,7 +60,8 @@ class TestModelOntology < TestCase
                          :homePage => "http://bioportal.bioontology.org/doc")
       p = Project.new({
           :name => "Great Project",
-          :ontologyUsed => [ont]
+          :ontologyUsed => [ont],
+          :some_stuff => [1]
       })
 
       begin
@@ -75,7 +77,8 @@ class TestModelOntology < TestCase
       assert_equal true, p.exist?(reload=true)
       p2 = Project.new({
           :name => "Not So Great",
-          :ontologyUsed => [ont]
+          :ontologyUsed => [ont],
+          :some_stuff => [1]
       })
       p2.save
       assert_equal true, p2.exist?(reload=true)
@@ -84,7 +87,6 @@ class TestModelOntology < TestCase
       assert_equal 2, projects.length
       projects.each do |p|
         assert_instance_of Project, p
-        p.load
         assert_instance_of String, p.name.value
       end
 
@@ -95,6 +97,13 @@ class TestModelOntology < TestCase
         assert_equal "SNOMED", o.acronym.value
       end
 
+      onts = Ontology.where(acronym: "SNOMED", submissionId: 1)
+      onts[0].projects.each do |p|
+        assert_raise ArgumentError do
+          p.load
+        end
+        assert p.some_stuff.length == 1
+      end
 
       #preloading inverse attributes in instance variables
       onts = Ontology.where(acronym: "SNOMED", submissionId: 1, load_attrs: { projects: { name: true }, acronym: true })
