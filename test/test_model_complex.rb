@@ -45,7 +45,6 @@ class TestModelComplex < TestCase
 
     terms = Term.where submission: submission
     terms.each do |t|
-      t.load
       t.delete
     end
 
@@ -88,7 +87,6 @@ class TestModelComplex < TestCase
     terms = Term.where submission: submission
     assert terms.length == 1
     term = terms[0]
-    term.load
     term.submission.resource_id.value == "http://goo.org/default/submission/submission1"
     term.deprecated = false
     term.save
@@ -100,7 +98,6 @@ class TestModelComplex < TestCase
 
     terms = Term.where submission: submission
     terms.each do |t|
-      t.load
       t.delete
     end
     assert_equal 0, count_pattern("GRAPH <#{submission.resource_id.value}> { #{vehicle.resource_id.to_turtle} ?p ?o . }")
@@ -124,7 +121,6 @@ class TestModelComplex < TestCase
     [s1, s2].each do |s|
       terms = Term.where submission: s
       terms.each do |t|
-        t.load
         t.delete
       end
     end
@@ -159,7 +155,6 @@ class TestModelComplex < TestCase
    [s1, s2].each do |s|
      terms = Term.where submission: s
      terms.each do |t|
-       t.load
        t.delete
      end
    end
@@ -177,7 +172,6 @@ class TestModelComplex < TestCase
 
     terms = Term.where submission: submission
     terms.each do |t|
-      t.load
       t.delete
       assert_equal 0, count_pattern("GRAPH <#{t.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
     end
@@ -284,7 +278,6 @@ class TestModelComplex < TestCase
 
     terms = Term.where submission: submission
     terms.each do |t|
-      t.load
       t.delete
       assert_equal 0, count_pattern("GRAPH <#{submission.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
     end
@@ -303,7 +296,6 @@ class TestModelComplex < TestCase
     terms = Term.where submission: submission
     terms.each do |t|
       assert t.internals.collection.kind_of? Submission
-      t.load
       t.delete
       assert_equal 0, count_pattern("GRAPH <#{t.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
     end
@@ -346,7 +338,6 @@ class TestModelComplex < TestCase
     terms = Term.where submission: submission
     terms.each do |t|
       assert t.internals.collection.kind_of? Submission
-      t.load
       t.delete
       assert_equal 0, count_pattern("GRAPH <#{t.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
     end
