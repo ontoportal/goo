@@ -122,8 +122,6 @@ class TestModelwhere < TestCase
         toy.name_odd = n
         engine_blue = ToyFeature.where(:color => { :code => "blue"})[0]
         assert !engine_blue.nil?
-        assert engine_blue.lazy_loaded?
-        engine_blue.load
         #the only blue thing is an engine
         assert_equal "engine", engine_blue.description.value
 
