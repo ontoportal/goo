@@ -271,4 +271,8 @@ class TestModelPersonA < TestCase
     assert read_only.attributes[:name].kind_of? SparqlRd::Resultset::StringLiteral
     assert read_only.attributes[:name] == "some name"
   end
+
+  def test_list_fields
+    assert Person.unique[:fields] == [:name]
+  end
 end

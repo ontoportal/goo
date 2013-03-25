@@ -399,15 +399,7 @@ module Goo
         end
 
         def unique(*args)
-          if args[-1].is_a?(Hash)
-            options = args.pop
-          else
-            options = {}
-          end
-          options[:generator] = options[:generator] || :concat_and_encode
-          options[:policy] = options[:policy] || :unique
-          unique_context = { :fields => args }.merge(options)
-          @goop_settings[:unique] = unique_context
+          @goop_settings[:unique]
         end
 
         def graph_policy(graph_policy)
