@@ -4,10 +4,8 @@ TestInit.configure_goo
 
 class Named < Goo::Base::Resource
   model :named,  :schemaless => true
-  attribute :name, :cardinality => { :max => 1, :min => 1 }
+  attribute :name, :cardinality => { :max => 1, :min => 1 }, :unique => true
   attribute :has_unnammed, :instance_of => { :with => :unnamed }
-
-  unique :name
 
   def initialize(attributes = {})
     super(attributes)

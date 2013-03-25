@@ -4,8 +4,7 @@ TestInit.configure_goo
 
 class Model1 < Goo::Base::Resource
   model :model1, :schemaless => true
-  attribute :prop, :cardinality => { :max => 1, :min => 1 }
-  unique :prop
+  attribute :prop, :cardinality => { :max => 1, :min => 1 }, :unique => true
 
   def initialize(attributes = {})
     super(attributes)
