@@ -190,4 +190,18 @@ class TestModelOntology < TestCase
       os.valid?
       assert(!os.errors[:homePage].nil?)
     end
+
+
+    def test_inverse_loading
+      flush()
+      ont = Ontology.new(acronym: "SNOMED", name: "SNOMED CT", :submissionId => 1)
+      ont.save
+      p = Project.new({
+            :name => "Great Project"
+      })
+      p.ontologyUsed = ont
+      p.save 
+      assert ont.projects.length == 1
+      flush()
+    end
 end
