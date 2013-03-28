@@ -554,10 +554,10 @@ eos
 
       if items
         fitems = items.keys.map { |i| "?subject = <#{i}>" }
-        filter = filter + "FILTER (%s)"%(fitems.join (" || "))
+        filter = filter + "\nFILTER (%s)"%(fitems.join (" || "))
       end
 
-      if page == "" and !count and !in_aggregate
+      if page == "" and !count and !in_aggregate and !items
         page = "ORDER BY ?subject"
       end
       if extra_filter
