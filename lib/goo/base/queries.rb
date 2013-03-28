@@ -515,11 +515,12 @@ eos
         patterns[graph_id] << attributes_patterns.map { |pattern| "OPTIONAL { #{pattern} }"}
       end
 
+      filter = ""
       if all_attributes
         patterns[graph_id] << "?subject ?predicate ?object ."
+        filter = "FILTER (!isBlank(?object))"
       end
 
-      filter = ""
       if unbound.length > 0
         fitems = []
         unbound.each_index do |ib|
@@ -527,7 +528,7 @@ eos
           patterns[graph_id] << "OPTIONAL { ?subject <#{predicate}> ?#{unbound[ib]}#{ib} }"
           fitems << "!bound(?#{unbound[ib]}#{ib})"
         end
-        filter =  "FILTER (%s)"%(fitems.join (" && "))
+        filter = "FILTER (%s)"%(fitems.join (" && "))
       end
 
       graph_patterns = []
