@@ -76,8 +76,12 @@ SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} ?predicate ?object
 eos
       elsif attributes.length == 1
        predicate = model_class.uri_for_predicate(attributes[0])
+       ffilter = ""
+       if predicate == 'http://www.w3.org/2000/01/rdf-schema#subClassOf'
+         ffilter = "\nFILTER (!isBlank(?object))" #A hack for the Class model.
+       end
        q = <<eos
-SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} <#{predicate}> ?object } }
+SELECT DISTINCT * WHERE { #{graph} { #{resource_id.to_turtle} <#{predicate}> ?object } #{ffilter} }
 eos
       else
         return Hash.new
