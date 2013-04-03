@@ -65,8 +65,7 @@ module Goo
       end
 
       def contains_data?
-        ((@attributes.has_key? :internals) and @attributes.length > 1) or
-          ((not @attributes.has_key? :internals) and @attributes.length > 0)
+        @attributes.length > 1
       end
 
       def internals()
