@@ -112,6 +112,9 @@ class TestBenchmarkModel < TestCase
                            load_attrs: some_attrs
         page = page_model.next_page
       end
+  def calculate_percentile(array, percentile)
+    array.sort[(percentile * array.length).ceil - 1]
+  end
     end
     puts "page some attrs: %.3f pages/sec."%(page_count/rep.total)
   end
