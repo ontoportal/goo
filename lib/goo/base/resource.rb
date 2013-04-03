@@ -4,7 +4,7 @@ require_relative "../utils/rdf"
 module Goo
   module Base
 
-    class Resource < OpenStruct
+    class Resource
       include Goo::Base::Settings
       include Goo::Search
 
@@ -18,7 +18,6 @@ module Goo
           unless model != nil
         raise ArgumentError, "Can't create model, model settings do not contain graph policy." \
           unless self.class.goop_settings[:graph_policy] != nil
-        super()
 
         @attributes = attributes.dup
         @attributes[:internals] = Internals.new(self)
@@ -33,7 +32,7 @@ module Goo
           if !self.respond_to? :uuid
             self.class.shape_attribute :uuid
           end
-          if not @table.include? :uuid
+          if not @attributes.include? :uuid
             self.uuid = Goo.uuid.generate
           end
         end
@@ -87,9 +86,6 @@ module Goo
           next if attr == :internals
           self.send("#{attr}=", *value, :in_load => true)
         end
-        internal_status = @attributes[:internals]
-        @table[:internals] = internal_status
-        @attributes = @table
       end
 
       def method_missing(sym, *args, &block)
@@ -654,7 +650,7 @@ module Goo
                 validator = Goo.validators[val].new(val_options)
                 val_options[:instance] = validator
               end
-              val_options[:instance].validate_each(self,att,@table[att])
+              val_options[:instance].validate_each(self,att,@attributes[att])
             end
           end
         end
