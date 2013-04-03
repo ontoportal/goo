@@ -112,6 +112,17 @@ class TestBenchmarkModel < TestCase
                            load_attrs: some_attrs
         page = page_model.next_page
       end
+    nthreads = 6
+    $THREADS = []
+    result = Benchmark.measure do 
+          bt = Time.now
+          et = Time.now
+        end
+      }.each(&:join)
+    end
+    puts result 
+  end
+
   def calculate_percentile(array, percentile)
     array.sort[(percentile * array.length).ceil - 1]
   end
@@ -123,8 +134,15 @@ class TestBenchmarkModel < TestCase
     perc85 = calculate_percentile(arr,0.85)
     return "%.3f %.3f %.3f %.3f %d"%[avg, max, perc85,sum,arr.length]
   end
+
+  def stats4s(f)
+    arr = []
+    f = File.open(f,"r")
+    f.each do |n|
+      arr << n.to_f
     end
-    puts "page some attrs: %.3f pages/sec."%(page_count/rep.total)
+    f.close()
+    puts stats(arr)
   end
 
   def test_benchmark
