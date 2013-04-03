@@ -1,5 +1,4 @@
 require 'benchmark'
-require 'perftools'
 
 require_relative 'test_case'
 
