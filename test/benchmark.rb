@@ -115,6 +115,14 @@ class TestBenchmarkModel < TestCase
   def calculate_percentile(array, percentile)
     array.sort[(percentile * array.length).ceil - 1]
   end
+
+  def stats(arr)
+    avg = arr.inject{ |sum, el| sum + el }.to_f / arr.size
+    sum = arr.inject{ |sum, el| sum + el }.to_f 
+    max = arr.max
+    perc85 = calculate_percentile(arr,0.85)
+    return "%.3f %.3f %.3f %.3f %d"%[avg, max, perc85,sum,arr.length]
+  end
     end
     puts "page some attrs: %.3f pages/sec."%(page_count/rep.total)
   end
