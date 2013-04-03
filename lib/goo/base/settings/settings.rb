@@ -270,8 +270,6 @@ module Goo
           attr = attr.to_sym
 
           define_method("#{attr}=") do |*args|
-
-
             in_load = false
             if args[-1].kind_of? Hash
               in_load = args[-1].include? :in_load

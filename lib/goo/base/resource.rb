@@ -82,7 +82,10 @@ module Goo
         end
 
         #if attributes are set then set values for properties.
-        @attributes.each_pair do |attr,value|
+        #@attributes.each_pair do |attr,value|
+        keys_attr.each do |attr|
+          value = @attributes[attr]
+          next if value.nil?
           next if attr == :internals
           self.send("#{attr}=", *value, :in_load => true)
         end
