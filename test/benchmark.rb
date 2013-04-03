@@ -1,4 +1,6 @@
 require 'benchmark'
+require 'perftools'
+
 require_relative 'test_case'
 
 TestInit.configure_goo
@@ -84,7 +86,8 @@ class TestBenchmarkModel < TestCase
     puts "create: %.3f instances/sec."%(INSTANCES/rep.total)
   end
 
-  def pages(bench)
+  def pages_internal(some)
+    page_count = 0
     some_attrs =  { :name => true,
                     :attr_0 => true,
                     :attr_sinval_0 =>true,
@@ -94,29 +97,41 @@ class TestBenchmarkModel < TestCase
                     :attr_dateval_0 => true,
                     :attr_dateval_1 => true
                   }
-
-    page_count = 0
-    rep = bench.report("page all attrs:") do
-      page = 1
-      while page
+    page = 1
+    while page
+      if some
+        page_model = BenchmarkModel.page page: page, load_attrs: some_attrs
+      else
         page_model = BenchmarkModel.page page: page
-        page = page_model.next_page
-        page_count = page_model.page_count
       end
+      page = page_model.next_page
+      page_count = page_model.page_count
     end
-    puts "page all attrs: %.3f pages/sec."%(page_count/rep.total)
+    return page_count
+  end
+
+  def pages(bench)
+    page_count = 0
     rep = bench.report("page some attrs:") do
-      page = 1
-      while page
-        page_model = BenchmarkModel.page page: page,
-                           load_attrs: some_attrs
-        page = page_model.next_page
-      end
+      page_count = pages_internal(true)
+    end
+    puts "page some attrs: %.3f pages/sec. Total pages %d"%[page_count/rep.total,page_count]
+    #rep = bench.report("page all attrs:") do
+    #  page_count = pages_internal(false)
+    #end
+    #puts "page all attrs: %.3f pages/sec."%(page_count/rep.total)
+  end
+
+  def concurrency_pages(bench)
     nthreads = 6
     $THREADS = []
     result = Benchmark.measure do 
+      (1..nthreads).map { 
+        Thread.new do
           bt = Time.now
+          countp = pages_internal(true)
           et = Time.now
+          $THREADS << (et-bt)
         end
       }.each(&:join)
     end
@@ -150,6 +165,7 @@ class TestBenchmarkModel < TestCase
     Benchmark.bm(1) do |bench|
       create(bench)
       pages(bench)
+      concurrency_pages(bench)
       delete(bench)
     end
   end
