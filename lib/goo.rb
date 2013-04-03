@@ -1,7 +1,6 @@
 require "pry"
 require "sparql_http"
 
-require "ostruct"
 require "set"
 require "uri"
 require "uuid"
