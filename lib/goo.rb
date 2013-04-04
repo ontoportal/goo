@@ -126,7 +126,7 @@ module Goo
 
   def self.find_prefix_for_uri(uri)
     @@_configuration[:namespaces].each_pair do |prefix,ns|
-      return prefix if uri.start_with? ns
+      return prefix if uri.start_with?(prefix == :default ? @@_configuration[:namespaces][ns] : ns)
     end
     return nil
   end
