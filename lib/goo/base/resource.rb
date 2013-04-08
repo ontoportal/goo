@@ -262,6 +262,7 @@ module Goo
         self.each_linked_base do |attr_name,linked_obj|
           next unless linked_obj.internals.loaded?
           if not linked_obj.valid?
+            binding.pry
             exc = NotValidException.new
               "Attribute '#{attr_name}' links to a non-valid object."
             exc.errors = linked_obj.internals.errors
@@ -443,6 +444,12 @@ module Goo
         end
         items = items || Hash.new
         dependent_items = Hash.new
+        lazy_load_group = {}
+        if not load_attrs.nil? and load_attrs.length > 0
+          load_attrs.each do |k|
+            lazy_load_group[k] = {}
+          end
+        end
         rs.each_solution do |sol|
           resource_id = sol.get(:subject)
           if in_aggregate
@@ -508,9 +515,35 @@ module Goo
                   end
                 end
                 unless sol_attr.to_sym == collection_attr
-                  item.lazy_load_attr(sol_attr.to_sym, value)
+                  #lazy_load_group is to set multiple values at once.
+                  if lazy_load_group.include? sol_attr.to_sym
+                    if not lazy_load_group[sol_attr.to_sym].include? item.resource_id
+                      lazy_load_group[sol_attr.to_sym][item.resource_id] = []
+                    end
+                    if value.respond_to?(:resource_id)
+                      prev_vals = lazy_load_group[sol_attr.to_sym][item.resource_id]
+                      if (prev_vals.select { |x| x.respond_to?(:resource_id) and (x.resource_id == value.resource_id) } ).length == 0
+                        prev_vals << value
+                      end
+                    else
+                      if not value.nil?
+                        lazy_load_group[sol_attr.to_sym][item.resource_id] << value
+                      end
+                    end
+                  else
+                    item.lazy_load_attr(sol_attr.to_sym, value)
+                  end
                 end
               end
+            end
+          end
+        end
+        if lazy_load_group.length > 0
+          lazy_load_group.each do |k,is|
+            is.each do |rid, v|
+              item = items[rid]
+              v.uniq!
+              item.lazy_load_attr(k, v)
             end
           end
         end

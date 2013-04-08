@@ -10,7 +10,7 @@ INT_VALS = 5
 DATE_VALS = 5
 DEP_OBJ = 1
 
-INSTANCES = 100
+INSTANCES = 500
 
 #One model with 100 attributes to stree the system
 class BenchmarkModel < Goo::Base::Resource
@@ -160,12 +160,15 @@ class TestBenchmarkModel < TestCase
   end
 
   def test_benchmark
-    delete(nil)
+    #delete(nil)
     Benchmark.bm(1) do |bench|
-      create(bench)
+      #create(bench)
       pages(bench)
       concurrency_pages(bench)
-      delete(bench)
+      #delete(bench)
+    end
+    $THREADS.each do |x|
+      puts "Thread pages concurrent %.3f"%x
     end
   end
 
