@@ -189,6 +189,14 @@ class TestModelwhere < TestCase
       assert !t.attributes[:part].first.attributes[:name].nil?
     end
 
+    #search for a feature with ToyPart that has white_wheel and white_wheel
+    white = Color.where(:code => "white")[0]
+    white_wheel = ToyFeature.where(:description => "wheel" , :color => white)[0]
+    red_wheel = ToyFeature.where(:description => "wheel" , :color => { :code => "red"})[0]
+    mult = ToyPart.where feature: [white_wheel, red_wheel]
+    mult.each do |x|
+      assert (mult[0].name.value[-1].to_i % 2 == 0)
+    end
 
     toys = ToyObject.all :load_attrs => :defined
     toys.each do |t|
