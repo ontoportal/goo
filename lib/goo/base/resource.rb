@@ -262,7 +262,6 @@ module Goo
         self.each_linked_base do |attr_name,linked_obj|
           next unless linked_obj.internals.loaded?
           if not linked_obj.valid?
-            binding.pry
             exc = NotValidException.new
               "Attribute '#{attr_name}' links to a non-valid object."
             exc.errors = linked_obj.internals.errors
