@@ -16,6 +16,9 @@ module Goo
       else
         xsd_type = SparqlRd::Utils::Xsd.xsd_type_from_value(value)
       end
+      if xsd_type == nil or xsd_type.length == 0
+      binding.pry
+      end
       raise XsdTypeNotFoundForValue, "XSD Type not found for value `#{value}` `#{value.class}`" \
         if xsd_type == nil or xsd_type.length == 0
       SparqlRd::Utils::Xsd.xsd_string_from_value(value,xsd_type)
@@ -433,8 +436,21 @@ eos
 
       patterns[graph_id] = []
 
+      #array expansions
+      pairs = []
+      attributes.each do |name,value|
+       if value.kind_of?(Array) and (value.all? { |r| r.respond_to? :resource_id })
+         value.each do |svalue|
+           pairs << [name,svalue]
+         end
+       else
+         pairs << [name,value]
+       end
+      end
+
       unbound = []
-      attributes.each do |attribute, value|
+
+      pairs.each do |attribute, value|
         next if model_class.collection_attribute? attribute
         if value == :unbound
           unbound << attribute
@@ -478,6 +494,8 @@ eos
           else
             raise ArgumentError, "Nested search cannot be performed due to missing instance_of in `#{attribute}`"
           end
+        elsif value.kind_of?(Array) and (value.all? { |r| r.respond_to? :resource_id })
+          binding.pry
         else
           rdf_object_string = value_to_rdf_object(value)
         end
