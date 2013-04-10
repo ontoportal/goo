@@ -350,12 +350,12 @@ eos
                 raise ArgumentError, "Wrong configuration in instance_of makes nested search fail." +
                                      "`#{model_symbol}` has no associated model"
               end
-              sub_patterns =  hash_to_triples_for_query(value,model_att,attr.to_s)
+              sub_patterns =  hash_to_triples_for_query(value,model_att,attr.to_s,0)
               sub_patterns.each_key do |graph_id|
                 patterns[graph_id] = [] unless patterns.include? graph_id
                 patterns[graph_id].concat(sub_patterns[graph_id])
               end
-              rdf_object_string = "?#{attr.to_s}"
+              rdf_object_string = "?#{attr.to_s}#{attr_count}"
             else
               raise ArgumentError, "Nested search cannot be performed due to missing instance_of"
             end
