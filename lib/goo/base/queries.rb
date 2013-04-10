@@ -16,9 +16,6 @@ module Goo
       else
         xsd_type = SparqlRd::Utils::Xsd.xsd_type_from_value(value)
       end
-      if xsd_type == nil or xsd_type.length == 0
-      binding.pry
-      end
       raise XsdTypeNotFoundForValue, "XSD Type not found for value `#{value}` `#{value.class}`" \
         if xsd_type == nil or xsd_type.length == 0
       SparqlRd::Utils::Xsd.xsd_string_from_value(value,xsd_type)
