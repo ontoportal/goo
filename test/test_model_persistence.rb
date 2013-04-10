@@ -11,6 +11,13 @@ class NoUniqueFailInFind < Goo::Base::Resource
   end
 end
 
+class SomethingWithIRI < Goo::Base::Resource
+  attribute :name , :unique => true
+  attribute :some_iri, :instance_of => { :with => RDF::IRI }
+  attribute :iri_one, :instance_of => { :with => RDF::IRI }, :single_value => true
+
+end
+
 class TwoUniquesWrong < Goo::Base::Resource
   attribute :x , :unique => true
   attribute :y , :unique => true
@@ -535,6 +542,31 @@ class TestModelPersonPersistB < TestCase
     assert_equal 1, l.length
     x.load unless x.loaded?
     assert x.name.parsed_value == name
+
+  end
+
+  def test_something_with_iris
+    SomethingWithIRI.all.each do |u|
+      u.load
+      u.delete
+    end
+
+    iri1 = RDF::IRI.new("http://foo.com/baa/1")
+    iri2 = RDF::IRI.new("http://foo.com/baa/2")
+    iri3 = RDF::IRI.new("http://foo.com/baa/3")
+
+    ss = SomethingWithIRI.new(name: "uri_name", :some_iri => [iri1, iri2], iri_one: iri3)
+    assert ss.valid?
+    ss.save
+    loaded = SomethingWithIRI.find("uri_name")
+    assert (ss.iri_one.kind_of? RDF::IRI)
+    assert (ss.some_iri[0].kind_of? RDF::IRI)
+    assert (ss.some_iri[1].kind_of? RDF::IRI)
+
+    SomethingWithIRI.all.each do |u|
+      u.load
+      u.delete
+    end
 
   end
 
