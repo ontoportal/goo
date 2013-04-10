@@ -333,7 +333,7 @@ eos
       return nil
     end
 
-    def self.hash_to_triples_for_query(hash,model_class,subject_var)
+    def self.hash_to_triples_for_query(hash,model_class,subject_var,attr_count)
       patterns = {}
       graph_id = Goo::Naming.get_graph_id(model_class)
       patterns[graph_id] = [] unless patterns.include? graph_id
@@ -364,7 +364,7 @@ eos
           else
             rdf_object_string = value_to_rdf_object(value)
           end
-          patterns[graph_id] << " ?#{subject_var} <#{predicate}> #{rdf_object_string} ."
+          patterns[graph_id] << " ?#{subject_var}#{attr_count} <#{predicate}> #{rdf_object_string} ."
         end
       end
       return patterns
@@ -440,6 +440,10 @@ eos
          value.each do |svalue|
            pairs << [name,svalue]
          end
+       elsif value.kind_of?(Array) and (value.all? { |r| r.kind_of? Hash })
+         value.each do |svalue|
+           pairs << [name,svalue]
+         end
        else
          pairs << [name,value]
        end
@@ -447,6 +451,13 @@ eos
 
       unbound = []
 
+      attr_counts = {}
+      pairs.each do |attribute, value|
+        unless attr_counts.include? attribute
+          attr_counts[attribute] = 0
+        end
+        attr_counts[attribute] += 1
+      end
       pairs.each do |attribute, value|
         next if model_class.collection_attribute? attribute
         if value == :unbound
@@ -482,17 +493,16 @@ eos
               raise ArgumentError, "Wrong configuration in instance_of makes nested search fail." +
                                    "`#{model_symbol}` has no associated model"
             end
-            sub_patterns =  hash_to_triples_for_query(value,model_att,attribute.to_s)
+            attr_counts[attribute] -= 1
+            sub_patterns = hash_to_triples_for_query(value,model_att,attribute.to_s,attr_counts[attribute])
             sub_patterns.each_key do |sub_graph_id|
               patterns[sub_graph_id] = [] unless patterns.include? sub_graph_id
               patterns[sub_graph_id].concat(sub_patterns[sub_graph_id])
             end
-            rdf_object_string = "?#{attribute.to_s}"
+            rdf_object_string = "?#{attribute.to_s}#{attr_counts[attribute]}"
           else
             raise ArgumentError, "Nested search cannot be performed due to missing instance_of in `#{attribute}`"
           end
-        elsif value.kind_of?(Array) and (value.all? { |r| r.respond_to? :resource_id })
-          binding.pry
         else
           rdf_object_string = value_to_rdf_object(value)
         end
