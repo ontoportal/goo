@@ -563,6 +563,11 @@ class TestModelPersonPersistB < TestCase
     assert (ss.some_iri[0].kind_of? RDF::IRI)
     assert (ss.some_iri[1].kind_of? RDF::IRI)
 
+    loaded = SomethingWithIRI.where(name: "uri_name")[0]
+    assert (ss.iri_one.kind_of? RDF::IRI)
+    assert (ss.some_iri[0].kind_of? RDF::IRI)
+    assert (ss.some_iri[1].kind_of? RDF::IRI)
+
     SomethingWithIRI.all.each do |u|
       u.load
       u.delete
