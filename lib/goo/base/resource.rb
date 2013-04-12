@@ -14,11 +14,15 @@ module Goo
       attr_accessor :id
 
       def initialize(*args)
-        options = args[0] || {}
-        attributes = options[:attributes]
         @loaded_attributes = Set.new
         @modified_attributes = Set.new
-        @persistent = false || options[:persistent]
+
+        attributes = args[0] || {}
+        opt_symbols = Goo.resource_options
+        attributes.each do |attr,value|
+          next if opt_symbols.include?(attr)
+          self.send("#{attr}=",value)
+        end
       end
 
       def valid?
