@@ -16,6 +16,7 @@ module Goo
       def initialize(*args)
         @loaded_attributes = Set.new
         @modified_attributes = Set.new
+        @persistent = false || args[-1][:persistent]
 
         attributes = args[0] || {}
         opt_symbols = Goo.resource_options
@@ -37,6 +38,15 @@ module Goo
         @errors = validation_errors.freeze
         return @errors.length == 0
       end
+
+      def persistent?
+        return @persistent
+      end
+
+      def modified?
+        return modified_attributes.length > 0
+      end
+
     end
 
   end

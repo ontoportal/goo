@@ -16,6 +16,8 @@ require_relative "goo/validators/enforce"
 
 module Goo
   
+  @@resource_options = Set.new([:persistent]).freeze
+
   @@configure_flag = false
   @@sparql_backends = {}
   @@search_backends = {}
@@ -101,6 +103,11 @@ module Goo
   def self.model_by_name(name)
     return @@model_by_name[name]
   end
+
+  def self.resource_options
+    return @@resource_options
+  end
+
 end
 
 #require_relative "goo/validators/validators"

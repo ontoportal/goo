@@ -131,4 +131,15 @@ class Test < TestCase
     person.status = Status.new
     assert person.valid?
   end
+
+  def test_simple_save
+    st = Status.new(description: "some text")
+    assert_equal("some text", st.description)
+    st = Status.new({ description: "some text" })
+    assert_equal("some text", st.description)
+    assert st.valid?
+    assert !st.persistent?
+    assert st.modified?
+  end
+
 end
