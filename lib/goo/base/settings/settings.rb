@@ -13,9 +13,6 @@ module Goo
         def default_model_options
           return {}
         end
-        def default_attribute_options
-          return {}
-        end
 
         def model(*args)
 
@@ -34,6 +31,11 @@ module Goo
           Goo.add_model(model_name,self)
 
         end
+
+        def attributes
+          return @model_settings[:attributes].keys
+        end
+
         def attribute(*args)
           options = args.reverse
           attr_name = options.pop
@@ -42,7 +44,10 @@ module Goo
           unless @model_settings.include? :attributes
             @model_settings[:attributes] = {}
           end
-          @model_settings[:attributes][attr_name] = default_attribute_options.merge(options)
+          if options[:enforce].nil? or !options[:enforce].include?(:list)
+            options[:enforce] = options[:enforce] ? (options[:enforce] << :no_list) : [:no_list]
+          end
+          @model_settings[:attributes][attr_name] = options
           shape_attribute(attr_name)
         end
    

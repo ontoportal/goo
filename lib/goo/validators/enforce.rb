@@ -7,67 +7,73 @@ module Goo
         return model.model_settings[:attributes][attr][:enforce]
       end
 
-      def enforce_type(attr,type,value)
-        errors = []
+      def self.enforce_type(attr,type,value)
         if value.kind_of? Array
           if (value.select {|x| !(x.kind_of? type)} ).length > 0
-            errors <<  "All values in attribute (#{attr}) must be a `#{type.name}` instance " 
+            return  "All values in attribute `#{attr}` must be `#{type.name}`" 
           end
         else
           if !(value.kind_of? type)
-            errors <<  "#{attr} value (#{value}) must be a `#{type.name}` instance " 
+            return  "Attribute `#{attr}` value `#{value}` must be a `#{type.name}`" 
           end
         end
-        return errors
       end
 
       def self.enforce_range_length(type_range,attr,opt_s,value)
-        errors = []
-        if !(value.kind_of?(Array) || value.kind_of?(String))
-          errors << "#{attr} value (#{value}) must be an Array or String - it has range length constraints"
+        if !value.nil? && !(value.kind_of?(Array) || value.kind_of?(String))
+          return "#{attr} value (#{value}) must be an Array or String - it has range length constraints"
         end
         range = opt_s[4..opt_s.length].to_i
         if type_range == :min
-          if value.length < range
-            errors "#{attr} value has length `#{value.length}` and the min length is `#{range}`"
+          if !value.nil? && (value.length < range)
+            return "#{attr} value has length `#{value.length}` and the min length is `#{range}`"
           end
         else
-          if value.length > range
-            errors <<  "#{attr} value has length `#{value.length}` and the max length is `#{range}`"
+          if !value.nil? && (value.length > range)
+            return "#{attr} value has length `#{value.length}` and the max length is `#{range}`"
           end
         end
-        return errors
       end
 
       def self.enforce(inst,attr,value)
-        errors = []
         enforce_opts = enforce_by_attribute(inst.class,attr)
+        return nil if enforce_opts.nil? or enforce_opts.length == 0
+        errors_by_opt = {}
         enforce_opts.each do |opt|
           case opt 
+           when :no_list
+             add_error(opt, errors_by_opt, 
+                       "`#{attr}` is defined as non Array - it cannot hold multiple values") if value.kind_of? Array
            when :existence
-            errors << "#{attr} value (#{value}) cannot be nil" if value.nil?
+             add_error(opt, errors_by_opt, "`#{attr}` value cannot be nil") if value.nil?
            when :list, Array
-            errors << "#{attr} value (#{value}) must be an Array" if !(value.kind_of? Array)
+             add_error(opt, errors_by_opt, "`#{attr}` value must be an Array") if !value.nil? && !(value.kind_of? Array)
            when :string, String
-             errors += enforce_type(attr,String,value)
+             add_error(opt, errors_by_opt, enforce_type(attr,String,value)) unless value.nil?
            when :integer, Fixnum
-             errors += enforce_type(attr,Fixnum,value)
+             add_error(opt, errors_by_opt, enforce_type(attr,Fixnum,value)) unless value.nil?
            when :date_time, DateTime
-             errors += enforce_type(attr,DateTime,value)
+             add_error(opt, errors_by_opt, enforce_type(attr,DateTime,value)) unless value.nil?
            else
              model = Goo.model_by_name(opt)
-             if model
+             if model and !value.nil?
                binding.pry
              end
              opt_s = opt.to_s
              if opt_s.index("max_") == 0
-               errors += enforce_range_length(:max,attr,opt_s,value)
+               add_error(:max, errors_by_opt, enforce_range_length(:max,attr,opt_s,value)) unless value.nil?
              end
              if opt_s.index("min_") == 0
-               errors += enforce_range_length(:min,attr,opt_s,value)
+               add_error(:min, errors_by_opt, enforce_range_length(:min,attr,opt_s,value)) unless value.nil?
              end
            end
         end
+        return errors_by_opt.length > 0 ? errors_by_opt : nil
+      end
+
+      def self.add_error(opt, h, err)
+        return if err.nil?
+        h[opt] = err
       end
     end
   end
