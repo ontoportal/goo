@@ -22,7 +22,7 @@ class Person < Goo::Base::Resource
   attribute :created, enforce: [ DateTime ],
             default: lambda { |record| DateTime.now }
             
-  attribute :friends, enforce: [ :existence ]
+  attribute :friends, enforce: [ :existence , Person]
   attribute :status, enforce: [ :existence, :status ],
   			default: lambda { |record| Status.find("single") }
 
@@ -105,6 +105,10 @@ class Test < TestCase
     person.friends = Person.new
     assert !person.valid?
     assert !person.errors[:friends]
+    person.friends = "some one"
+    assert !person.valid?
+    assert person.errors[:friends][:person]
+    person.friends = Person.new
 
     person.one_number = 99
     assert !person.valid?
@@ -123,7 +127,8 @@ class Test < TestCase
     assert !person.valid?
     assert !person.errors[:one_number]
 
-    binding.pry
-
+    assert person.errors[:status][:existence]
+    person.status = Status.new
+    assert person.valid?
   end
 end

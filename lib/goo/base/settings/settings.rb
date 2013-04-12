@@ -9,6 +9,7 @@ module Goo
 
       module ClassMethods
         attr_accessor :model_settings
+        attr_reader :model_name
 
         def default_model_options
           return {}
@@ -21,14 +22,14 @@ module Goo
           end
 
           model_name = args[0]
-          model_name = model_name.to_sym
+          @model_name = model_name.to_sym
           
           #a hash with options is expected
           options = args[1]
 
           @model_settings = default_model_options.merge(options || {})
 
-          Goo.add_model(model_name,self)
+          Goo.add_model(@model_name,self)
 
         end
 

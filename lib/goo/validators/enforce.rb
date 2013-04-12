@@ -55,9 +55,15 @@ module Goo
            when :date_time, DateTime
              add_error(opt, errors_by_opt, enforce_type(attr,DateTime,value)) unless value.nil?
            else
-             model = Goo.model_by_name(opt)
-             if model and !value.nil?
-               binding.pry
+             model_range = opt.respond_to?(:shape_attribute) ? opt : Goo.model_by_name(opt)
+             if model_range and !value.nil?
+               values = value.kind_of?(Array) ? value : [value]
+               values.each do |v|
+                 unless v.kind_of?(model_range)
+                   add_error(model_range.model_name, errors_by_opt,
+                             "`#{attr}` contains values that are not instance of `#{model_range.model_name}`")
+                 end
+               end
              end
              opt_s = opt.to_s
              if opt_s.index("max_") == 0
