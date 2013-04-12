@@ -8,4 +8,7 @@ Gem::Specification.new do |s|
   s.files = Dir['lib/**/*.rb']
   s.homepage = 'http://github.com/ncbo/goo'
   s.add_dependency("uuid")
+  s.add_dependency("rsolr")
+  s.add_dependency("rdf")
+  s.add_dependency("sparql-client")
 end

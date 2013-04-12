@@ -1,135 +1,106 @@
 require "pry"
-require "sparql_http"
+require "rdf"
+require "sparql/client"
 
 require "set"
 require "uri"
 require "uuid"
+require 'rsolr'
 
-require_relative "goo/search/search"
+require_relative "goo/sparql/sparql"
 require_relative "goo/base/base"
-require_relative "goo/naming/naming"
-require_relative "goo/utils/utils"
+require_relative "goo/validators/enforce"
+#require_relative "goo/search/search"
+#require_relative "goo/naming/naming"
+#require_relative "goo/utils/utils"
 
 module Goo
+  
+  @@configure_flag = false
+  @@sparql_backends = {}
+  @@search_backends = {}
+  @@model_by_name = {}
+  @@search_connection = nil
 
-  @@_configuration = {}
-  @@_models = Set.new
-  @@_default_store = nil
-  @@_uuid_generator = nil
-  @@_support_skolem = false
-  @@_validators = {}
-  @@_search_conf = nil
-  @@_search_connection = nil
+  @@default_namespace = nil
+  @@namespaces = {}
 
-  def self.models
-    @@_models
+  def self.add_namespace(shortcut, namespace,default=false)
+    if !(namespace.instance_of? RDF::URI)
+      raise ArgumentError, "Namespace must be a RDF::URI object" 
+    end
+    @@namespaces[shortcut.to_sym] = namespace
+    @@default_namespace = shortcut if default
   end
 
-  def self.configure_sanity_check(conf)
-    unless conf.has_key? :namespaces
+  def self.add_sparql_backend(name, *opts)
+    opts = opts[0]
+    unless opts.include? :service
+      raise ArgumentError, "SPARQL backend configuration must contains a host list."
+    end
+    @@sparql_backends[name] = opts
+    @@sparql_backends[name][:client]=Goo::SPARQL::Client.new(opts[:service])
+  end
+
+  def self.add_search_backend(name, *opts)
+    opts = opts[0]
+    unless opts.include? :service
+      raise ArgumentError, "Search backend configuration must contains a host list."
+    end
+    @@search_backends[name] = opts
+  end
+
+  def self.configure_sanity_check()
+    unless @@namespaces.length > 0
       raise ArgumentError, "Namespaces needs to be provided."
     end
-    unless conf[:namespaces].has_key? :default
+    unless @@default_namespace
       raise ArgumentError, "Default namespaces needs to be provided."
-    end
-    unless conf[:namespaces][:default].kind_of? Symbol and\
-           conf[:namespaces].has_key? conf[:namespaces][:default]
-      raise ArgumentError, "Default namespace must be a symbol pointing to other ns."
     end
   end
 
   def self.configure
-    raise ArgumentError, "Configuration needs to receive a code block" \
-      if not block_given?
-
-    yield @@_configuration
-
-    configure_sanity_check(@@_configuration)
-    stores = @@_configuration[:stores]
-    if stores
-      stores.each do |store|
-        SparqlRd::Repository.configuration(store)
-
-        if store.has_key? :default and store[:default]
-          @@_default_store  = SparqlRd::Repository.endpoint(store[:name])
-        end
-      end
-
-      @@_default_store = SparqlRd::Repository.endpoint(stores[0][:name]) \
-        if @@_default_store.nil?
+    if not block_given?
+      raise ArgumentError, "Configuration needs to receive a code block"
     end
-
-    if @@_configuration.include? :search_conf
-      @@_search_conf = @@_configuration[:search_conf]
-      @@_search_connection = RSolr.connect :url => @@_search_conf[:search_server]
+    yield self 
+    configure_sanity_check()
+    if @@search_backends.length > 0
+      @@search_connection = RSolr.connect :url => search_conf()
     end
-
-    @@_uuid_generator = UUID.new
-    #somehow this upsets 4store
-    #@@_support_skolem = Goo::Naming::Skolem.detect
-    @@_support_skolem = false
+    @@namespaces.freeze
+    @@sparql_backends.freeze
+    @@search_backends.freeze
+    @@configure_flag = true
   end
 
-  def self.search_conf
-    return @@_search_conf
-  end
-
-  def self.search_connection
-    return @@_search_connection
-  end
-
-  def self.uuid
-    return @@_uuid_generator
-  end
-
-  def self.store(name=nil)
-    if name.nil?
-      return @@_default_store
-    end
-    return SparqlRd::Repository.endpoint(name)
-  end
-
-  def self.is_skolem_supported?
-    @@_support_skolem
-  end
-
-  def self.register_validator(name,obj)
-    @@_validators[name] = obj
-  end
-
-  def self.validators
-    @@_validators
+  def self.configure?
+    return @@configure_flag
   end
 
   def self.namespaces
-    return @@_configuration[:namespaces]
+    return @@namespaces
   end
 
-  def self.stores
-    @@_configuration[:stores]
+  def self.search_conf
+    return @@search_backends[:main][:service]
   end
 
-  def self.first_or_empty_if_nil(x)
-    return x[0] if x.length > 0
-    return nil
+  def self.search_connection
+    return @@search_connection
   end
 
-  def self.find_model_by_uri(uri)
-    ms = @@_models.select { |m| m.type_uri == uri }
-    return first_or_empty_if_nil(ms)
+  def self.sparql_client(name=:main)
+    return @@sparql_backends[name][:client]
   end
 
-  def self.find_model_by_name(name)
-    ms = @@_models.select { |m| m.goo_name == name }
-    return first_or_empty_if_nil(ms)
+  def self.add_model(name, model)
+    @@model_by_name[name] = model
   end
 
-  def self.find_prefix_for_uri(uri)
-    @@_configuration[:namespaces].each_pair do |prefix,ns|
-      return prefix if uri.start_with?(prefix == :default ? @@_configuration[:namespaces][ns] : ns)
-    end
-    return nil
+  def self.model_by_name(name)
+    return @@model_by_name[name]
   end
 end
 
-require_relative "goo/validators/validators"
+#require_relative "goo/validators/validators"

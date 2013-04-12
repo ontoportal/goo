@@ -47,22 +47,21 @@ GooUnit.runner = GooUnit.new
 
 module TestInit
   def self.configure_goo
-    if Goo.store().nil?
+    if not Goo.configure?
       Goo.configure do |conf|
-        #  :rules => :NONE is a 4store specific param.
-        conf[:stores] = [ { :name => :main , :host => "localhost", :port => 9000 , :options => { :rules => :NONE } } ]
-        conf[:namespaces] = {
-          :omv => "http://omv.org/ontology/",
-          :skos => "http://www.w3.org/2004/02/skos/core#",
-          :owl => "http://www.w3.org/2002/07/owl#",
-          :rdfs => "http://www.w3.org/2000/01/rdf-schema#",
-          :goo => "http://goo.org/default/",
-          :metadata => "http://goo.org/metadata/",
-          :foaf => "http://xmlns.com/foaf/0.1/",
-          :rdf => "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-          :default => :goo,
-        }
-        conf[:search_conf] = { :search_server => 'http://ncbo-dev-app-02.stanford.edu:8080/solr/' }
+
+        conf.add_namespace(:omv, RDF::URI("http://omv.org/ontology/"))
+        conf.add_namespace(:skos, RDF::URI("http://www.w3.org/2004/02/skos/core#"))
+        conf.add_namespace(:owl, RDF::URI("http://www.w3.org/2002/07/owl#"))
+        conf.add_namespace(:rdfs, RDF::URI("http://www.w3.org/2000/01/rdf-schema#"))
+        conf.add_namespace(:goo, RDF::URI("http://goo.org/default/"),default=true)
+        conf.add_namespace(:metadata, RDF::URI("http://goo.org/metadata/"))
+        conf.add_namespace(:foaf, RDF::URI("http://xmlns.com/foaf/0.1/"))
+        conf.add_namespace(:rdf, RDF::URI("http://www.w3.org/1999/02/22-rdf-syntax-ns#"))
+
+        conf.add_sparql_backend(:main, service: "localhost:9000", options: { rules: :NONE })
+        conf.add_search_backend(:main, service: "http://ncbo-dev-app-02.stanford.edu:8080/solr/" )
+
       end
     end
   end
