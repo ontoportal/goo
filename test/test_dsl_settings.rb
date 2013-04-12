@@ -123,5 +123,7 @@ class Test < TestCase
     assert !person.valid?
     assert !person.errors[:one_number]
 
+    binding.pry
+
   end
 end
