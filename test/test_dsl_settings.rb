@@ -5,7 +5,8 @@ TestInit.configure_goo
 
 class Status < Goo::Base::Resource
   model :status
-  attribute :description, enforce: [ :existence ]
+  attribute :description, enforce: [ :existence, :unique]
+  attribute :active, enforce: [ :existence, :boolean ], namespace: :omv
 
   def initialize(attributes = {})
     super(attributes)
@@ -14,13 +15,14 @@ end
 
 class Person < Goo::Base::Resource
   model :person
-  attribute :name, enforce: [ :existence, :string ]
+  attribute :name, enforce: [ :existence, :string, :unique]
   attribute :multiple_values, enforce: [ :list, :existence, :integer, :min_3, :max_5 ]
   attribute :one_number, enforce: [ :existence, :integer ] #by default not a list
   attribute :birth_date, enforce: [ :existence, :date_time ]
 
   attribute :created, enforce: [ DateTime ],
-            default: lambda { |record| DateTime.now }
+            default: lambda { |record| DateTime.now },
+            namespace: :omv
             
   attribute :friends, enforce: [ :existence , Person]
   attribute :status, enforce: [ :existence, :status ],
@@ -132,14 +134,21 @@ class Test < TestCase
     assert person.valid?
   end
 
+  def test_default_value
+    #default is on save ... returns`
+    binding.pry
+  end
+
   def test_simple_save
-    st = Status.new(description: "some text")
+    st = Status.new(description: "some text", active: true)
     assert_equal("some text", st.description)
-    st = Status.new({ description: "some text" })
+    st = Status.new({ description: "some text", active: true })
     assert_equal("some text", st.description)
     assert st.valid?
     assert !st.persistent?
     assert st.modified?
+    assert st == st.save 
+
   end
 
 end

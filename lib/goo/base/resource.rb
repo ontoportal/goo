@@ -1,3 +1,4 @@
+require 'cgi'
 require_relative "settings/settings"
 
 module Goo
@@ -11,11 +12,12 @@ module Goo
       attr_reader :modified_attributes
       attr_reader :errors
 
-      attr_accessor :id
+      attr_reader :id
 
       def initialize(*args)
         @loaded_attributes = Set.new
         @modified_attributes = Set.new
+        @previous_values = nil
         @persistent = false || args[-1][:persistent]
 
         attributes = args[0] || {}
@@ -24,6 +26,8 @@ module Goo
           next if opt_symbols.include?(attr)
           self.send("#{attr}=",value)
         end
+
+        @id = nil
       end
 
       def valid?
@@ -39,6 +43,18 @@ module Goo
         return @errors.length == 0
       end
 
+      def id=(new_id)
+        if !@id.nil? and @persistent
+          raise ArgumentError, "The id of a persistent object cannot be changed."
+        end
+        raise ArgumentError, "ID must be an RDF::URI" unless new_id.kind_of?(RDF::URI)
+        @id = new_id
+      end
+
+      def id
+        return @id
+      end
+
       def persistent?
         return @persistent
       end
@@ -47,6 +63,41 @@ module Goo
         return modified_attributes.length > 0
       end
 
+      def save
+        return ArgumentError, "Object is not modified" unless modified?
+        return ArgumentError, "Object is not valid. Check errors." unless valid?
+
+        unless @persistent
+          uattr = self.class.unique_attribute
+          @id = id_from_unique_attribute(uattr)
+        end
+        graph_insert, graph_delete = Goo::SPARQL::Triples.model_update_triples(self)
+        if graph_delete and graph_delete.size > 0
+          resp = Goo.sparql_update_client.delete_data(graph_delete, graph: self.class.uri_type)
+          binding.pry
+        end
+        if graph_insert and graph_insert.size > 0
+          resp = Goo.sparql_update_client.insert_data(graph_insert, graph: self.class.uri_type)
+          binding.pry
+        end
+        binding.pry
+
+        return self
+      end
+
+      def previous_values
+        return @previous_values
+      end
+
+      protected
+      def id_from_unique_attribute(attr)
+        value_attr = self.send("#{attr}")
+        if value_attr.nil?
+          raise ArgumentError, "`#{attr}` value is nil. Id for resource cannot be generated."
+        end
+        uri_last_fragment = CGI.escape(value_attr)
+        return self.class.namespace[self.class.model_name.to_s + '/' + uri_last_fragment]
+      end
     end
 
   end

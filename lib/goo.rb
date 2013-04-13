@@ -1,5 +1,6 @@
 require "pry"
 require "rdf"
+require "rdf/ntriples"
 require "sparql/client"
 
 require "set"
@@ -12,7 +13,7 @@ require_relative "goo/base/base"
 require_relative "goo/validators/enforce"
 #require_relative "goo/search/search"
 #require_relative "goo/naming/naming"
-#require_relative "goo/utils/utils"
+require_relative "goo/utils/utils"
 
 module Goo
   
@@ -28,8 +29,8 @@ module Goo
   @@namespaces = {}
 
   def self.add_namespace(shortcut, namespace,default=false)
-    if !(namespace.instance_of? RDF::URI)
-      raise ArgumentError, "Namespace must be a RDF::URI object" 
+    if !(namespace.instance_of? RDF::Vocabulary)
+      raise ArgumentError, "Namespace must be a RDF::Vocabulary object" 
     end
     @@namespaces[shortcut.to_sym] = namespace
     @@default_namespace = shortcut if default
@@ -37,11 +38,10 @@ module Goo
 
   def self.add_sparql_backend(name, *opts)
     opts = opts[0]
-    unless opts.include? :service
-      raise ArgumentError, "SPARQL backend configuration must contains a host list."
-    end
     @@sparql_backends[name] = opts
-    @@sparql_backends[name][:client]=Goo::SPARQL::Client.new(opts[:service])
+    @@sparql_backends[name][:query]=Goo::SPARQL::Client.new(opts[:query], {protocol: "1.1"})
+    @@sparql_backends[name][:update]=Goo::SPARQL::Client.new(opts[:update], {protocol: "1.0"})
+    @@sparql_backends[name][:data]=Goo::SPARQL::Client.new(opts[:data], {protocol: "1.1"})
   end
 
   def self.add_search_backend(name, *opts)
@@ -92,8 +92,16 @@ module Goo
     return @@search_connection
   end
 
-  def self.sparql_client(name=:main)
-    return @@sparql_backends[name][:client]
+  def self.sparql_query_client(name=:main)
+    return @@sparql_backends[name][:query]
+  end
+
+  def self.sparql_update_client(name=:main)
+    return @@sparql_backends[name][:update]
+  end
+
+  def self.sparql_data_client(name=:main)
+    return @@sparql_backends[name][:data]
   end
 
   def self.add_model(name, model)
@@ -106,6 +114,11 @@ module Goo
 
   def self.resource_options
     return @@resource_options
+  end
+
+  def self.vocabulary(namespace)
+    return @@namespaces[@@default_namespace] if namespace.nil?
+    return @@namespaces[namespace] 
   end
 
 end

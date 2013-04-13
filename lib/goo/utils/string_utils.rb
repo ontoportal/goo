@@ -15,29 +15,5 @@ class String
   def camelize
     self.split('_').map {|w| w.capitalize}.join
   end
-  def predicate
-    ss = self.camelize
-    return ss[0].downcase + ss[1..-1]
-  end
-  def eql?(other)
-    if other.kind_of? SparqlRd::Resultset::StringLiteral
-      return str_eql?(other.value)
-    end
-    return str_eql?(other)
-  end
-  def ==(other)
-   if other.kind_of? SparqlRd::Resultset::StringLiteral
-      return str_eql_sym(other.value)
-    end
-    return str_eql_sym(other)
-  end
-  def <=>(other)
-    other = other.parsed_value if other.instance_of? SparqlRd::Resultset::StringLiteral
-    return cmp_str_orig(other)
-  end
-  def +(other)
-    other = other.parsed_value if other.instance_of? SparqlRd::Resultset::StringLiteral
-    return plus_orig(other)
-  end
 end
 

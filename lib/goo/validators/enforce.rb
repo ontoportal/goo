@@ -7,7 +7,22 @@ module Goo
         return model.model_settings[:attributes][attr][:enforce]
       end
 
+      def self.enforce_type_boolean(attr,value)
+        if value.kind_of? Array
+          if (value.select {|x| !((x.class == TrueClass) || (x.class == FalseClass))} ).length > 0
+            return  "All values in attribute `#{attr}` must be `#{type.name}`" 
+          end
+        else
+          if !((value.class == TrueClass) || (value.class == FalseClass))
+            return  "Attribute `#{attr}` value `#{value}` must be a `#{type.name}`" 
+          end
+        end
+      end
+
       def self.enforce_type(attr,type,value)
+        if type == :boolean
+          return self.enforce_type_boolean(attr,value)
+        end
         if value.kind_of? Array
           if (value.select {|x| !(x.kind_of? type)} ).length > 0
             return  "All values in attribute `#{attr}` must be `#{type.name}`" 
@@ -52,6 +67,8 @@ module Goo
              add_error(opt, errors_by_opt, enforce_type(attr,String,value)) unless value.nil?
            when :integer, Fixnum
              add_error(opt, errors_by_opt, enforce_type(attr,Fixnum,value)) unless value.nil?
+           when :boolean
+             add_error(opt, errors_by_opt, enforce_type(attr,:boolean,value)) unless value.nil?
            when :date_time, DateTime
              add_error(opt, errors_by_opt, enforce_type(attr,DateTime,value)) unless value.nil?
            else
