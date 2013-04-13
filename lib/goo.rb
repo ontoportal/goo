@@ -39,9 +39,12 @@ module Goo
   def self.add_sparql_backend(name, *opts)
     opts = opts[0]
     @@sparql_backends[name] = opts
-    @@sparql_backends[name][:query]=Goo::SPARQL::Client.new(opts[:query], {protocol: "1.1"})
-    @@sparql_backends[name][:update]=Goo::SPARQL::Client.new(opts[:update], {protocol: "1.0"})
-    @@sparql_backends[name][:data]=Goo::SPARQL::Client.new(opts[:data], {protocol: "1.1"})
+    @@sparql_backends[name][:query]=Goo::SPARQL::Client.new(opts[:query],
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded" })
+    @@sparql_backends[name][:update]=Goo::SPARQL::Client.new(opts[:update],
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded" })
+    @@sparql_backends[name][:data]=Goo::SPARQL::Client.new(opts[:data],
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded" })
   end
 
   def self.add_search_backend(name, *opts)

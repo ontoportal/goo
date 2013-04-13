@@ -63,6 +63,26 @@ module Goo
         return modified_attributes.length > 0
       end
 
+      def exist?
+        _id = @id
+        if _id.nil?
+          uattr = self.class.unique_attribute
+          _id = id_from_unique_attribute(uattr)
+        end
+        return Goo::SPARQL::Queries.model_exist(self,id=_id)
+      end
+
+      def delete
+        raise ArgumentError, "This object is not persistent and cannot be deleted" if !@persistent
+        graph_delete = Goo::SPARQL::Triples.model_delete_triples(self)
+        begin
+        Goo.sparql_update_client.delete_data(graph_delete, graph: self.class.uri_type)
+        rescue Exception => e
+          binding.pry
+        end
+        return nil
+      end
+
       def save
         return ArgumentError, "Object is not modified" unless modified?
         return ArgumentError, "Object is not valid. Check errors." unless valid?
@@ -70,18 +90,31 @@ module Goo
         unless @persistent
           uattr = self.class.unique_attribute
           @id = id_from_unique_attribute(uattr)
+          if self.exist?
+            _id = @id.to_s
+            @id = nil
+            raise NotValidException, "The model is already persistent in the system with ID #{_id}"
+          end
         end
+
         graph_insert, graph_delete = Goo::SPARQL::Triples.model_update_triples(self)
         if graph_delete and graph_delete.size > 0
-          resp = Goo.sparql_update_client.delete_data(graph_delete, graph: self.class.uri_type)
-          binding.pry
+          begin
+            Goo.sparql_update_client.delete_data(graph_delete, graph: self.class.uri_type)
+          rescue Exception => e
+            binding.pry
+          end
         end
         if graph_insert and graph_insert.size > 0
-          resp = Goo.sparql_update_client.insert_data(graph_insert, graph: self.class.uri_type)
-          binding.pry
+          begin
+            Goo.sparql_update_client.insert_data(graph_insert, graph: self.class.uri_type)
+          rescue Exception => e
+            binding.pry
+          end
         end
-        binding.pry
 
+        @modified_attributes = Set.new
+        @persistent = true
         return self
       end
 

@@ -139,7 +139,7 @@ class Test < TestCase
     binding.pry
   end
 
-  def test_simple_save
+  def test_simple_save_delete
     st = Status.new(description: "some text", active: true)
     assert_equal("some text", st.description)
     st = Status.new({ description: "some text", active: true })
@@ -147,8 +147,16 @@ class Test < TestCase
     assert st.valid?
     assert !st.persistent?
     assert st.modified?
+    assert !st.exist?
     assert st == st.save 
+    assert st.persistent?
+    assert !st.modified?
+    assert nil == st.delete
+    assert !st.exist?
+  end
 
+  def test_load
+    binding.pry
   end
 
 end
