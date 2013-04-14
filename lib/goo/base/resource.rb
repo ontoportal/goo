@@ -70,6 +70,9 @@ module Goo
       end
 
       def id
+        if @id.nil?
+          @id = id_from_unique()
+        end
         return @id
       end
 
@@ -84,8 +87,7 @@ module Goo
       def exist?(from_valid=false)
         _id = @id
         if _id.nil? and !from_valid
-          uattr = self.class.unique_attribute
-          _id = id_from_unique_attribute(uattr)
+          _id = id_from_unique()
         end
         return Goo::SPARQL::Queries.model_exist(self,id=_id)
       end
@@ -130,7 +132,23 @@ module Goo
         return @previous_values
       end
 
+      ###
+      # Class level methods
+      # ##
+      def self.find(id, *options)
+        attributes_from_backend = {}
+
+        options_load = { ids: [id], klass: self }.merge(options[-1] || {})
+        Goo::SPARQL::Queries.model_load(options_load)
+
+      end
+
       protected
+      def id_from_unique()
+          uattr = self.class.unique_attribute
+          return id_from_unique_attribute(uattr)
+      end
+
       def id_from_unique_attribute(attr)
         value_attr = self.send("#{attr}")
         if value_attr.nil?
