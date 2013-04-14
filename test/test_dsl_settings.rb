@@ -153,12 +153,9 @@ class Test < TestCase
     assert !st.modified?
     assert nil == st.delete
     assert !st.exist?
-
-    
   end
 
   def test_not_valid_save
-
     st = Status.new({ description: "some text", active: "true" })
     assert_raises Goo::Base::NotValidException do
       st.save
@@ -166,4 +163,26 @@ class Test < TestCase
     assert !st.persistent?
   end
 
+  def test_find
+    st = Status.new({ description: "some text", active: true })
+    st.save
+    assert st.persistent?
+    
+    id = st.id
+    st_from_backend = Status.find(id)
+    assert_instance_of Status, st_from_backend
+    assert (st_from_backend.kind_of? Goo::Base::Resource)
+
+    st.class.attributes.each do |attr|
+      assert_equal(st.send("#{attr}"), st_from_backend.send("#{attr}"))
+    end
+    assert_equal id, st_from_backend.id
+
+    assert st_from_backend.persistent?
+    assert !st_from_backend.modified?
+
+    not_existent_id = RDF::URI("http://some.bogus.id/x")
+    st_from_backend = Status.find(not_existent_id)
+    assert st_from_backend.nil?
+  end
 end

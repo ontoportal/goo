@@ -93,7 +93,7 @@ module Goo
         raise ArgumentError, "This object is not persistent and cannot be deleted" if !@persistent
         graph_delete = Goo::SPARQL::Triples.model_delete_triples(self)
         begin
-        Goo.sparql_update_client.delete_data(graph_delete, graph: self.class.uri_type)
+          Goo.sparql_update_client.delete_data(graph_delete, graph: self.class.uri_type)
         rescue Exception => e
           binding.pry
         end
