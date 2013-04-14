@@ -40,6 +40,23 @@ module Goo
           end
         end
         @errors = validation_errors.freeze
+
+        unless @persistent
+          uattr = self.class.unique_attribute
+          if @errors[uattr].nil?
+            begin
+              @id = id_from_unique_attribute(uattr)
+              if self.exist?(from_valid=true)
+                uvalue = self.send("#{uattr}")
+                @errors[uattr][:unique] = 
+                  "There is already a persistent resource with `#{uattr}` value `#{uvalue}`"
+              end
+            rescue ArgumentError => e
+              @errors[uattr][:unique] = e.message
+            end 
+          end
+        end
+
         return @errors.length == 0
       end
 
@@ -63,9 +80,9 @@ module Goo
         return modified_attributes.length > 0
       end
 
-      def exist?
+      def exist?(from_valid=false)
         _id = @id
-        if _id.nil?
+        if _id.nil? and !from_valid
           uattr = self.class.unique_attribute
           _id = id_from_unique_attribute(uattr)
         end
@@ -84,18 +101,8 @@ module Goo
       end
 
       def save
-        return ArgumentError, "Object is not modified" unless modified?
-        return ArgumentError, "Object is not valid. Check errors." unless valid?
-
-        unless @persistent
-          uattr = self.class.unique_attribute
-          @id = id_from_unique_attribute(uattr)
-          if self.exist?
-            _id = @id.to_s
-            @id = nil
-            raise NotValidException, "The model is already persistent in the system with ID #{_id}"
-          end
-        end
+        raise ArgumentError, "Object is not modified" unless modified?
+        raise Goo::Base::NotValidException, "Object is not valid. Check errors." unless valid?
 
         graph_insert, graph_delete = Goo::SPARQL::Triples.model_update_triples(self)
         if graph_delete and graph_delete.size > 0

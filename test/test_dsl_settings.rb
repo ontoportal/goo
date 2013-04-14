@@ -153,10 +153,17 @@ class Test < TestCase
     assert !st.modified?
     assert nil == st.delete
     assert !st.exist?
+
+    
   end
 
-  def test_load
-    binding.pry
+  def test_not_valid_save
+
+    st = Status.new({ description: "some text", active: "true" })
+    assert_raises Goo::Base::NotValidException do
+      st.save
+    end
+    assert !st.persistent?
   end
 
 end

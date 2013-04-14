@@ -10,11 +10,11 @@ module Goo
       def self.enforce_type_boolean(attr,value)
         if value.kind_of? Array
           if (value.select {|x| !((x.class == TrueClass) || (x.class == FalseClass))} ).length > 0
-            return  "All values in attribute `#{attr}` must be `#{type.name}`" 
+            return  "All values in attribute `#{attr}` must be `Boolean`" 
           end
         else
           if !((value.class == TrueClass) || (value.class == FalseClass))
-            return  "Attribute `#{attr}` value `#{value}` must be a `#{type.name}`" 
+            return  "Attribute `#{attr}` value `#{value}` must be a `Boolean`" 
           end
         end
       end
