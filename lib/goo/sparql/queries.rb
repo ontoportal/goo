@@ -74,7 +74,7 @@ module Goo
           variables.each do |v|
             next if v == :id
             #group for multiple values
-            models_by_id[id].send("#{v}=",sol[v].value, on_load: true)
+            models_by_id[id].send("#{v}=",sol[v].object, on_load: true)
           end
         end
 

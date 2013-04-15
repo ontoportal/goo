@@ -166,7 +166,6 @@ class Test < TestCase
   end
 
   def test_find
-
     st = Status.new({ description: "some text", active: true })
     st.save
     assert st.persistent?
@@ -183,10 +182,6 @@ class Test < TestCase
       end
     end
 
-    #st.class.attributes.each do |attr|
-    #  assert_equal(st.send("#{attr}"), st_from_backend.send("#{attr}"))
-    #end
-
     assert st_from_backend.persistent?
     assert !st_from_backend.modified?
 
@@ -196,6 +191,24 @@ class Test < TestCase
     not_existent_id = RDF::URI("http://some.bogus.id/x")
     st_from_backend = Status.find(not_existent_id)
     assert st_from_backend.nil?
+  end
+
+  def test_find_load_all
+    st = Status.new({ description: "some text", active: true })
+    st.save
+    assert st.persistent?
+    
+    id = st.id
+    st_from_backend = Status.find(id, include: Status.attributes )
+    assert (st_from_backend.persistent?)
+    assert (!st_from_backend.modified?)
+
+    st.class.attributes.each do |attr|
+      assert_equal(st.send("#{attr}"), st_from_backend.send("#{attr}"))
+    end
+
+    assert nil == st_from_backend.delete
+    assert !st_from_backend.exist?
   end
 
   def test_update_array_values
