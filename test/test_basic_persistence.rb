@@ -3,6 +3,12 @@ require_relative 'test_case'
 TestInit.configure_goo
 
 
+class ArrayValues < Goo::Base::Resource
+  model :array_values
+  attribute :name, enforce: [ :existence, :unique ]
+  attribute :many, enforce: [ :list, :string ]
+end
+
 class StatusPersistent < Goo::Base::Resource
   model :status
   attribute :description, enforce: [ :existence, :unique]
@@ -163,7 +169,28 @@ class TestBasicPersistence < TestCase
   def test_update_array_values
     #object should always return freezed arrays
     #so that we detect the set
-    binding.pry
+    arr = ArrayValues.new(name: "x" , many: ["a","b"])
+    assert (arr.valid?)
+    arr.save
+    assert arr.persistent?
+    assert arr.exist?
+
+    arr_from_backend = ArrayValues.find(arr.id, include: ArrayValues.attributes)
+    assert_equal ["a", "b"], arr_from_backend.many.sort
+
+    assert_raises RuntimeError do
+      arr_from_backend.many << "c"
+    end
+
+    arr_from_backend.many = ["A","B","C"]
+    arr_from_backend.save
+
+    arr_from_backend = ArrayValues.find(arr.id, include: ArrayValues.attributes)
+    assert_equal ["A","B","C"], arr_from_backend.many.sort
+
+    arr_from_backend.delete
+    assert !arr_from_backend.exist?
+
   end
 
 end

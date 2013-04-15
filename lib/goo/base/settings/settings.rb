@@ -36,7 +36,11 @@ module Goo
           @uri_type = @namespace[@model_name.to_s.camelize]
         end
 
-        def attributes
+        def attributes(*options)
+          if options and options.length > 0
+            filt = options.first 
+            return (@model_settings[:attributes].select{ |attr,opts| opts[:enforce].include?(filt) }).keys()
+          end
           return @model_settings[:attributes].keys
         end
 

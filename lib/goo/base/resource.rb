@@ -18,7 +18,7 @@ module Goo
         @loaded_attributes = Set.new
         @modified_attributes = Set.new
         @previous_values = nil
-        @persistent = false || args[-1][:persistent]
+        @persistent = false
 
         attributes = args[0] || {}
         opt_symbols = Goo.resource_options
