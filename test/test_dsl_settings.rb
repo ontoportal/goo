@@ -2,8 +2,7 @@ require_relative 'test_case'
 
 TestInit.configure_goo
 
-
-class Status < Goo::Base::Resource
+class StatusModel < Goo::Base::Resource
   model :status
   attribute :description, enforce: [ :existence, :unique]
   attribute :active, enforce: [ :existence, :boolean ], namespace: :omv
@@ -13,7 +12,7 @@ class Status < Goo::Base::Resource
   end
 end
 
-class Person < Goo::Base::Resource
+class PersonModel < Goo::Base::Resource
   model :person
   attribute :name, enforce: [ :existence, :string, :unique]
   attribute :multiple_values, enforce: [ :list, :existence, :integer, :min_3, :max_5 ]
@@ -24,22 +23,22 @@ class Person < Goo::Base::Resource
             default: lambda { |record| DateTime.now },
             namespace: :omv
             
-  attribute :friends, enforce: [ :existence , Person]
+  attribute :friends, enforce: [ :existence , PersonModel]
   attribute :status, enforce: [ :existence, :status ],
-  			default: lambda { |record| Status.find("single") }
+  			default: lambda { |record| StatusModel.find("single") }
 
   def initialize(attributes = {})
     super(attributes)
   end
 end
 
-class Test < TestCase
+class TestDSLSeeting < TestCase
   def initialize(*args)
     super(*args)
   end
 
   def test_attributes_set_get
-    person = Person.new
+    person = PersonModel.new
     assert(person.respond_to? :id)
     assert(person.kind_of? Goo::Base::Resource)
     assert !person.valid?
@@ -100,17 +99,17 @@ class Test < TestCase
     assert !person.valid?
     assert !person.errors[:multiple_values]
 
-    friends = [Person.new , Person.new]
+    friends = [PersonModel.new , PersonModel.new]
     person.friends = friends
     assert !person.valid?
     assert person.errors[:friends][:no_list]
-    person.friends = Person.new
+    person.friends = PersonModel.new
     assert !person.valid?
     assert !person.errors[:friends]
     person.friends = "some one"
     assert !person.valid?
     assert person.errors[:friends][:person]
-    person.friends = Person.new
+    person.friends = PersonModel.new
 
     person.one_number = 99
     assert !person.valid?
@@ -130,118 +129,14 @@ class Test < TestCase
     assert !person.errors[:one_number]
 
     assert person.errors[:status][:existence]
-    person.status = Status.new
+    person.status = StatusModel.new
     assert person.valid?
   end
 
   def test_default_value
     #default is on save ... returns`
-    binding.pry
-  end
-
-  def test_simple_save_delete
-    st = Status.new(description: "some text", active: true)
-    assert_equal("some text", st.description)
-    st = Status.new({ description: "some text", active: true })
-    assert_equal("some text", st.description)
-    assert st.valid?
-    assert !st.persistent?
-    assert st.modified?
-    assert !st.exist?
-    assert st == st.save 
-    assert st.persistent?
-    assert !st.modified?
-    assert nil == st.delete
-    assert !st.exist?
-    assert !st.persistent?
-    assert !st.modified?
-  end
-
-  def test_not_valid_save
-    st = Status.new({ description: "some text", active: "true" })
-    assert_raises Goo::Base::NotValidException do
-      st.save
-    end
-    assert !st.persistent?
-  end
-
-  def test_find
-    st = Status.new({ description: "some text", active: true })
-    st.save
-    assert st.persistent?
-    
-    id = st.id
-    st_from_backend = Status.find(id)
-    assert_instance_of Status, st_from_backend
-    assert (st_from_backend.kind_of? Goo::Base::Resource)
-    assert_equal id, st_from_backend.id
-
-    st.class.attributes.each do |attr|
-      assert_raises Goo::Base::AttributeNotLoaded do
-        st_from_backend.send("#{attr}")
-      end
-    end
-
-    assert st_from_backend.persistent?
-    assert !st_from_backend.modified?
-
-    assert nil == st_from_backend.delete
-    assert !st_from_backend.exist?
-
-    not_existent_id = RDF::URI("http://some.bogus.id/x")
-    st_from_backend = Status.find(not_existent_id)
-    assert st_from_backend.nil?
-  end
-
-  def test_find_load_all
-    st = Status.new({ description: "some text", active: true })
-    st.save
-    assert st.persistent?
-    
-    id = st.id
-    st_from_backend = Status.find(id, include: Status.attributes )
-    assert (st_from_backend.persistent?)
-    assert (!st_from_backend.modified?)
-
-    st.class.attributes.each do |attr|
-      assert_equal(st.send("#{attr}"), st_from_backend.send("#{attr}"))
-    end
-    assert st_from_backend.fully_loaded?
-    assert (st_from_backend.missing_load_attributes.length == 0)
-
-    assert nil == st_from_backend.delete
-    assert !st_from_backend.exist?
-  end
-
-  def test_find_load_some
-    st = Status.new({ description: "some text", active: true })
-    st.save
-    assert st.persistent?
-    
-    id = st.id
-    st_from_backend = Status.find(id, include: [ :active ] )
-    assert (st_from_backend.persistent?)
-    assert (!st_from_backend.modified?)
-
-    assert (st_from_backend.active == true)
-    assert_raises Goo::Base::AttributeNotLoaded do
-      st_from_backend.description
-    end
-
-    assert !st_from_backend.fully_loaded?
-    assert (st_from_backend.missing_load_attributes.length == 1)
-    assert (st_from_backend.missing_load_attributes.include?(:description))
-
-    assert nil == st_from_backend.delete
-    assert !st_from_backend.exist?
-  end
-
-
-
-  def test_update_array_values
-    #object should always return freezed arrays
-    #so that we detect the set
-    binding.pry
+    person = PersonModel.new
+    assert_equal nil, person.created
   end
 
 end

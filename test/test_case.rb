@@ -44,7 +44,6 @@ end
 
 GooUnit.runner = GooUnit.new
 
-
 module TestInit
   def self.configure_goo
     if not Goo.configure?
