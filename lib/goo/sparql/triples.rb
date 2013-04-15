@@ -1,5 +1,5 @@
 module Goo
-  module GSPARQL
+  module SPARQL
     module Triples
 
       def self.model_delete_triples(model)

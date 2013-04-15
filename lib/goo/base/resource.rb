@@ -80,6 +80,10 @@ module Goo
         return @persistent
       end
 
+      def persistent=(val)
+        @persistent=val
+      end
+
       def modified?
         return modified_attributes.length > 0
       end
@@ -100,6 +104,8 @@ module Goo
         rescue Exception => e
           binding.pry
         end
+        @persistent = false
+        @modified = true
         return nil
       end
 
@@ -137,10 +143,9 @@ module Goo
       # ##
       def self.find(id, *options)
         attributes_from_backend = {}
-
         options_load = { ids: [id], klass: self }.merge(options[-1] || {})
-        Goo::SPARQL::Queries.model_load(options_load)
-
+        models_by_id = Goo::SPARQL::Queries.model_load(options_load)
+        return models_by_id[id]
       end
 
       protected

@@ -5,6 +5,8 @@ module Goo
     end
     class StatusException < StandardError
     end
+    class AttributeNotLoaded < StandardError
+    end
     class PrefixVocabularieNotFound < StandardError
     end
     class PropertyNameNotFound < StandardError

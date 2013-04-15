@@ -78,7 +78,8 @@ module Goo
           define_method("#{attr}=") do |*args|
             @loaded_attributes.add(attr)
             value = args[0]
-            unless args[-1].instance_of?(Hash) and args[-1][:on_load]
+            binding.pry if args.last.instance_of?(Hash) and args.last[:on_load]
+            unless args.last.instance_of?(Hash) and args.last[:on_load]
               prev = self.instance_variable_get("@#{attr}")
               if !prev.nil? and !@modified_attributes.include?(attr)
                 if prev != value 
@@ -94,8 +95,7 @@ module Goo
             if (not @persistent) or @loaded_attributes.include?(attr)
               return self.instance_variable_get("@#{attr}")
             else
-              #raise somethoing
-              binding.pry
+              raise Goo::Base::AttributeNotLoaded, "Persistent object with `#{attr}` not loaded"
             end
           end
         end

@@ -153,6 +153,8 @@ class Test < TestCase
     assert !st.modified?
     assert nil == st.delete
     assert !st.exist?
+    assert !st.persistent?
+    assert !st.modified?
   end
 
   def test_not_valid_save
@@ -164,22 +166,33 @@ class Test < TestCase
   end
 
   def test_find
+
     st = Status.new({ description: "some text", active: true })
-    #st.save
-    #assert st.persistent?
+    st.save
+    assert st.persistent?
     
     id = st.id
     st_from_backend = Status.find(id)
     assert_instance_of Status, st_from_backend
     assert (st_from_backend.kind_of? Goo::Base::Resource)
+    assert_equal id, st_from_backend.id
 
     st.class.attributes.each do |attr|
-      assert_equal(st.send("#{attr}"), st_from_backend.send("#{attr}"))
+      assert_raises Goo::Base::AttributeNotLoaded do
+        st_from_backend.send("#{attr}")
+      end
     end
-    assert_equal id, st_from_backend.id
+
+    #st.class.attributes.each do |attr|
+    #  assert_equal(st.send("#{attr}"), st_from_backend.send("#{attr}"))
+    #end
 
     assert st_from_backend.persistent?
     assert !st_from_backend.modified?
+
+    binding.pry #delete fails because it is missing data !!!
+    assert st_from_backend.delete
+    assert !st_from_backend.exists?
 
     not_existent_id = RDF::URI("http://some.bogus.id/x")
     st_from_backend = Status.find(not_existent_id)
