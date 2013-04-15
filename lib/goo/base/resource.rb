@@ -96,9 +96,27 @@ module Goo
         return Goo::SPARQL::Queries.model_exist(self,id=_id)
       end
 
+      def fully_loaded?
+        #every declared attributed has been loaded
+        return @loaded_attributes == Set.new(self.class.attributes)
+      end
+
+      def missing_load_attributes
+        #every declared attributed has been loaded
+        return Set.new(self.class.attributes) - @loaded_attributes
+      end
+
       def delete
         raise ArgumentError, "This object is not persistent and cannot be deleted" if !@persistent
+
+        if !fully_loaded?
+          missing = missing_load_attributes
+          options_load = { models: [ self ], klass: self.class, :include => missing }
+          Goo::SPARQL::Queries.model_load(options_load)
+        end
+
         graph_delete = Goo::SPARQL::Triples.model_delete_triples(self)
+
         begin
           Goo.sparql_update_client.delete_data(graph_delete, graph: self.class.uri_type)
         rescue Exception => e
@@ -142,7 +160,6 @@ module Goo
       # Class level methods
       # ##
       def self.find(id, *options)
-        attributes_from_backend = {}
         options_load = { ids: [id], klass: self }.merge(options[-1] || {})
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
         return models_by_id[id]

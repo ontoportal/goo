@@ -21,9 +21,20 @@ module Goo
         models = options[:models]
         store = options[:store] || :main
 
-        models_by_id = {}
+        if ids and models
+          raise ArgumentError, "Inconsistent call , either models or IDs"
+        end
         if models
           models.each do |m|
+            raise ArgumentError, "To load attributes the resource must be persistent" unless m.persistent?
+          end
+        end
+
+        models_by_id = {}
+        if models
+          ids = []
+          models.each do |m|
+            ids << m.id
             models_by_id[m.id] = m
           end
         else
@@ -35,10 +46,16 @@ module Goo
 
         variables = [:id]
 
+        patterns = [[ :id ,RDF.type, klass.uri_type]]
         if incl
-          binding.pry
+          #make it deterministic
+          incl = incl.to_a.sort
+          variables.concat(incl)
+          incl.each do |attr|
+            predicate = klass.attribute_uri(attr)
+            patterns << [ :id , predicate , attr]
+          end
         end
-        patterns = [ :id ,RDF.type, klass.uri_type]
         filter_id = []
         ids.each do |id|
           filter_id << "?id = #{id.to_ntriples.to_s}"
@@ -47,23 +64,27 @@ module Goo
 
         client = Goo.sparql_query_client(store)
         select = client.select(*variables).distinct()
-        select.where(patterns)
+        select.where(*patterns)
         select.filter(filter_id_str)
 
         found = Set.new
         select.each_solution do |sol|
           found.add(sol[:id])
+          id = sol[:id]
           variables.each do |v|
             next if v == :id
             #group for multiple values
-            models_by_id[id].send("#{attr}=",sol[v], on_load: true)
+            models_by_id[id].send("#{v}=",sol[v].value, on_load: true)
           end
         end
 
-        #remove from models_by_id elements that where not touch
+        #remove from models_by_id elements that were not touched
         models_by_id.select! { |k,m| found.include?(k) }
-        models_by_id.each do |k,m|
-          m.persistent=true
+
+        if options[:ids] #newly loaded
+          models_by_id.each do |k,m|
+            m.persistent=true
+          end
         end
         return models_by_id
       end

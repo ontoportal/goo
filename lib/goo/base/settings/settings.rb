@@ -78,7 +78,6 @@ module Goo
           define_method("#{attr}=") do |*args|
             @loaded_attributes.add(attr)
             value = args[0]
-            binding.pry if args.last.instance_of?(Hash) and args.last[:on_load]
             unless args.last.instance_of?(Hash) and args.last[:on_load]
               prev = self.instance_variable_get("@#{attr}")
               if !prev.nil? and !@modified_attributes.include?(attr)

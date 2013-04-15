@@ -190,12 +190,18 @@ class Test < TestCase
     assert st_from_backend.persistent?
     assert !st_from_backend.modified?
 
-    binding.pry #delete fails because it is missing data !!!
-    assert st_from_backend.delete
-    assert !st_from_backend.exists?
+    assert nil == st_from_backend.delete
+    assert !st_from_backend.exist?
 
     not_existent_id = RDF::URI("http://some.bogus.id/x")
     st_from_backend = Status.find(not_existent_id)
     assert st_from_backend.nil?
   end
+
+  def test_update_array_values
+    #object should always return freezed arrays
+    #so that we detect the set
+    binding.pry
+  end
+
 end
