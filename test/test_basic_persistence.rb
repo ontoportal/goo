@@ -136,7 +136,29 @@ class TestBasicPersistence < TestCase
     assert !st_from_backend.exist?
   end
 
+  def test_update_unique
+    #fail when updating a unique field
+    binding.pry
+  end
 
+  def test_update
+    st = StatusPersistent.new({ description: "some text", active: true })
+    st.save
+    assert st.persistent?
+
+    st.active = false
+    assert(st.modified?)
+    st.save
+    assert(!st.modified?)
+
+    st_from_backend = StatusPersistent.find(st.id, include: [ :active ] )
+    assert (st_from_backend.persistent?)
+    assert !st_from_backend.modified?
+    assert_equal(false, st_from_backend.active)
+
+    assert nil == st_from_backend.delete
+    assert !st_from_backend.exist?
+  end
 
   def test_update_array_values
     #object should always return freezed arrays
