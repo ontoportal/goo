@@ -44,6 +44,14 @@ module Goo
           return @model_settings[:attributes].keys
         end
 
+        def attributes_with_defaults
+          return (@model_settings[:attributes].select{ |attr,opts| opts[:default] }).keys()
+        end
+
+        def default(attr)
+          return @model_settings[:attributes][attr][:default]
+        end
+
         def attribute_namespace(attr)
           return @model_settings[:attributes][attr][:namespace]
         end
@@ -113,6 +121,14 @@ module Goo
         end
         def unique_attribute
           return @unique_attribute
+        end
+
+        def id_from_unique_attribute(attr,value_attr)
+          if value_attr.nil?
+            raise ArgumentError, "`#{attr}` value is nil. Id for resource cannot be generated."
+          end
+          uri_last_fragment = CGI.escape(value_attr)
+          return namespace[model_name.to_s + '/' + uri_last_fragment]
         end
       end
     end

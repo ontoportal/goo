@@ -44,7 +44,8 @@ module Goo
           uattr = self.class.unique_attribute
           if validation_errors[uattr].nil?
             begin
-              @id = id_from_unique_attribute(uattr)
+              value_attr = self.send("#{uattr}")
+              @id = self.class.id_from_unique_attribute(uattr,value_attr)
               if self.exist?(from_valid=true)
                 uvalue = self.send("#{uattr}")
                 validation_errors[uattr] = validation_errors[uattr] || {}
@@ -147,6 +148,10 @@ module Goo
           end
         end
 
+
+        #after save all attributes where loaded
+        @loaded_attributes = Set.new(self.class.attributes)
+
         @modified_attributes = Set.new
         @persistent = true
         return self
@@ -160,6 +165,9 @@ module Goo
       # Class level methods
       # ##
       def self.find(id, *options)
+        unless id.instance_of?(RDF::URI)
+          id = id_from_unique_attribute(unique_attribute(),id)
+        end
         options_load = { ids: [id], klass: self }.merge(options[-1] || {})
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
         return models_by_id[id]
@@ -168,17 +176,10 @@ module Goo
       protected
       def id_from_unique()
           uattr = self.class.unique_attribute
-          return id_from_unique_attribute(uattr)
+          uvalue = self.send("#{uattr}")
+          return self.class.id_from_unique_attribute(uattr,uvalue)
       end
 
-      def id_from_unique_attribute(attr)
-        value_attr = self.send("#{attr}")
-        if value_attr.nil?
-          raise ArgumentError, "`#{attr}` value is nil. Id for resource cannot be generated."
-        end
-        uri_last_fragment = CGI.escape(value_attr)
-        return self.class.namespace[self.class.model_name.to_s + '/' + uri_last_fragment]
-      end
     end
 
   end

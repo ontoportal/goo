@@ -47,13 +47,14 @@ module Goo
         variables = [:id]
 
         patterns = [[ :id ,RDF.type, klass.uri_type]]
+        optional_patterns = []
         if incl
           #make it deterministic
           incl = incl.to_a.sort
           variables.concat(incl)
           incl.each do |attr|
             predicate = klass.attribute_uri(attr)
-            patterns << [ :id , predicate , attr]
+            optional_patterns << [ :id , predicate , attr]
           end
         end
         filter_id = []
@@ -65,6 +66,9 @@ module Goo
         client = Goo.sparql_query_client(store)
         select = client.select(*variables).distinct()
         select.where(*patterns)
+        optional_patterns.each do |optional|
+          select.optional(*[optional])
+        end
         select.filter(filter_id_str)
 
         found = Set.new
@@ -75,7 +79,10 @@ module Goo
           variables.each do |v|
             next if v == :id
             #group for multiple values
-            object = sol[v].object
+            object = sol[v] ? sol[v] : nil
+            if object and  !(object.kind_of? RDF::URI)
+              object = object.object
+            end
             if list_attributes.include?(v)
               pre = models_by_id[id].send("#{v}")
               object = !pre ? [object] : (pre.dup << object)

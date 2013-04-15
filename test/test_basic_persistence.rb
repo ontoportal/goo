@@ -30,8 +30,8 @@ class PersonPersistent < Goo::Base::Resource
             default: lambda { |record| DateTime.now },
             namespace: :omv
             
-  attribute :friends, enforce: [ :existence , PersonPersistent]
-  attribute :status, enforce: [ :existence, :status ],
+  attribute :friends, enforce: [ PersonPersistent ]
+  attribute :status, enforce: [ :status ],
   			default: lambda { |record| StatusPersistent.find("single") }
 
   def initialize(attributes = {})
@@ -147,6 +147,20 @@ class TestBasicPersistence < TestCase
     binding.pry
   end
 
+  def test_find_with_string
+    st = StatusPersistent.new({ description: "some text", active: true })
+    st.save
+    assert st.persistent?
+    st_from_backend = StatusPersistent.find("some text", include: [ :active ] )
+    assert_instance_of(StatusPersistent, st_from_backend)
+    assert_equal(st.id, st_from_backend.id)
+    assert_equal(true, st_from_backend.active)
+    st_from_backend.delete
+
+    st_from_backend = StatusPersistent.find("not there")
+    assert st_from_backend.nil?
+  end
+
   def test_update
     st = StatusPersistent.new({ description: "some text", active: true })
     st.save
@@ -191,6 +205,40 @@ class TestBasicPersistence < TestCase
     arr_from_backend.delete
     assert !arr_from_backend.exist?
 
+  end
+
+  def test_person_save
+    st = StatusPersistent.new(description: "single", active: true)
+    st.save
+
+    person = PersonPersistent.new
+    person.name = "John"
+    person.multiple_values = [1,2,3,4]
+    person.one_number = 99
+    person.birth_date = DateTime.parse('2001-02-03T04:05:06.12')
+    assert person.valid?
+    person.save
+    assert person.persistent?
+    assert !person.modified?
+
+    assert_equal nil, person.friends
+
+    #default st and created
+    assert_instance_of(StatusPersistent, person.status)
+    assert_instance_of(DateTime, person.created)
+    assert_equal(nil, person.friends)
+
+    person_from_backend = PersonPersistent.find("John", include: PersonPersistent.attributes)
+    binding.pry
+    assert_equal(person.status.id, person_from_backend.status)
+    assert_equal(nil, person_from_backend.friends)
+    assert_equal(person.name, person_from_backend.name)
+    assert_equal(person.multiple_values.sort, person_from_backend.multiple_values.sort)
+    assert_equal(person.birth_date, person_from_backend.birth_date)
+    assert_equal(person.created, person_from_backend.created)
+
+    person_from_backend.delete
+    assert !person_from_backend.exist?
   end
 
 end
