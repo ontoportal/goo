@@ -206,10 +206,37 @@ class Test < TestCase
     st.class.attributes.each do |attr|
       assert_equal(st.send("#{attr}"), st_from_backend.send("#{attr}"))
     end
+    assert st_from_backend.fully_loaded?
+    assert (st_from_backend.missing_load_attributes.length == 0)
 
     assert nil == st_from_backend.delete
     assert !st_from_backend.exist?
   end
+
+  def test_find_load_some
+    st = Status.new({ description: "some text", active: true })
+    st.save
+    assert st.persistent?
+    
+    id = st.id
+    st_from_backend = Status.find(id, include: [ :active ] )
+    assert (st_from_backend.persistent?)
+    assert (!st_from_backend.modified?)
+
+    assert (st_from_backend.active == true)
+    assert_raises Goo::Base::AttributeNotLoaded do
+      st_from_backend.description
+    end
+
+    assert !st_from_backend.fully_loaded?
+    assert (st_from_backend.missing_load_attributes.length == 1)
+    assert (st_from_backend.missing_load_attributes.include?(:description))
+
+    assert nil == st_from_backend.delete
+    assert !st_from_backend.exist?
+  end
+
+
 
   def test_update_array_values
     #object should always return freezed arrays
