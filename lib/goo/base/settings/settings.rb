@@ -88,7 +88,10 @@ module Goo
               end
               @modified_attributes.add(attr)
             end
-            self.instance_variable_set("@#{attr}",args[0])
+            if value.instance_of?(Array)
+              value = value.dup.freeze
+            end
+            self.instance_variable_set("@#{attr}",value)
           end
           define_method("#{attr}") do |*args|
             if (not @persistent) or @loaded_attributes.include?(attr)

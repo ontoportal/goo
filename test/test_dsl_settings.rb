@@ -99,6 +99,10 @@ class TestDSLSeeting < TestCase
     assert !person.valid?
     assert !person.errors[:multiple_values]
 
+    assert_raises RuntimeError do
+      person.multiple_values << 99 #RuntimeError: can't modify frozen Array
+    end
+
     friends = [PersonModel.new , PersonModel.new]
     person.friends = friends
     assert !person.valid?
