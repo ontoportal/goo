@@ -30,7 +30,7 @@ module Goo
 
           Goo.add_model(@model_name,self)
           @attribute_uris = {}
-          @namespace = Goo.vocabulary(nil)
+          @namespace = Goo.vocabulary(@model_settings[:namespace])
           @uri_type = @namespace[@model_name.to_s.camelize]
           @model_settings[:range] = {}
         end

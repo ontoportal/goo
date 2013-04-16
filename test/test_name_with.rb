@@ -36,5 +36,6 @@ class TestNameWith < TestCase
 
     from_backend.delete
     assert(!from_backend.exist?)
+    assert 0, triples_for_subject(from_backend.id)
   end
 end

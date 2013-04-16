@@ -70,20 +70,22 @@ module TestInit
 end
 
 class TestCase < MiniTest::Unit::TestCase
-  def no_triples_for_subject(resource_id)
-    rs = Goo.store().query("SELECT * WHERE { #{resource_id.to_turtle} ?p ?o }")
+
+  def triples_for_subject(resource_id)
+    rs = Goo.sparql_query_client.query("SELECT * WHERE { #{resource_id.to_ntriples} ?p ?o . }")
+    count = 0
     rs.each_solution do |sol|
-      #unreachable
-      assert_equal 1,0
+      count += 1
     end
+    return count
   end
 
   def count_pattern(pattern)
     q = "SELECT * WHERE { #{pattern} }"
-    rs = Goo.store().query(q)
+    rs = Goo.sparql_query_client.query(q)
     count = 0
     rs.each_solution do |sol|
-      count = count + 1
+      count += 1
     end
     return count
   end
