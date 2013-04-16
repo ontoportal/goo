@@ -476,15 +476,16 @@ module Goo
             pred = sol.get :predicate
             obj = sol.get :object
             attr = item.class.attr_for_predicate_uri(pred.value)
-            if attr.nil? && self.schemaless?
+            if self.schemaless?
               item.attributes.include?(pred) ? item.attributes[pred] << obj : item.attributes[pred] =[obj]
-              next
             end
-            range = range_class(attr)
-            unless range.nil?
-              obj = range.find obj, load_attrs: []
+            if attr
+              range = range_class(attr)
+              unless range.nil?
+                obj = range.find obj, load_attrs: []
+              end
+              item.lazy_load_attr(attr,obj)
             end
-            item.lazy_load_attr(attr,obj)
           end
           next if load_attrs.nil?
           if load_attrs.length > 0
