@@ -76,9 +76,14 @@ module Goo
              if model_range and !value.nil?
                values = value.kind_of?(Array) ? value : [value]
                values.each do |v|
-                 unless v.kind_of?(model_range)
+                 if not v.kind_of?(model_range)
                    add_error(model_range.model_name, errors_by_opt,
                              "`#{attr}` contains values that are not instance of `#{model_range.model_name}`")
+                 else
+                   if not v.persistent?
+                     add_error(model_range.model_name, errors_by_opt,
+                               "`#{attr}` contains non persistent models. It will not save.")
+                   end
                  end
                end
              end

@@ -10,7 +10,7 @@ class ArrayValues < Goo::Base::Resource
 end
 
 class StatusPersistent < Goo::Base::Resource
-  model :status
+  model :status_persistent
   attribute :description, enforce: [ :existence, :unique]
   attribute :active, enforce: [ :existence, :boolean ], namespace: :omv
 
@@ -20,7 +20,7 @@ class StatusPersistent < Goo::Base::Resource
 end
 
 class PersonPersistent < Goo::Base::Resource
-  model :person
+  model :person_persistent
   attribute :name, enforce: [ :existence, :string, :unique]
   attribute :multiple_values, enforce: [ :list, :existence, :integer, :min_3, :max_5 ]
   attribute :one_number, enforce: [ :existence, :integer ] #by default not a list
@@ -30,8 +30,8 @@ class PersonPersistent < Goo::Base::Resource
             default: lambda { |record| DateTime.now },
             namespace: :omv
             
-  attribute :friends, enforce: [ PersonPersistent ]
-  attribute :status, enforce: [ :status ],
+  attribute :friends, enforce: [ :list, PersonPersistent ]
+  attribute :status, enforce: [ :status_persistent ],
   			default: lambda { |record| StatusPersistent.find("single") }
 
   def initialize(attributes = {})
@@ -238,6 +238,37 @@ class TestBasicPersistence < TestCase
 
     person_from_backend.delete
     assert !person_from_backend.exist?
+    st.delete
+  end
+
+  def test_friends
+    st = StatusPersistent.new(description: "single", active: true)
+    st = st.exist? ? StatusPersistent.find("single") : st.save
+    person1 = PersonPersistent.new(name: "John", multiple_values: [1,2,3,4], one_number: 99,
+                                   birth_date: DateTime.parse('2001-02-03T04:05:06.12'))
+
+    person2 = PersonPersistent.new(name: "Rick", multiple_values: [1,2,3,4], one_number: 99,
+                               birth_date: DateTime.parse('2001-02-03T04:05:06.12'))
+    person2.friends = [person1]
+
+    #dependent objects must be persistant
+    assert !person2.valid?
+    assert person2.errors[:friends][:person_persistent]
+
+    person1.save
+
+    assert person2.valid?
+    person2.save
+
+    from_backend = PersonPersistent.find(person2.id, include: [:friends])
+    assert_equal 1, person2.friends.length
+    assert_equal person1.id, person2.friends.first.id
+
+
+    person1.delete
+    assert 0, triples_for_subject(person1.id)
+    person2.delete
+    assert 0, triples_for_subject(person2.id)
   end
 
 end

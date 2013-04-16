@@ -3,7 +3,7 @@ require_relative 'test_case'
 TestInit.configure_goo
 
 class StatusModel < Goo::Base::Resource
-  model :status
+  model :status_model
   attribute :description, enforce: [ :existence, :unique]
   attribute :active, enforce: [ :existence, :boolean ], namespace: :omv
 
@@ -13,7 +13,7 @@ class StatusModel < Goo::Base::Resource
 end
 
 class PersonModel < Goo::Base::Resource
-  model :person
+  model :person_model
   attribute :name, enforce: [ :existence, :string, :unique]
   attribute :multiple_values, enforce: [ :list, :existence, :integer, :min_3, :max_5 ]
   attribute :one_number, enforce: [ :existence, :integer ] #by default not a list
@@ -109,10 +109,10 @@ class TestDSLSeeting < TestCase
     assert person.errors[:friends][:no_list]
     person.friends = PersonModel.new
     assert !person.valid?
-    assert !person.errors[:friends]
+    assert person.errors[:friends][:person_model]
     person.friends = "some one"
     assert !person.valid?
-    assert person.errors[:friends][:person]
+    assert person.errors[:friends][:person_model]
     person.friends = PersonModel.new
 
     person.one_number = 99
@@ -134,7 +134,9 @@ class TestDSLSeeting < TestCase
 
     assert person.errors[:status][:existence]
     person.status = StatusModel.new
-    assert person.valid?
+
+    #there are assigned objects that are not saved
+    assert !person.valid?
   end
 
   def test_default_value

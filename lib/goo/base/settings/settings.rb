@@ -83,7 +83,7 @@ module Goo
           end
 
           @model_settings[:attributes][attr_name][:enforce].each do |opt|
-            if Goo.models.include?(opt) || opt.kind_of?(Goo::Base::Resource)
+            if Goo.models.include?(opt) || opt.respond_to?(:model_name)
               opt = Goo.models[opt] if opt.instance_of?(Symbol)
               @model_settings[:range][attr_name]=opt
               break

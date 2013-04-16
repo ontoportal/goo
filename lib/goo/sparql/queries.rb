@@ -99,7 +99,7 @@ module Goo
               end
             end
 
-            if list_attributes.include?(v)
+            if object and list_attributes.include?(v)
               pre = models_by_id[id].send("#{v}")
               object = !pre ? [object] : (pre.dup << object)
             end

@@ -14,7 +14,7 @@ class NamespacesModel < Goo::Base::Resource
   end
 end
 
-class TestNameWith < TestCase
+class TestNamespaces < TestCase
   def initialize(*args)
     super(*args)
   end
