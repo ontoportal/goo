@@ -141,6 +141,10 @@ module Goo
           uri_last_fragment = CGI.escape(value_attr)
           return namespace[model_name.to_s + '/' + uri_last_fragment]
         end
+
+        def name_with
+          return @model_settings[:name_with]
+        end
       end
     end
   end

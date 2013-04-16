@@ -44,13 +44,10 @@ module Goo
           uattr = self.class.unique_attribute
           if validation_errors[uattr].nil?
             begin
-              value_attr = self.send("#{uattr}")
-              @id = self.class.id_from_unique_attribute(uattr,value_attr)
               if self.exist?(from_valid=true)
-                uvalue = self.send("#{uattr}")
                 validation_errors[uattr] = validation_errors[uattr] || {}
                 validation_errors[uattr][:unique] = 
-                  "There is already a persistent resource with `#{uattr}` value `#{uvalue}`"
+                  "There is already a persistent resource with id `#{@id.to_s}`"
               end
             rescue ArgumentError => e
               validation_errors[uattr][:unique] = e.message
@@ -72,7 +69,12 @@ module Goo
 
       def id
         if @id.nil?
-          @id = id_from_unique()
+          custom_name = self.class.name_with
+          if custom_name
+            @id = custom_name.call(self)
+          else
+            @id = id_from_unique()
+          end
         end
         return @id
       end
