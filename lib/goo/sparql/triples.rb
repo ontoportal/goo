@@ -13,6 +13,7 @@ module Goo
           values = value.kind_of?(Array) ? value : [value]
           values.each do |v|
             object = v.class.respond_to?(:shape_attribute) ? v.id : v
+            next if object.nil?
             graph_delete << [subject, predicate, object]
           end
         end
@@ -30,6 +31,7 @@ module Goo
             values = value.kind_of?(Array) ? value : [value]
             values.each do |v|
               object = v.class.respond_to?(:shape_attribute) ? v.id : v
+              next if object.nil?
               graph_delete << [subject, predicate, object]
             end
           end

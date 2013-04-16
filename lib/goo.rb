@@ -115,6 +115,10 @@ module Goo
     return @@model_by_name[name]
   end
 
+  def self.models
+    return @@model_by_name
+  end
+
   def self.resource_options
     return @@resource_options
   end

@@ -5,8 +5,6 @@ module Goo
         base.extend(ClassMethods)
       end
 
-
-
       module ClassMethods
         attr_accessor :model_settings
         attr_reader :model_name
@@ -34,6 +32,7 @@ module Goo
           @attribute_uris = {}
           @namespace = Goo.vocabulary(nil)
           @uri_type = @namespace[@model_name.to_s.camelize]
+          @model_settings[:range] = {}
         end
 
         def attributes(*options)
@@ -54,6 +53,10 @@ module Goo
 
         def attribute_namespace(attr)
           return @model_settings[:attributes][attr][:namespace]
+        end
+
+        def range(attr)
+          @model_settings[:range][attr]
         end
 
         def attribute(*args)
@@ -77,6 +80,14 @@ module Goo
               raise ArgumentError, "Model `#{@model_name}` has two or more unique attributes."
             end
             @unique_attribute = attr_name
+          end
+
+          @model_settings[:attributes][attr_name][:enforce].each do |opt|
+            if Goo.models.include?(opt) || opt.kind_of?(Goo::Base::Resource)
+              opt = Goo.models[opt] if opt.instance_of?(Symbol)
+              @model_settings[:range][attr_name]=opt
+              break
+            end
           end
         end
    

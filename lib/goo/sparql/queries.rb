@@ -73,6 +73,7 @@ module Goo
 
         found = Set.new
         list_attributes = klass.attributes(:list)
+        objects_new = {}
         select.each_solution do |sol|
           found.add(sol[:id])
           id = sol[:id]
@@ -83,6 +84,21 @@ module Goo
             if object and  !(object.kind_of? RDF::URI)
               object = object.object
             end
+
+            #dependent model creation
+            if object.kind_of?(RDF::URI)
+              if objects_new.include?(object)
+                object = objects_new[object]
+              else
+                range = klass.range(v)
+                range_object = range.new
+                range_object.id = object
+                range_object.persistent = true
+                object = range_object
+                objects_new[object.id] = object
+              end
+            end
+
             if list_attributes.include?(v)
               pre = models_by_id[id].send("#{v}")
               object = !pre ? [object] : (pre.dup << object)

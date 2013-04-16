@@ -209,7 +209,7 @@ class TestBasicPersistence < TestCase
 
   def test_person_save
     st = StatusPersistent.new(description: "single", active: true)
-    st.save
+    st = st.exist? ? StatusPersistent.find("single") : st.save
 
     person = PersonPersistent.new
     person.name = "John"
@@ -229,13 +229,12 @@ class TestBasicPersistence < TestCase
     assert_equal(nil, person.friends)
 
     person_from_backend = PersonPersistent.find("John", include: PersonPersistent.attributes)
-    binding.pry
-    assert_equal(person.status.id, person_from_backend.status)
+    assert_equal(person.status.id, person_from_backend.status.id)
     assert_equal(nil, person_from_backend.friends)
     assert_equal(person.name, person_from_backend.name)
     assert_equal(person.multiple_values.sort, person_from_backend.multiple_values.sort)
-    assert_equal(person.birth_date, person_from_backend.birth_date)
-    assert_equal(person.created, person_from_backend.created)
+    assert_equal(person.birth_date.xmlschema, person_from_backend.birth_date.xmlschema)
+    assert_equal(person.created.xmlschema, person_from_backend.created.xmlschema)
 
     person_from_backend.delete
     assert !person_from_backend.exist?
