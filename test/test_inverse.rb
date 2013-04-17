@@ -17,7 +17,7 @@ end
 class Project < Goo::Base::Resource
   model :project
   attribute :name, enforce: [ :existence, :unique ]
-  attribute :tasks, inverse: [ on: Task, attribute: :project]
+  attribute :tasks, inverse: { on: Task, attribute: :project }
 end
 
 
@@ -28,7 +28,7 @@ class TestInverse < TestCase
   end
 
   def test_inverse_retrieval
-    #assert Project.range(:tasks) == :task
+    assert Project.range(:tasks) == Task
     assert Task.range(:project) == Project
     assert Goo.models[:task] == Task
     assert Goo.models[:project] == Project
@@ -47,5 +47,10 @@ class TestInverse < TestCase
     #task => project
     task = Task.find("task1", include: [ :project ])
     assert task.project.first.id == goo.id
+
+    #do not allow to assign inverse properties
+    assert_raises ArgumentError do
+      goo.tasks = task
+    end
   end
 end

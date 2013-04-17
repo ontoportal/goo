@@ -47,9 +47,12 @@ module Goo
         def attributes(*options)
           if options and options.length > 0
             filt = options.first 
+            if filt == :all
+              return @model_settings[:attributes].keys
+            end
             return (@model_settings[:attributes].select{ |attr,opts| opts[:enforce].include?(filt) }).keys()
           end
-          return @model_settings[:attributes].keys
+          return @model_settings[:attributes].keys.select{ |k| @model_settings[:attributes][k][:inverse].nil? }
         end
 
         def attributes_with_defaults
@@ -68,12 +71,23 @@ module Goo
           @model_settings[:range][attr]
         end
 
+        def inverse?(attr)
+          return (!@model_settings[:attributes][attr][:inverse].nil?)
+        end
+
         def set_range(attr)
           @model_settings[:attributes][attr][:enforce].each do |opt|
             if Goo.models.include?(opt) || opt.respond_to?(:model_name)
               opt = Goo.models[opt] if opt.instance_of?(Symbol)
               @model_settings[:range][attr]=opt
               break
+            end
+          end
+          if @model_settings[:attributes][attr][:inverse]
+            on = @model_settings[:attributes][attr][:inverse][:on]
+            if Goo.models.include?(on) || on.respond_to?(:model_name)
+              on = Goo.models[opt] if on.instance_of?(Symbol)
+              @model_settings[:range][attr]=on
             end
           end
         end
@@ -108,6 +122,7 @@ module Goo
           return if attr == :resource_id
           attr = attr.to_sym
           define_method("#{attr}=") do |*args|
+            raise ArgumentError, "`#{attr}` is an inverse attribute. Values cannot be assigned." if self.class.inverse?(attr)
             @loaded_attributes.add(attr)
             value = args[0]
             unless args.last.instance_of?(Hash) and args.last[:on_load]
