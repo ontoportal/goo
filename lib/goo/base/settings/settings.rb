@@ -33,6 +33,15 @@ module Goo
           @namespace = Goo.vocabulary(@model_settings[:namespace])
           @uri_type = @namespace[@model_name.to_s.camelize]
           @model_settings[:range] = {}
+          @model_settings[:attributes] = {}
+          
+          #registering a new models forces to redo ranges
+          Goo.models.each do |k,m|
+            m.attributes.each do |attr|
+              next if m.range(attr)
+              m.set_range(attr)
+            end
+          end
         end
 
         def attributes(*options)
@@ -59,14 +68,21 @@ module Goo
           @model_settings[:range][attr]
         end
 
+        def set_range(attr)
+          @model_settings[:attributes][attr][:enforce].each do |opt|
+            if Goo.models.include?(opt) || opt.respond_to?(:model_name)
+              opt = Goo.models[opt] if opt.instance_of?(Symbol)
+              @model_settings[:range][attr]=opt
+              break
+            end
+          end
+        end
+
         def attribute(*args)
           options = args.reverse
           attr_name = options.pop
           attr_name = attr_name.to_sym
           options = options.pop
-          unless @model_settings.include? :attributes
-            @model_settings[:attributes] = {}
-          end
           if options[:enforce].nil? or !options[:enforce].include?(:list)
             options[:enforce] = options[:enforce] ? (options[:enforce] << :no_list) : [:no_list]
           end
@@ -81,14 +97,7 @@ module Goo
             end
             @unique_attribute = attr_name
           end
-
-          @model_settings[:attributes][attr_name][:enforce].each do |opt|
-            if Goo.models.include?(opt) || opt.respond_to?(:model_name)
-              opt = Goo.models[opt] if opt.instance_of?(Symbol)
-              @model_settings[:range][attr_name]=opt
-              break
-            end
-          end
+          set_range(attr_name)
         end
    
         def attribute_uri(attr)

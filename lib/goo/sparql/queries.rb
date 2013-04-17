@@ -100,7 +100,7 @@ module Goo
             end
 
             if object and list_attributes.include?(v)
-              pre = models_by_id[id].send("#{v}")
+              pre = models_by_id[id].instance_variable_get("@#{v}")
               object = !pre ? [object] : (pre.dup << object)
             end
             models_by_id[id].send("#{v}=",object, on_load: true)
