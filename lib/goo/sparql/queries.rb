@@ -26,7 +26,8 @@ module Goo
         end
         if models
           models.each do |m|
-            raise ArgumentError, "To load attributes the resource must be persistent" unless m.persistent?
+            raise ArgumentError, 
+              "To load attributes the resource must be persistent" unless m.persistent?
           end
         end
 
@@ -53,8 +54,16 @@ module Goo
           incl = incl.to_a.sort
           variables.concat(incl)
           incl.each do |attr|
-            predicate = klass.attribute_uri(attr)
-            optional_patterns << [ :id , predicate , attr]
+            if klass.inverse?(attr)
+              inverse_opts = klass.inverse_opts(attr)
+              on_klass = inverse_opts[:on]
+              inverse_klass = on_klass.respond_to?(:model_name) ? on_klass: Goo.models[on_class]
+              predicate = inverse_klass.attribute_uri(inverse_opts[:attribute])
+              optional_patterns << [ attr, predicate, :id ]
+            else
+              predicate = klass.attribute_uri(attr)
+              optional_patterns << [ :id , predicate , attr]
+            end
           end
         end
         filter_id = []

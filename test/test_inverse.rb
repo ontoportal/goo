@@ -32,6 +32,7 @@ class TestInverse < TestCase
     assert Task.range(:project) == Project
     assert Goo.models[:task] == Task
     assert Goo.models[:project] == Project
+    assert Project.attributes(:list).include?(:tasks)
 
     goo = Project.new(name: "Goo")
     Project.find("Goo").delete if goo.exist?
@@ -39,18 +40,42 @@ class TestInverse < TestCase
     goo.save
     assert goo.persistent?
 
-    task1 = Task.new(description: "task1", project: [ goo ])
-    Task.find("task1").delete if task1.exist?
-    assert task1.valid?
-    task1.save
+    5.times do |i|
+      task = Task.new(description: "task_#{i}", project: [ goo ])
+      Task.find("task_#{i}").delete if task.exist?
+      assert task.valid?
+      task.save
+    end
 
     #task => project
-    task = Task.find("task1", include: [ :project ])
-    assert task.project.first.id == goo.id
+    5.times do |i|
+      task = Task.find("task_#{i}", include: [ :project ])
+      assert task.project.first.id == goo.id
+    end
+
+    #project => task
+    project = Project.find("Goo", include: [ :tasks ])
+    assert_equal(5, project.tasks.length)
+    assert project.tasks.map { |x| x.id.to_s[33].to_i }.sort == [0,1,2,3,4]
+
 
     #do not allow to assign inverse properties
     assert_raises ArgumentError do
-      goo.tasks = task
+      project.tasks = Task.find("task_1")
     end
+
+    3.times do |i|
+      Task.find("task_#{i}").delete()
+    end
+
+    project = Project.find("Goo", include: [ :tasks ])
+    assert_equal(2, project.tasks.length)
+    Task.find("task_3").delete()
+    Task.find("task_4").delete()
+    assert_equal(2, project.tasks.length)
+    assert project.tasks.map { |x| x.id.to_s[33].to_i }.sort == [3,4]
+    project = Project.find("Goo", include: [ :tasks ])
+    project.delete
+
   end
 end

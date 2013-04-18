@@ -50,13 +50,22 @@ module Goo
             if filt == :all
               return @model_settings[:attributes].keys
             end
-            return (@model_settings[:attributes].select{ |attr,opts| opts[:enforce].include?(filt) }).keys()
+            if filt == :inverse
+              return @model_settings[:attributes].keys.
+                select{ |k| @model_settings[:attributes][k][:inverse] }
+            end
+            atts = (@model_settings[:attributes].
+                    select{ |attr,opts| opts[:enforce].include?(filt) }).keys()
+            atts.concat(attributes(:inverse)) if filt == :list
+            return atts
           end
-          return @model_settings[:attributes].keys.select{ |k| @model_settings[:attributes][k][:inverse].nil? }
+          return @model_settings[:attributes].keys.
+            select{ |k| @model_settings[:attributes][k][:inverse].nil? }
         end
 
         def attributes_with_defaults
-          return (@model_settings[:attributes].select{ |attr,opts| opts[:default] }).keys()
+          return (@model_settings[:attributes].
+                  select{ |attr,opts| opts[:default] }).keys()
         end
 
         def default(attr)
@@ -73,6 +82,10 @@ module Goo
 
         def inverse?(attr)
           return (!@model_settings[:attributes][attr][:inverse].nil?)
+        end
+
+        def inverse_opts(attr)
+          return @model_settings[:attributes][attr][:inverse]
         end
 
         def set_range(attr)
@@ -122,7 +135,10 @@ module Goo
           return if attr == :resource_id
           attr = attr.to_sym
           define_method("#{attr}=") do |*args|
-            raise ArgumentError, "`#{attr}` is an inverse attribute. Values cannot be assigned." if self.class.inverse?(attr)
+            if self.class.inverse?(attr) && !(args && args.last.instance_of?(Hash) && args.last[:on_load])
+              raise ArgumentError, 
+                "`#{attr}` is an inverse attribute. Values cannot be assigned."
+            end
             @loaded_attributes.add(attr)
             value = args[0]
             unless args.last.instance_of?(Hash) and args.last[:on_load]
