@@ -115,13 +115,16 @@ module Goo
         if !fully_loaded?
           missing = missing_load_attributes
           options_load = { models: [ self ], klass: self.class, :include => missing }
+          if self.class.collection_opts
+            options_load[:collection] = self.collection 
+          end
           Goo::SPARQL::Queries.model_load(options_load)
         end
 
         graph_delete = Goo::SPARQL::Triples.model_delete_triples(self)
 
         begin
-          Goo.sparql_update_client.delete_data(graph_delete, graph: self.class.uri_type)
+          Goo.sparql_update_client.delete_data(graph_delete, graph: self.graph)
         rescue Exception => e
           binding.pry
         end
@@ -135,13 +138,19 @@ module Goo
         if opts.nil?
           return self.class.uri_type
         end
+        col = collection
+        return col ? col.id : nil
+      end
+
+      def collection
+        opts = self.class.collection_opts
         if opts.instance_of?(Symbol)
           if self.class.attributes.include?(opts)
             value = self.send("#{opts}")
             if value.nil?
               raise ArgumentError, "Collection `#{opts}` is nil"
             end
-            return value.id
+            return value
           else
             raise ArgumentError, "Collection `#{opts}` is not an attribute"
           end

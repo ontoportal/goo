@@ -80,10 +80,10 @@ class TestCollection < TestCase
       count_pattern(
         "GRAPH #{less.id.to_ntriples} { #{issue.id.to_ntriples} a ?x }" ))
 
-    assert Issue.new(description: "issue1", owner: less).exist?
-    assert Issue.new(description: "issue1", owner: john).exist?
-    Issue.find(description: "issue1", owner: john).delete
-    Issue.find(description: "issue1", owner: less).delete
+    assert Issue.find("issue1", collection: less).exist?
+    assert Issue.find("issue1", collection: john).exist?
+    Issue.find("issue1", collection: john).delete
+    Issue.find("issue1", collection: less).delete
     john.delete
     less.delete
   end
