@@ -17,6 +17,7 @@ end
 class Project < Goo::Base::Resource
   model :project
   attribute :name, enforce: [ :existence, :unique ]
+  attribute :active, enforce: [ :boolean ]
   attribute :tasks, inverse: { on: Task, attribute: :project }
 end
 
@@ -39,6 +40,9 @@ class TestInverse < TestCase
     assert goo.valid?
     goo.save
     assert goo.persistent?
+    assert_equal (0,
+      count_pattern(
+        "#{project.id.to_ntriples} #{project.class.attribute_uri(:tasks).to_ntriples} ?x " ))
 
     5.times do |i|
       task = Task.new(description: "task_#{i}", project: [ goo ])
@@ -70,6 +74,14 @@ class TestInverse < TestCase
 
     project = Project.find("Goo", include: [ :tasks ])
     assert_equal(2, project.tasks.length)
+    
+    #on save no persist inverse
+    project.active = true
+    project.save
+    assert_equal (0,
+      count_pattern(
+        "#{project.id.to_ntriples} #{project.class.attribute_uri(:tasks).to_ntriples} ?x " ))
+
     Task.find("task_3").delete()
     Task.find("task_4").delete()
     assert_equal(2, project.tasks.length)
@@ -78,4 +90,5 @@ class TestInverse < TestCase
     project.delete
 
   end
+
 end
