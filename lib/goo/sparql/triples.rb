@@ -8,6 +8,7 @@ module Goo
         graph_delete = RDF::Graph.new
         graph_delete << [subject, RDF.type, model.class.uri_type]
         model.class.attributes.each do |attr|
+          next if model.class.collection?(attr)
           predicate = model.class.attribute_uri(attr)
           value = model.send("#{attr}")
           values = value.kind_of?(Array) ? value : [value]
@@ -53,6 +54,7 @@ module Goo
         end
 
         model.modified_attributes.each do |attr|
+          next if model.class.collection?(attr)
           predicate = model.class.attribute_uri(attr)
           value = model.send("#{attr}")
           next if value.nil?

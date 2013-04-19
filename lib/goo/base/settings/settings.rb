@@ -63,6 +63,14 @@ module Goo
             select{ |k| @model_settings[:attributes][k][:inverse].nil? }
         end
 
+        def collection?(attr)
+          return @model_settings[:collection] == attr
+        end
+
+        def collection_opts
+          return @model_settings[:collection]
+        end
+
         def attributes_with_defaults
           return (@model_settings[:attributes].
                   select{ |attr,opts| opts[:default] }).keys()

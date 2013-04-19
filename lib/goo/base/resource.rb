@@ -130,26 +130,46 @@ module Goo
         return nil
       end
 
+      def graph
+        opts = self.class.collection_opts
+        if opts.nil?
+          return self.class.uri_type
+        end
+        if opts.instance_of?(Symbol)
+          if self.class.attributes.include?(opts)
+            value = self.send("#{opts}")
+            if value.nil?
+              raise ArgumentError, "Collection `#{opts}` is nil"
+            end
+            return value.id
+          else
+            raise ArgumentError, "Collection `#{opts}` is not an attribute"
+          end
+        else
+          binding.pry
+        end
+      end
+
       def save
         raise ArgumentError, "Object is not modified" unless modified?
         raise Goo::Base::NotValidException, "Object is not valid. Check errors." unless valid?
 
         graph_insert, graph_delete = Goo::SPARQL::Triples.model_update_triples(self)
+        graph = self.graph() 
         if graph_delete and graph_delete.size > 0
           begin
-            Goo.sparql_update_client.delete_data(graph_delete, graph: self.class.uri_type)
+            Goo.sparql_update_client.delete_data(graph_delete, graph: graph)
           rescue Exception => e
             binding.pry
           end
         end
         if graph_insert and graph_insert.size > 0
           begin
-            Goo.sparql_update_client.insert_data(graph_insert, graph: self.class.uri_type)
+            Goo.sparql_update_client.insert_data(graph_insert, graph: graph)
           rescue Exception => e
             binding.pry
           end
         end
-
 
         #after save all attributes where loaded
         @loaded_attributes = Set.new(self.class.attributes)
@@ -171,6 +191,9 @@ module Goo
           id = id_from_unique_attribute(unique_attribute(),id)
         end
         options_load = { ids: [id], klass: self }.merge(options[-1] || {})
+        if !self.collection_opts.nil? and !options_load.include?(:collection)
+          raise ArgumentError, "Collection needed call `#{self.name}.find`"
+        end
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
         return models_by_id[id]
       end

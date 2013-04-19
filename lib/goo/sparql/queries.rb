@@ -19,6 +19,7 @@ module Goo
         klass = options[:klass]
         incl = options[:include]
         models = options[:models]
+        collection = options[:collection]
         store = options[:store] || :main
 
         if ids and models
@@ -31,6 +32,7 @@ module Goo
           end
         end
 
+        graph = collection ? collection.id : klass.uri_type
         models_by_id = {}
         if models
           ids = []
@@ -79,6 +81,7 @@ module Goo
           select.optional(*[optional])
         end
         select.filter(filter_id_str)
+        select.from(graph)
 
         found = Set.new
         list_attributes = klass.attributes(:list)
@@ -116,6 +119,13 @@ module Goo
           end
         end
 
+        if collection and klass.collection_opts.instance_of?(Symbol)
+          collection_attribute = klass.collection_opts
+          models_by_id.each do |id,m|
+            m.send("#{collection_attribute}=", collection)
+          end
+        end
+
         #remove from models_by_id elements that were not touched
         models_by_id.select! { |k,m| found.include?(k) }
 
@@ -124,6 +134,7 @@ module Goo
             m.persistent=true
           end
         end
+         
         return models_by_id
       end
 
