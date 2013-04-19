@@ -25,8 +25,10 @@ class TestCollection < TestCase
   end
 
   def test_collection
-    john = User.find("John", include: [:name]) || User.new(name: "John").save()
-    issue = Issue.find("issue1", collection: john) || Issue.new(description: "issue1", owner: john).save()
+    john = User.find("John", include: [:name]) || 
+      User.new(name: "John").save()
+    issue = Issue.find("issue1", collection: john) || 
+      Issue.new(description: "issue1", owner: john).save()
     assert !Issue.find("issue1", collection: john).nil?
     assert_raises ArgumentError do
       Issue.find("issue1")
@@ -48,14 +50,42 @@ class TestCollection < TestCase
     assert_equal(0,
       count_pattern(
         "GRAPH #{owner.id.to_ntriples} { #{issue.id.to_ntriples} a ?x }" ))
+
+    john.delete
+    assert_equal(0,
+      count_pattern(
+        "#{john.id.to_ntriples} ?y ?x " ))
   end
 
   def test_unique_per_collection
-
     #exist? should use collection
     #same ids in different collections can save
     #different  
-    binding.pry
+    john = User.find("John", include: [:name]) || 
+      User.new(name: "John").save()
+    less = User.find("Less", include: [:name]) || 
+      User.new(name: "Less").save()
+
+    issue = Issue.find("issue1", collection: john) || 
+      Issue.new(description: "issue1", owner: john).save()
+    assert_equal(1,
+      count_pattern(
+        "GRAPH #{john.id.to_ntriples} { #{issue.id.to_ntriples} a ?x }" ))
+
+    assert !Issue.new(description: "issue1", owner: less).exist?
+    #different owner
+    issue = Issue.find("issue1", collection: less) || 
+      Issue.new(description: "issue1", owner: less).save()
+    assert_equal(1,
+      count_pattern(
+        "GRAPH #{less.id.to_ntriples} { #{issue.id.to_ntriples} a ?x }" ))
+
+    assert Issue.new(description: "issue1", owner: less).exist?
+    assert Issue.new(description: "issue1", owner: john).exist?
+    Issue.find(description: "issue1", owner: john).delete
+    Issue.find(description: "issue1", owner: less).delete
+    john.delete
+    less.delete
   end
 
   def test_inverse_on_collection
@@ -69,6 +99,10 @@ class TestCollection < TestCase
 
   def test_collection_lambda
     binding.pry
+  end
+
+  def test_delete_owner
+    #delete owner fails if it has collections
   end
 
   def test_multiple_collection
