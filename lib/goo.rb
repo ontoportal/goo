@@ -1,4 +1,3 @@
-require "pry"
 require "sparql_http"
 
 require "set"
