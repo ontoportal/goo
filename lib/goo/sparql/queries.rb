@@ -52,6 +52,8 @@ module Goo
 
         patterns = [[ :id ,RDF.type, klass.uri_type]]
         optional_patterns = []
+        graph_items_collection = nil
+        inverse_klass_collection = nil
         if incl
           #make it deterministic
           incl = incl.to_a.sort
@@ -61,6 +63,12 @@ module Goo
               inverse_opts = klass.inverse_opts(attr)
               on_klass = inverse_opts[:on]
               inverse_klass = on_klass.respond_to?(:model_name) ? on_klass: Goo.models[on_class]
+              if inverse_klass.collection?(inverse_opts[:attribute])
+                #inverse on collection - need to retrieve graph
+                graph_items_collection = attr
+                inverse_klass_collection = inverse_klass
+                next
+              end
               predicate = inverse_klass.attribute_uri(inverse_opts[:attribute])
               optional_patterns << [ attr, predicate, :id ]
             else
@@ -125,6 +133,13 @@ module Goo
           models_by_id.each do |id,m|
             m.send("#{collection_attribute}=", collection)
           end
+        end
+
+        if graph_items_collection
+          #here we need a where call using collection
+          #inverse_klass_collection.where
+          #
+          binding.pry
         end
 
         #remove from models_by_id elements that were not touched

@@ -89,8 +89,15 @@ class TestCollection < TestCase
   end
 
   def test_inverse_on_collection
-    binding.pry
-    User.find("John",include: issues).issues
+    john = User.find("John", include: [:name]) || 
+      User.new(name: "John").save()
+    5.times do |i|
+      Issue.new(description: "issue_#{i}", owner: john).save
+    end
+    User.find("John",include: [:issues]).issues
+    5.times do |i|
+      Issue.find("issue_#{i}", collection: john).delete
+    end
   end
 
   def test_change_owner_changes_collections
