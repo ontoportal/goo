@@ -14,37 +14,8 @@ MiniTest::Unit.autorun
 
 require_relative "../lib/goo.rb"
 
-class GooUnit < MiniTest::Unit
-  def before_suites
-    # code to run before the first test (gets inherited in sub-tests)
-  end
+module GooTest
 
-  def after_suites
-    # code to run after the last test (gets inherited in sub-tests)
-  end
-
-  def _run_suites(suites, type)
-    begin
-      before_suites
-      super(suites, type)
-    ensure
-      after_suites
-    end
-  end
-
-  def _run_suite(suite, type)
-    begin
-      suite.before_suite if suite.respond_to?(:before_suite)
-      super(suite, type)
-    ensure
-      suite.after_suite if suite.respond_to?(:after_suite)
-    end
-  end
-end
-
-GooUnit.runner = GooUnit.new
-
-module TestInit
   def self.configure_goo
     if not Goo.configure?
       Goo.configure do |conf|
@@ -67,30 +38,57 @@ module TestInit
       end
     end
   end
-end
 
-class TestCase < MiniTest::Unit::TestCase
-
-  def triples_for_subject(resource_id)
-    rs = Goo.sparql_query_client.query("SELECT * WHERE { #{resource_id.to_ntriples} ?p ?o . }")
-    count = 0
-    rs.each_solution do |sol|
-      count += 1
+  class Unit < MiniTest::Unit
+    def before_suites
+      # code to run before the first test (gets inherited in sub-tests)
     end
-    return count
+
+    def after_suites
+      # code to run after the last test (gets inherited in sub-tests)
+    end
+
+    def _run_suites(suites, type)
+      begin
+        before_suites
+        super(suites, type)
+      ensure
+        after_suites
+      end
+    end
+
+    def _run_suite(suite, type)
+      begin
+        suite.before_suite if suite.respond_to?(:before_suite)
+        super(suite, type)
+      ensure
+        suite.after_suite if suite.respond_to?(:after_suite)
+      end
+    end
   end
 
-  def count_pattern(pattern)
-    q = "SELECT * WHERE { #{pattern} }"
-    rs = Goo.sparql_query_client.query(q)
-    count = 0
-    rs.each_solution do |sol|
-      count += 1
-    end
-    return count
-  end
+  GooTest::Unit.runner = GooTest::Unit.new
 
-  def initialize(*args)
-    super(*args)
+  class TestCase < MiniTest::Unit::TestCase
+
+    def triples_for_subject(resource_id)
+      rs = Goo.sparql_query_client.query("SELECT * WHERE { #{resource_id.to_ntriples} ?p ?o . }")
+      count = 0
+      rs.each_solution do |sol|
+        count += 1
+      end
+      return count
+    end
+
+    def count_pattern(pattern)
+      q = "SELECT * WHERE { #{pattern} }"
+      rs = Goo.sparql_query_client.query(q)
+      count = 0
+      rs.each_solution do |sol|
+        count += 1
+      end
+      return count
+    end
+
   end
 end
