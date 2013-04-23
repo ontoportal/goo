@@ -33,7 +33,7 @@ module Goo
           end
         end
 
-        graph = collection ? collection.id : klass.uri_type
+        graphs = [collection ? collection.id : klass.uri_type]
         models_by_id = {}
         if models
           ids = []
@@ -62,7 +62,8 @@ module Goo
             if klass.inverse?(attr)
               inverse_opts = klass.inverse_opts(attr)
               on_klass = inverse_opts[:on]
-              inverse_klass = on_klass.respond_to?(:model_name) ? on_klass: Goo.models[on_class]
+              inverse_klass = on_klass.respond_to?(:model_name) ? on_klass: Goo.models[on_klass]
+              graphs << inverse_klass.uri_type
               if inverse_klass.collection?(inverse_opts[:attribute])
                 #inverse on collection - need to retrieve graph
                 graph_items_collection = attr
@@ -90,7 +91,7 @@ module Goo
           select.optional(*[optional])
         end
         select.filter(filter_id_str)
-        select.from(graph)
+        select.from(graphs)
 
         found = Set.new
         list_attributes = klass.attributes(:list)

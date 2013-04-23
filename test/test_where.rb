@@ -1,12 +1,12 @@
 require_relative 'test_case'
 
-TestInit.configure_goo
+GooTest.configure_goo
 
 #collection on attribute
 class University < Goo::Base::Resource
   model :university
   attribute :name, enforce: [ :existence, :unique]
-  attribute :programs, inverse: { on: :progam, attribute: :university }
+  attribute :programs, inverse: { on: :program, attribute: :university }
 
   def initialize(attributes = {})
     super(attributes)
@@ -18,7 +18,7 @@ class Program < Goo::Base::Resource
   attribute :name, enforce: [ :existence, :unique ]
   attribute :students, inverse: { on: :student, attribute: :enrolled }
   attribute :university, enforce: [ :existence, :university ]
-  def id_generator(p)
+  def self.id_generator(p)
     return RDF::URI.new("http://example.org/program/#{p.university.name}/#{p.name}")
   end
 
@@ -31,35 +31,42 @@ class Student < Goo::Base::Resource
 end
 
 
-class TestWhere < TestCase
+class TestWhere < GooTest::TestCase
 
   def initialize(*args)
     super(*args)
   end
 
-  def before_suite
-    ["Stanford", "Southampton", "UPM"].each do |uni_name|
-      if University.find(uni_name).nil?
-        University.new(name: uni_name).save
-        ["BioInformatics", "CompSci", "Medicine"].each do |p|
-          prg = Program.new(name: p, university: University.find(uni_name, include: [:name]))
-          prg.save if prg.exist?
+  def self.before_suite
+    begin
+      ["Stanford", "Southampton", "UPM"].each do |uni_name|
+        if University.find(uni_name).nil?
+          University.new(name: uni_name).save
+          ["BioInformatics", "CompSci", "Medicine"].each do |p|
+            prg = Program.new(name: p, university: University.find(uni_name, include: [:name]))
+            prg.save if !prg.exist?
+          end
         end
       end
+    rescue Exception => e
+      binding.pry
     end
   end
 
-  def after_suite
+  def self.after_suite
     ["Stanford", "Southampton", "UPM"].each do |uni_name|
-      u = University.find(uni_name)
-      u.programs.each do |p|
-        p.delete
+      u = University.find(uni_name, include: [:programs])
+      unless u.programs.nil?
+        u.programs.each do |p|
+          p.delete
+        end
       end
       u.delete
     end
   end
 
   def test_where_simple
+    assert University.range(:programs) == Program
     binding.pry
   end
 

@@ -37,7 +37,6 @@ module Goo
           
           #registering a new models forces to redo ranges
           Goo.models.each do |k,m|
-            binding.pry if self.model_name == :program and m.model_name == :university
             m.attributes(:all).each do |attr|
               next if m.range(attr)
               m.set_range(attr)
@@ -108,7 +107,7 @@ module Goo
           if @model_settings[:attributes][attr][:inverse]
             on = @model_settings[:attributes][attr][:inverse][:on]
             if Goo.models.include?(on) || on.respond_to?(:model_name)
-              on = Goo.models[opt] if on.instance_of?(Symbol)
+              on = Goo.models[on] if on.instance_of?(Symbol) rescue binding.pry
               @model_settings[:range][attr]=on
             end
           end
