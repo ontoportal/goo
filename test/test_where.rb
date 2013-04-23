@@ -6,7 +6,7 @@ TestInit.configure_goo
 class University < Goo::Base::Resource
   model :university
   attribute :name, enforce: [ :existence, :unique]
-  attribute :programs, inverse: { on: Program, attribute: :university }
+  attribute :programs, inverse: { on: :progam, attribute: :university }
 
   def initialize(attributes = {})
     super(attributes)
@@ -16,8 +16,8 @@ end
 class Program < Goo::Base::Resource
   model :program, name_with: lambda { |p| id_generator(p) } 
   attribute :name, enforce: [ :existence, :unique ]
-  attribute :students, inverse: { on: Student, attribute: :enrolled }
-  attribute :university, enforce: [ :existence, University ]
+  attribute :students, inverse: { on: :student, attribute: :enrolled }
+  attribute :university, enforce: [ :existence, :university ]
   def id_generator(p)
     return RDF::URI.new("http://example.org/program/#{p.university.name}/#{p.name}")
   end
@@ -27,7 +27,7 @@ end
 class Student < Goo::Base::Resource
   model :student
   attribute :name, enforce: [ :existence, :unique ]
-  attribute :enrolled, enforce: [:list, Program]
+  attribute :enrolled, enforce: [:list, :program]
 end
 
 
@@ -57,6 +57,10 @@ class TestWhere < TestCase
       end
       u.delete
     end
+  end
+
+  def test_where_simple
+    binding.pry
   end
 
   def test_unbound
