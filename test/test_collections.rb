@@ -94,7 +94,10 @@ class TestCollection < TestCase
     5.times do |i|
       Issue.new(description: "issue_#{i}", owner: john).save
     end
+    
     User.find("John",include: [:issues]).issues
+    User.find("John",include: [issues: [:desciption]]).issues
+
     5.times do |i|
       Issue.find("issue_#{i}", collection: john).delete
     end
@@ -102,14 +105,6 @@ class TestCollection < TestCase
 
   def test_change_owner_changes_collections
     binding.pry
-  end
-
-  def test_collection_lambda
-    binding.pry
-  end
-
-  def test_delete_owner
-    #delete owner fails if it has collections
   end
 
   def test_multiple_collection
