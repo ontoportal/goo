@@ -192,6 +192,7 @@ module Goo
         return @previous_values
       end
 
+
       ###
       # Class level methods
       # ##
@@ -205,6 +206,16 @@ module Goo
         end
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
         return models_by_id[id]
+      end
+
+      def self.where(*options)
+        filters = options.first || {}
+        incl = filters.delete(:include) || []
+        models = filters.delete(:models) || []
+
+        options_load = { models: models, include: incl, filters: filters, klass: self }
+        models_by_id = Goo::SPARQL::Queries.model_load(options_load)
+        return models_by_id.values
       end
 
       protected

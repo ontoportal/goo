@@ -67,7 +67,70 @@ class TestWhere < GooTest::TestCase
 
   def test_where_simple
     assert University.range(:programs) == Program
-    binding.pry
+
+    st = University.where(name: "Stanford")
+    assert st.length == 1
+    st = st.first
+    assert st.instance_of?(University)
+
+    #nothing is loaded
+    st.class.attributes.each do |attr|
+      assert_raises Goo::Base::AttributeNotLoaded do
+        st.send("#{attr}")
+      end
+    end
+
+    st = University.where(name: "Stanford", include: University.attributes)
+    assert st.length == 1
+    st = st.first
+    assert assert st.instance_of?(University)
+    assert st.name == "Stanford"
+    assert_raises Goo::Base::AttributeNotLoaded do
+      st.programs
+    end
+    #
+    #all includes inverse
+    st = University.where(name: "Stanford", include: University.attributes(:all))
+    assert st.length == 1
+    st = st.first
+    assert st.instance_of?(University)
+    assert st.name == "Stanford"
+    assert st.programs.length == 3
+    #programs here are not loaded
+    pr = st.programs[0]
+    pr.class.attributes.each do |attr|
+      assert_raises Goo::Base::AttributeNotLoaded do
+        pr.send("#{attr}")
+      end
+    end
+    program_ids = ["http://example.org/program/Stanford/BioInformatics",
+ "http://example.org/program/Stanford/CompSci",
+ "http://example.org/program/Stanford/Medicine"]
+   assert st.programs.map { |x| x.id.to_s }.sort == program_ids
+
+  end
+
+  def test_embed
+
+    #embed name of the programs
+    st = University.where(name: "Stanford", include: [programs: [:name]])[0]
+    assert st.programs.length == 3
+    st.programs.each do |pr|
+      pr.name
+      assert_raises Goo::Base::AttributeNotLoaded do
+        pr.students
+      end
+    end
+
+
+  end
+
+
+  def test_aggregated
+    #universities with more than 3 programs
+  end
+
+  def test_or
   end
 
   def test_unbound
