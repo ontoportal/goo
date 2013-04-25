@@ -39,5 +39,8 @@ class String
     other = other.parsed_value if other.instance_of? SparqlRd::Resultset::StringLiteral
     return plus_orig(other)
   end
+  def numeric?
+    Float(self) != nil rescue false
+  end
 end
 
