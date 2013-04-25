@@ -59,6 +59,10 @@ module Goo
         return inst
       end
 
+      def read_only?
+        internals.read_only == true
+      end
+
       def self.inherited(subclass)
         #hook to set up default configuration.
         subclass.model
