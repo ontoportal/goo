@@ -208,6 +208,14 @@ module Goo
         return models_by_id[id]
       end
 
+      def self.all(*options)
+        options = options.first || {}
+        unless options.length == 0 || (options.length == 1 && options[:include])
+          raise ArgumentError, ".all only accepts the include options" 
+        end
+        return self.where(options)
+      end
+
       def self.where(*options)
         filters = options.first || {}
         incl = filters.delete(:include) || []

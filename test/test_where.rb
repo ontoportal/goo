@@ -7,9 +7,20 @@ class University < Goo::Base::Resource
   model :university
   attribute :name, enforce: [ :existence, :unique]
   attribute :programs, inverse: { on: :program, attribute: :university }
+  attribute :address, enforce: [ :existence, :min_1, :list, :address]
 
   def initialize(attributes = {})
     super(attributes)
+  end
+end
+
+class Address < Goo::Base::Resource
+  model :address, name_with: lambda { |p| id_generator(p) }
+  attribute :line1, enforce: [ :existence ]
+  attribute :line2
+  attribute :country, enforce: [ :existence ]
+  def self.id_generator(p)
+    return RDF::URI.new("http://example.org/address/#{p.line1}+#{p.line2}+#{p.country}")
   end
 end
 
@@ -18,16 +29,23 @@ class Program < Goo::Base::Resource
   attribute :name, enforce: [ :existence, :unique ]
   attribute :students, inverse: { on: :student, attribute: :enrolled }
   attribute :university, enforce: [ :existence, :university ]
+  attribute :category, enforce: [ :existence, :category, :list ]
   def self.id_generator(p)
     return RDF::URI.new("http://example.org/program/#{p.university.name}/#{p.name}")
   end
 
 end
 
+class Category < Goo::Base::Resource
+  model :category
+  attribute :code, enforce: [ :existence, :unique ]
+end
+
 class Student < Goo::Base::Resource
   model :student
   attribute :name, enforce: [ :existence, :unique ]
   attribute :enrolled, enforce: [:list, :program]
+  attribute :birth_date, enforce: [:date_time, :existence]
 end
 
 
@@ -39,11 +57,22 @@ class TestWhere < GooTest::TestCase
 
   def self.before_suite
     begin
+      addresses = {}
+      addresses["Stanford"] = [ Address.new(line1: "bla", line2: "foo", country: "EN").save ]
+      addresses["Southampton"] = [ Address.new(line1: "bla", line2: "foo", country: "US").save ]
+      addresses["UPM"] = [ Address.new(line1: "bla", line2: "foo", country: "SP").save ]
       ["Stanford", "Southampton", "UPM"].each do |uni_name|
         if University.find(uni_name).nil?
-          University.new(name: uni_name).save
-          ["BioInformatics", "CompSci", "Medicine"].each do |p|
-            prg = Program.new(name: p, university: University.find(uni_name, include: [:name]))
+          University.new(name: uni_name, address: addresses[uni_name]).save
+          [ ["BioInformatics",["Medicine","Biology","Computer Science"]],
+            ["CompSci",["Engineering","Mathematics","Computer Science", "Electronics"]],
+            ["Medicine", ["Medicine", "Chemistry", "Biology"]]].each do |p,cs|
+            categories = []
+            cs.each do |c|
+              categories << (Category.find(c) || Category.new(code: c).save)
+            end
+            prg = Program.new(name: p, category: categories, university: University.find(uni_name, include: [:name]))
+            binding.pry if !prg.valid?
             prg.save if !prg.exist?
           end
         end
@@ -54,14 +83,11 @@ class TestWhere < GooTest::TestCase
   end
 
   def self.after_suite
-    ["Stanford", "Southampton", "UPM"].each do |uni_name|
-      u = University.find(uni_name, include: [:programs])
-      unless u.programs.nil?
-        u.programs.each do |p|
-          p.delete
-        end
+    objects = [Student, University, Program, Category, Address]
+    objects.each do |obj|
+      obj.all(include: obj.attributes).each do |i|
+        i.delete
       end
-      u.delete
     end
   end
 
@@ -110,24 +136,69 @@ class TestWhere < GooTest::TestCase
 
   end
 
-  def test_embed
-
-    #embed name of the programs
-    st = University.where(name: "Stanford", include: [programs: [:name]])[0]
-    assert st.programs.length == 3
-    st.programs.each do |pr|
-      pr.name
-      assert_raises Goo::Base::AttributeNotLoaded do
-        pr.students
-      end
+  def test_all
+    cats = Category.all(include: Category.attributes)
+    cats.each do |cats|
+      assert_instance_of String, cats.code
     end
-
+    assert University.all.length == 3
+    assert Address.all.length == 3
+    assert Category.all.length == 7
 
   end
 
+  def test_embed
+    programs = Program.all(include: [ :name, university: [:name], category: [:code]] )
+  end
+
+  def test_where_on_links_and_embed
+
+
+    #students enrolled in a specific program
+    Student.where(program: Program.find("http://example.org/program/Stanford/Medicine"), 
+                  include: [:name, :birth_date, programs: [:name]])
+    binding.pry
+
+    #Students in a university
+    #Student.where(program: [university: University.find("Stanford")], include: [programs: [:name], :name, :birth_date] )
+
+    #Students in a university by name
+    #Student.where(program: [university: [name: "Stanford"]], include: [programs: [:name, university: [ :location ]], :name] )
+
+
+    #universities with a program in a category
+    #University.where(program: [category: Category.find("Science") ], include: [:name])
+
+  end
+
+  def test_where_or
+#    Student.where(program: [university: Or.new(University.find("Stanford"),University.find("Southampton")) ],
+#                                               include: [programs: [:name, university: [:location, :name]])
+#    Student.where(program: [university: [ name: Or.new("Stanford","Southampton") ]],
+#                                               include: [programs: [:name, university: [:location, :name]])
+  end
+
+
+  def test_filter
+    #can I use sparql-client structure to pass filters and aggregates.
+    #f = Filter(:greater, DateTime.parse('2001-02-03'))
+    #student = Student.where(birth_date: f, include: [:name, programs: [:name], :birth_date])
+  end
 
   def test_aggregated
+    #student = Student.all(include: Aggregation(:programs_count, :enrolled, :count))
+
+    #students enrolled in more than 1 program and get the programs name
+    #student = Student.where(programs_count: Filter(:greater, 1), include: Aggregation(:programs_count, :enrolled, :count))
+
     #universities with more than 3 programs
+    #universities with more than 3 students
+    #universities where students per program is > 20 
+    #
+    #universities with more than two addresses in the US
+  end
+
+  def test_where_with_lambda
   end
 
   def test_or

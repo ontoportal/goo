@@ -79,7 +79,7 @@ module Goo
         inverse_klass_collection = nil
         if incl
           #make it deterministic
-          incl = incl.to_a.sort
+          incl = incl.to_a.sort rescue binding.pry
           variables.concat(incl)
           incl.each do |attr|
             graph, pattern = query_pattern(klass,attr)

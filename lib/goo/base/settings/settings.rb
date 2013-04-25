@@ -118,6 +118,7 @@ module Goo
           attr_name = options.pop
           attr_name = attr_name.to_sym
           options = options.pop
+          options = {} if options.nil?
           if options[:enforce].nil? or !options[:enforce].include?(:list)
             options[:enforce] = options[:enforce] ? (options[:enforce] << :no_list) : [:no_list]
           end

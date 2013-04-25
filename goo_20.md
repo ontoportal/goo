@@ -17,6 +17,11 @@ ontology.status.to_resource
 
 - enums … in memory objects.
 
+ordering and pagination
+
+by doing programatic filters we can do things either in code or in sparql allowing us flexibility.
+
+
 
 - iterative query templates for effient object loading.
 
