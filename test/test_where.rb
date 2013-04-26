@@ -144,7 +144,6 @@ class TestWhere < GooTest::TestCase
     assert University.all.length == 3
     assert Address.all.length == 3
     assert Category.all.length == 7
-
   end
 
   def test_embed
@@ -155,15 +154,18 @@ class TestWhere < GooTest::TestCase
 
 
     #students enrolled in a specific program
-    Student.where(program: Program.find("http://example.org/program/Stanford/Medicine"), 
-                  include: [:name, :birth_date, programs: [:name]])
+    #Student.where(program: Program.find("http://example.org/program/Stanford/Medicine"), 
+    #              include: [:name, :birth_date, programs: [:name]])
     binding.pry
 
     #Students in a university
-    #Student.where(program: [university: University.find("Stanford")], include: [programs: [:name], :name, :birth_date] )
+    #Student.where(
+    #  program: [university: University.find("Stanford")], 
+    #  include: [programs: [:name], :name, :birth_date] )
 
     #Students in a university by name
-    #Student.where(program: [university: [name: "Stanford"]], include: [programs: [:name, university: [ :location ]], :name] )
+    #Student.where(program: [university: [name: "Stanford"]], 
+    #              include: [programs: [:name, university: [ :location ]], :name] )
 
 
     #universities with a program in a category
@@ -171,25 +173,34 @@ class TestWhere < GooTest::TestCase
 
   end
 
+  def test_where_and
+    #I need a program in two unis
+    #Student.where(
+    #  program: [university: University.find("Stanford").and(University.find("Southampton")) ],
+    #  include: [programs: [:name, university: [:location, :name]])
+  end
+
   def test_where_or
-#    Student.where(program: [university: Or.new(University.find("Stanford"),University.find("Southampton")) ],
-#                                               include: [programs: [:name, university: [:location, :name]])
-#    Student.where(program: [university: [ name: Or.new("Stanford","Southampton") ]],
-#                                               include: [programs: [:name, university: [:location, :name]])
+    #Student.where(
+    #  program: [university: University.find("Stanford").or(University.find("Southampton")) ],
+    #  include: [programs: [:name, university: [:location, :name]])
   end
 
 
   def test_filter
-    #can I use sparql-client structure to pass filters and aggregates.
-    #f = Filter(:greater, DateTime.parse('2001-02-03'))
+    #f = Filter.greater(DateTime.parse('2001-02-03')).less(DateTime.parse('2021-02-03'))
     #student = Student.where(birth_date: f, include: [:name, programs: [:name], :birth_date])
   end
 
   def test_aggregated
-    #student = Student.all(include: Aggregation(:programs_count, :enrolled, :count))
+    #agg = Aggregate.count(:enrolled) #programs_count as default
+    #agg = Aggregate.count(:enrolled, attribute: :programs_count)
+
+    #student = Student.all(include: agg)
 
     #students enrolled in more than 1 program and get the programs name
-    #student = Student.where(programs_count: Filter(:greater, 1), include: Aggregation(:programs_count, :enrolled, :count))
+    #student = Student.where(programs_count: Filter.greater(2).less(10) , 
+    #                        include: [agg, :name, :birth_date])
 
     #universities with more than 3 programs
     #universities with more than 3 students
@@ -201,11 +212,9 @@ class TestWhere < GooTest::TestCase
   def test_where_with_lambda
   end
 
-  def test_or
-  end
-
   def test_unbound
     #unbound ... like with no parents
+    #not exist SPARQL 1.1
   end
 
   def test_multiple
