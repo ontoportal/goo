@@ -142,6 +142,9 @@ module Goo
           if att == :uuid
             return (namespace :default) + "uuid"
           end
+          if use_as(att)
+            att = use_as(att)
+          end
           att_fragment = att
           if goop_settings[:attributes][att]
             att_fragment = goop_settings[:attributes][att][:alias] || att
@@ -414,6 +417,9 @@ module Goo
         end
 
         def range_class(attr)
+          if use_as(attr)
+            attr = use_as(attr)
+          end
           if inverse_attr?(attr)
             return inverse_attr_options(attr)[0]
           end
