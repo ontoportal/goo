@@ -2,6 +2,10 @@ require_relative 'test_case'
 
 GooTest.configure_goo
 
+PROGRAMS_AND_CATEGORIES = [ ["BioInformatics",["Medicine","Biology","Computer Science"]],
+            ["CompSci",["Engineering","Mathematics","Computer Science", "Electronics"]],
+            ["Medicine", ["Medicine", "Chemistry", "Biology"]]]
+
 #collection on attribute
 class University < Goo::Base::Resource
   model :university
@@ -63,9 +67,7 @@ class TestWhere < GooTest::TestCase
       ["Stanford", "Southampton", "UPM"].each do |uni_name|
         if University.find(uni_name).nil?
           University.new(name: uni_name, address: addresses[uni_name]).save
-          [ ["BioInformatics",["Medicine","Biology","Computer Science"]],
-            ["CompSci",["Engineering","Mathematics","Computer Science", "Electronics"]],
-            ["Medicine", ["Medicine", "Chemistry", "Biology"]]].each do |p,cs|
+          PROGRAMS_AND_CATEGORIES.each do |p,cs|
             categories = []
             cs.each do |c|
               categories << (Category.find(c) || Category.new(code: c).save)
@@ -148,6 +150,24 @@ class TestWhere < GooTest::TestCase
 
   def test_embed
     programs = Program.all(include: [ :name, university: [:name], category: [:code]] )
+    assert programs.length == 9
+    programs.each do |p|
+      assert_instance_of University, p.university
+      assert_instance_of Array, p.category
+      assert p.category.length == p.category.select { |x| x.instance_of? Category }.length
+      assert_instance_of String, p.university.name
+      assert p.id.to_s[p.university.name]
+      PROGRAMS_AND_CATEGORIES.each do |x|
+        if p.id.to_s[x[0]]
+          assert x[1].length == p.category.length
+          p.category.each do |c|
+            assert_instance_of String, c.code
+            assert (x[1].index c.code)
+          end
+          break
+        end
+      end
+    end
   end
 
   def test_where_on_links_and_embed

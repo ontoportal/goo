@@ -188,6 +188,19 @@ module Goo
             m.persistent=true
           end
         end
+
+        #next level of embed attributes
+        if incl_embed && incl_embed.length > 0
+          incl_embed.each do |attr,next_attrs|
+            #anything to join ?
+            attr_range = klass.range(attr)
+            next if attr_range.nil?
+            range_objs = objects_new.select { |id,obj| obj.instance_of?(attr_range) }.values
+            if range_objs.length > 0
+              attr_range.where(include: next_attrs, models: range_objs)
+            end
+          end
+        end
          
         return models_by_id
       end
