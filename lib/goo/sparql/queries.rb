@@ -136,9 +136,9 @@ module Goo
         end
         if filters
           #make it deterministic - for caching
+          internal_variables = []
           filters.keys.sort.each do |attr|
             value = filters[attr]
-            internal_variables = []
             patterns_for_filter(klass,attr,value,graphs,patterns,
                                variables,internal_variables)
             graphs.uniq!

@@ -189,7 +189,13 @@ class TestWhere < MiniTest::Unit::TestCase
     assert programs.map { |p| p.name }.sort == ["BioInformatics", "CompSci", "Medicine"]
   end
 
-  def test_where_1levels_inverse
+  def test_where_2levels_inverse
+    unis = University.where(address: [country: "US"], programs: [category: [code: "Biology"]])
+    assert unis.length == 1
+    assert unis.first.id.to_s == "http://goo.org/default/university/Stanford"
+    unis = University.where(programs: [category: [code: "Biology"]], include: [:name])
+    assert unis.length == 3
+    assert unis.map { |u| u.name }.sort == ["Southampton", "Stanford", "UPM"]
   end
 
   def test_embed_include
@@ -246,8 +252,8 @@ class TestWhere < MiniTest::Unit::TestCase
 
 
     #students enrolled in a specific program
-    Student.where(program: Program.find("http://example.org/program/Stanford/Medicine"), 
-                  include: [:name, :birth_date, programs: [:name]])
+    #Student.where(program: Program.find("http://example.org/program/Stanford/Medicine"), 
+    #              include: [:name, :birth_date, programs: [:name]])
 
     #Students in a university
     #Student.where(
