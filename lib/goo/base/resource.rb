@@ -70,10 +70,10 @@ module Goo
       def id
         if @id.nil?
           custom_name = self.class.name_with
-          if custom_name
+          if custom_name.instance_of?(Symbol)
+            @id = id_from_attribute()
+          else custom_name
             @id = custom_name.call(self)
-          else
-            @id = id_from_unique()
           end
         end
         return @id
@@ -94,7 +94,7 @@ module Goo
       def exist?(from_valid=false)
         _id = @id
         if _id.nil? and !from_valid
-          _id = id_from_unique()
+          _id = id_from_attribute()
         end
         return Goo::SPARQL::Queries.model_exist(self,id=_id)
       end
@@ -227,8 +227,8 @@ module Goo
       end
 
       protected
-      def id_from_unique()
-          uattr = self.class.unique_attribute
+      def id_from_attribute()
+          uattr = self.class.name_with
           uvalue = self.send("#{uattr}")
           return self.class.id_from_unique_attribute(uattr,uvalue)
       end

@@ -4,21 +4,21 @@ GooTest.configure_goo
 
 class NameWith < Goo::Base::Resource
   model :name_with, name_with: lambda { |s| id_generator(s) } 
-  attribute :name, enforce: [ :existence, :string ]
+  attribute :name, enforce: [ :existence, :string, :unique ]
 
   def self.id_generator(inst)
     return RDF::URI.new("http://example.org/" + inst.name + "/bla")
   end
 end
 
+class NameWithAttribute < Goo::Base::Resource
+  model :name_with_attribute, name_with: :name
+  attribute :name, enforce: [ :existence, :string, :unique ]
+end
+
 class TestNameWith < MiniTest::Unit::TestCase
   def initialize(*args)
     super(*args)
-  end
-
-  def self.before_suite
-  end
-  def self.after_suite
   end
 
   def test_name_with
@@ -32,6 +32,30 @@ class TestNameWith < MiniTest::Unit::TestCase
     assert_equal("John", from_backend.name)
 
     another = NameWith.new(name: "John")
+    assert_instance_of(RDF::URI, another.id)
+    assert another.exist?
+    assert_raises Goo::Base::NotValidException do
+      another.save
+    end
+
+    from_backend.delete
+    assert(!from_backend.exist?)
+    assert 0, GooTest.triples_for_subject(from_backend.id)
+  end
+
+  def test_name_with_attribute
+    nw = NameWithAttribute.new(name: "John")
+    assert_instance_of(RDF::URI, nw.id)
+    assert_equal("http://goo.org/default/name_with_attribute/John",nw.id.to_s)
+    assert !nw.exist?
+    nw.save
+
+    from_backend = NameWithAttribute.find(
+      RDF::URI.new("http://goo.org/default/name_with_attribute/John"),
+                                 include: [:name])
+    assert_equal("John", from_backend.name)
+
+    another = NameWithAttribute.new(name: "John")
     assert_instance_of(RDF::URI, another.id)
     assert another.exist?
     assert_raises Goo::Base::NotValidException do
