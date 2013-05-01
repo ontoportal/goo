@@ -92,14 +92,17 @@ class TestWhere < MiniTest::Unit::TestCase
           end
         end
       end
-      #STUDENTS.each do |st_data|
-        #st = Student.new(name: st_data[0], birth_date: st_data[1])
-        #programs = []
-        #st_data[2].each do |pr|
-        #  binding.pry
-          #Program.where(name: pr[0], universi
-        #end
-      #end
+      STUDENTS.each do |st_data|
+        st = Student.new(name: st_data[0], birth_date: st_data[1])
+        programs = []
+        st_data[2].each do |pr|
+          pr = Program.where(name: pr[0], university: [name: pr[1] ])
+          pr = pr.first
+          programs << pr
+        end
+        st.enrolled= programs
+        st.save
+      end
     rescue Exception => e
       binding.pry
     end
@@ -248,25 +251,81 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
 
-  def test_where_on_links_and_embed
-
+  def test_unique_object_references
 
     #students enrolled in a specific program
-    #Student.where(program: Program.find("http://example.org/program/Stanford/Medicine"), 
-    #              include: [:name, :birth_date, programs: [:name]])
+    students = Student.where(enrolled: 
+                             Program.find(RDF::URI.new("http://example.org/program/Stanford/BioInformatics")), 
+                  include: [:name, :birth_date, enrolled: [:name]])
+    assert students.length == 2
+    assert students.map { |x| x.name }.sort == ["Daniel","Susan"]
+    
+    #if programs have the same id then the share the same memory reference
+    programs = []
+    students.each do |st|
+      programs.concat(st.enrolled)
+    end
+    assert programs.length == 3
+    programs.each do |p|
+      assert_instance_of String, p.name
+      programs.each do |p2|
+        if p.id == p2.id
+          assert p.object_id == p2.object_id
+        end
+      end
+    end
+    assert programs.uniq.length == 2
 
     #Students in a university
-    #Student.where(
-    #  program: [university: University.find("Stanford")], 
-    #  include: [programs: [:name], :name, :birth_date] )
+    students = Student.where(
+      enrolled: [ university: University.find("Stanford") ], 
+      include: [:name, :birth_date, enrolled: [category: [:code ]]])
+    assert students.length == 3
+    assert students.map { |x| x.name }.sort == ["Daniel","John","Susan"]
+    students = students.sort_by { |x| x.name  }
+    daniel = students.first
+    assert daniel.enrolled.map { |p| p.category.map { |c| c.code }.sort }.sort == [
+      ["Biology", "Computer Science", "Medicine"],
+      ["Computer Science", "Electronics", "Engineering", "Mathematics"]]
+    john = students[1]
+    assert john.enrolled.map { |p| p.category.map { |c| c.code }.sort }.sort == [
+      ["Computer Science", "Electronics", "Engineering", "Mathematics"]]
+    susan = students.last
+    assert susan.enrolled.map { |p| p.category.map { |c| c.code }.sort }.sort == [
+      ["Biology", "Computer Science", "Medicine"]]
 
+    categories = []
+    students.each do |st|
+      categories.concat(st.enrolled.map { |p| p.category }.flatten)
+    end
+    assert categories.length == 14
+    uniq_object_refs = categories.map { |x| x.object_id }.uniq
+    assert uniq_object_refs.length == 6
+
+
+  end
+
+  def test_complex_include
     #Students in a university by name
-    #Student.where(program: [university: [name: "Stanford"]], 
-    #              include: [programs: [:name, university: [ :location ]], :name] )
+    students = Student.where(enrolled: [university: [name: "Stanford"]], 
+                  include: [:name, enrolled: [:name, university: [ :address ]]] )
 
+    assert students.map { |x| x.name }.sort == ["Daniel","John","Susan"]
+    students.each do |s|
+      s.enrolled do |p|
+        assert_instance_of String, p.name
+        assert_instance_of University, p.university
+        assert_instance_of Array, p.university.addresses
+        assert_instance_of Address, p.university.addresses.first
+        assert_raises Goo::Base::AttributeNotLoaded do 
+          p.university.addresses.first.country
+        end
+      end
+    end
+  end
 
-    #universities with a program in a category
-    #University.where(program: [category: Category.find("Science") ], include: [:name])
+  def test_complex_where
+    #Countries that have some university with a student named Daniel
 
   end
 

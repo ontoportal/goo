@@ -24,7 +24,7 @@ module Goo
       end
 
       def self.query_pattern(klass,attr,value=nil,subject=:id)
-        klass.inverse?(attr) rescue binding.pry
+        value = value.id if value.class.respond_to?(:model_settings)
         if klass.inverse?(attr)
           inverse_opts = klass.inverse_opts(attr)
           on_klass = inverse_opts[:on]
