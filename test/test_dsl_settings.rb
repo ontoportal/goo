@@ -1,9 +1,9 @@
 require_relative 'test_case'
 
-TestInit.configure_goo
+GooTest.configure_goo
 
 class StatusModel < Goo::Base::Resource
-  model :status_model
+  model :status_model, name_with: :name
   attribute :description, enforce: [ :existence, :unique]
   attribute :active, enforce: [ :existence, :boolean ], namespace: :omv
 
@@ -13,7 +13,7 @@ class StatusModel < Goo::Base::Resource
 end
 
 class PersonModel < Goo::Base::Resource
-  model :person_model
+  model :person_model, name_with: :name
   attribute :name, enforce: [ :existence, :string, :unique]
   attribute :multiple_values, enforce: [ :list, :existence, :integer, :min_3, :max_5 ]
   attribute :one_number, enforce: [ :existence, :integer ] #by default not a list
@@ -32,7 +32,7 @@ class PersonModel < Goo::Base::Resource
   end
 end
 
-class TestDSLSeeting < TestCase
+class TestDSLSeeting < MiniTest::Unit::TestCase
   def initialize(*args)
     super(*args)
   end
