@@ -30,7 +30,7 @@ end
 
 class Program < Goo::Base::Resource
   model :program, name_with: lambda { |p| id_generator(p) } 
-  attribute :name, enforce: [ :existence, :unique ]
+  attribute :name, enforce: [ :existence ]
   attribute :students, inverse: { on: :student, attribute: :enrolled }
   attribute :university, enforce: [ :existence, :university ]
   attribute :category, enforce: [ :existence, :category, :list ]
