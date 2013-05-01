@@ -152,6 +152,7 @@ class TestWhere < GooTest::TestCase
     programs = Program.all(include: [ :name, university: [:name], category: [:code]] )
     assert programs.length == 9
     programs.each do |p|
+      assert_instance_of String, p.name
       assert_instance_of University, p.university
       assert_instance_of Array, p.category
       assert p.category.length == p.category.select { |x| x.instance_of? Category }.length
