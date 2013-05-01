@@ -1,7 +1,6 @@
 require_relative 'test_case'
 
-TestInit.configure_goo
-
+GooTest.configure_goo
 
 class NameWith < Goo::Base::Resource
   model :name_with, name_with: lambda { |s| id_generator(s) } 
@@ -12,9 +11,14 @@ class NameWith < Goo::Base::Resource
   end
 end
 
-class TestNameWith < TestCase
+class TestNameWith < MiniTest::Unit::TestCase
   def initialize(*args)
     super(*args)
+  end
+
+  def self.before_suite
+  end
+  def self.after_suite
   end
 
   def test_name_with
@@ -36,6 +40,7 @@ class TestNameWith < TestCase
 
     from_backend.delete
     assert(!from_backend.exist?)
-    assert 0, triples_for_subject(from_backend.id)
+    assert 0, GooTest.triples_for_subject(from_backend.id)
   end
+
 end

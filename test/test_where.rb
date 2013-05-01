@@ -52,10 +52,13 @@ class Student < Goo::Base::Resource
 end
 
 
-class TestWhere < GooTest::TestCase
+class TestWhere < MiniTest::Unit::TestCase
 
   def initialize(*args)
     super(*args)
+  end
+
+  def setup
   end
 
   def self.before_suite
@@ -204,7 +207,6 @@ class TestWhere < GooTest::TestCase
     #students enrolled in a specific program
     #Student.where(program: Program.find("http://example.org/program/Stanford/Medicine"), 
     #              include: [:name, :birth_date, programs: [:name]])
-    binding.pry
 
     #Students in a university
     #Student.where(

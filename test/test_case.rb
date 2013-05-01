@@ -14,30 +14,7 @@ MiniTest::Unit.autorun
 
 require_relative "../lib/goo.rb"
 
-module GooTest
-
-  def self.configure_goo
-    if not Goo.configure?
-      Goo.configure do |conf|
-
-        conf.add_namespace(:omv, RDF::Vocabulary.new("http://omv.org/ontology/"))
-        conf.add_namespace(:skos, RDF::Vocabulary.new("http://www.w3.org/2004/02/skos/core#"))
-        conf.add_namespace(:owl, RDF::Vocabulary.new("http://www.w3.org/2002/07/owl#"))
-        conf.add_namespace(:rdfs, RDF::Vocabulary.new("http://www.w3.org/2000/01/rdf-schema#"))
-        conf.add_namespace(:goo, RDF::Vocabulary.new("http://goo.org/default/"),default=true)
-        conf.add_namespace(:metadata, RDF::Vocabulary.new("http://goo.org/metadata/"))
-        conf.add_namespace(:foaf, RDF::Vocabulary.new("http://xmlns.com/foaf/0.1/"))
-        conf.add_namespace(:rdf, RDF::Vocabulary.new("http://www.w3.org/1999/02/22-rdf-syntax-ns#"))
-
-        conf.add_sparql_backend(:main, query: "http://localhost:9000/sparql/",
-                                data: "http://localhost:9000/data/",
-                                update: "http://localhost:9000/update/",
-                                options: { rules: :NONE })
-        conf.add_search_backend(:main, service: "http://ncbo-dev-app-02.stanford.edu:8080/solr/" )
-
-      end
-    end
-  end
+class GooTest
 
   class Unit < MiniTest::Unit
     def before_suites
@@ -67,28 +44,47 @@ module GooTest
     end
   end
 
-  GooTest::Unit.runner = GooTest::Unit.new
+  MiniTest::Unit.runner = GooTest::Unit.new
 
-  class TestCase < MiniTest::Unit::TestCase
+  def self.configure_goo
+    if not Goo.configure?
+      Goo.configure do |conf|
 
-    def triples_for_subject(resource_id)
-      rs = Goo.sparql_query_client.query("SELECT * WHERE { #{resource_id.to_ntriples} ?p ?o . }")
-      count = 0
-      rs.each_solution do |sol|
-        count += 1
+        conf.add_namespace(:omv, RDF::Vocabulary.new("http://omv.org/ontology/"))
+        conf.add_namespace(:skos, RDF::Vocabulary.new("http://www.w3.org/2004/02/skos/core#"))
+        conf.add_namespace(:owl, RDF::Vocabulary.new("http://www.w3.org/2002/07/owl#"))
+        conf.add_namespace(:rdfs, RDF::Vocabulary.new("http://www.w3.org/2000/01/rdf-schema#"))
+        conf.add_namespace(:goo, RDF::Vocabulary.new("http://goo.org/default/"),default=true)
+        conf.add_namespace(:metadata, RDF::Vocabulary.new("http://goo.org/metadata/"))
+        conf.add_namespace(:foaf, RDF::Vocabulary.new("http://xmlns.com/foaf/0.1/"))
+        conf.add_namespace(:rdf, RDF::Vocabulary.new("http://www.w3.org/1999/02/22-rdf-syntax-ns#"))
+
+        conf.add_sparql_backend(:main, query: "http://localhost:9000/sparql/",
+                                data: "http://localhost:9000/data/",
+                                update: "http://localhost:9000/update/",
+                                options: { rules: :NONE })
+        conf.add_search_backend(:main, service: "http://ncbo-dev-app-02.stanford.edu:8080/solr/" )
+
       end
-      return count
     end
+  end
 
-    def count_pattern(pattern)
-      q = "SELECT * WHERE { #{pattern} }"
-      rs = Goo.sparql_query_client.query(q)
-      count = 0
-      rs.each_solution do |sol|
-        count += 1
-      end
-      return count
+  def self.triples_for_subject(resource_id)
+    rs = Goo.sparql_query_client.query("SELECT * WHERE { #{resource_id.to_ntriples} ?p ?o . }")
+    count = 0
+    rs.each_solution do |sol|
+      count += 1
     end
+    return count
+  end
 
+  def self.count_pattern(pattern)
+    q = "SELECT * WHERE { #{pattern} }"
+    rs = Goo.sparql_query_client.query(q)
+    count = 0
+    rs.each_solution do |sol|
+      count += 1
+    end
+    return count
   end
 end
