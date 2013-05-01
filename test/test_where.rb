@@ -8,7 +8,7 @@ PROGRAMS_AND_CATEGORIES = [ ["BioInformatics",["Medicine","Biology","Computer Sc
 
 #collection on attribute
 class University < Goo::Base::Resource
-  model :university
+  model :university, name_with: :name
   attribute :name, enforce: [ :existence, :unique]
   attribute :programs, inverse: { on: :program, attribute: :university }
   attribute :address, enforce: [ :existence, :min_1, :list, :address]
@@ -40,12 +40,12 @@ class Program < Goo::Base::Resource
 end
 
 class Category < Goo::Base::Resource
-  model :category
+  model :category, name_with: :code
   attribute :code, enforce: [ :existence, :unique ]
 end
 
 class Student < Goo::Base::Resource
-  model :student
+  model :student, name_with: :name
   attribute :name, enforce: [ :existence, :unique ]
   attribute :enrolled, enforce: [:list, :program]
   attribute :birth_date, enforce: [:date_time, :existence]
