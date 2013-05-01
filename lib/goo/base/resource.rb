@@ -192,6 +192,7 @@ module Goo
           where_opts[:items] = { self.resource_id.value => self }
           where_opts[:load_attrs] = load_attrs
           where_opts[:all] = true if loaded and self.class.schemaless?
+          where_opts[:query_options] = query_options if query_options
           if self.internals.collection
             coll_attr = self.class.goop_settings[:collection][:attribute]
             where_opts[coll_attr]=self.send(coll_attr)
