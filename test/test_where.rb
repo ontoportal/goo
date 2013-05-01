@@ -171,6 +171,17 @@ class TestWhere < GooTest::TestCase
     end
   end
 
+  def test_embed_with_inverse
+    unis = University.all(include: [:name, programs: [:name, category: [:code]]])
+    unis.each do |u|
+      assert_instance_of String, u.name
+      assert_instance_of Array, u.programs
+      u.programs.each do |p|
+        assert_instance_of String, p.name
+      end
+    end
+  end
+
   def test_where_on_links_and_embed
 
 
