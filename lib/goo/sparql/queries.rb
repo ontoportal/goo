@@ -23,7 +23,8 @@ module Goo
         return so.true?
       end
 
-      def self.query_pattern(klass,attr,value=nil)
+      def self.query_pattern(klass,attr,value=nil,subject=:id)
+        klass.inverse?(attr) rescue binding.pry
         if klass.inverse?(attr)
           inverse_opts = klass.inverse_opts(attr)
           on_klass = inverse_opts[:on]
@@ -36,10 +37,31 @@ module Goo
             binding.pry
           end
           predicate = inverse_klass.attribute_uri(inverse_opts[:attribute])
-          return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, :id ]]
+          return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, subject ]]
         else
           predicate = klass.attribute_uri(attr)
-          return [nil, [ :id , predicate , value.nil? ? attr : value]]
+          return [klass.uri_type, [ subject , predicate , value.nil? ? attr : value]]
+        end
+      end
+
+      def self.patterns_for_filter(klass,attr,value,graphs,patterns,
+                                   variables,internal_variables,subject=:id)
+
+        next_pattern = nil 
+        if value.instance_of?(Array)
+          next_pattern = value.first #it is always an array of length 1
+          value = "internal_join_var_#{internal_variables.length}".to_sym
+          internal_variables << value
+        end
+        graph, pattern = query_pattern(klass,attr,value,subject)
+        patterns << pattern if pattern
+        graphs << graph if graph
+        if next_pattern
+          range = klass.range(attr)
+          next_pattern.each do |next_attr,next_value|
+            patterns_for_filter(range, next_attr, next_value, graphs,
+                              patterns, variables, internal_variables, subject=value)
+          end
         end
       end
 
@@ -114,11 +136,12 @@ module Goo
         end
         if filters
           #make it deterministic - for caching
-          filters = filters.to_a.sort
-          filters.each do |attr,value|
-            graph, pattern = query_pattern(klass,attr,value)
-            patterns << pattern if pattern
-            graphs << pattern if graph
+          filters.keys.sort.each do |attr|
+            value = filters[attr]
+            internal_variables = []
+            patterns_for_filter(klass,attr,value,graphs,patterns,
+                               variables,internal_variables)
+            graphs.uniq!
           end
         end
         filter_id = []

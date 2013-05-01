@@ -6,6 +6,16 @@ PROGRAMS_AND_CATEGORIES = [ ["BioInformatics",["Medicine","Biology","Computer Sc
             ["CompSci",["Engineering","Mathematics","Computer Science", "Electronics"]],
             ["Medicine", ["Medicine", "Chemistry", "Biology"]]]
 
+STUDENTS = [
+  ["Susan", DateTime.parse('1978-01-01'), [["BioInformatics", "Stanford"]] ],
+  ["John", DateTime.parse('1978-01-02'), [["CompSci", "Stanford"]] ],
+  ["Tim", DateTime.parse('1978-01-03'), [["CompSci", "UPM"]] ],
+  ["Daniel", DateTime.parse('1978-01-04'), [["CompSci", "Southampton"], ["BioInformatics", "Stanford"]] ],
+  ["Louis", DateTime.parse('1978-01-05'), [["Medicine", "Southampton"]]],
+  ["Lee", DateTime.parse('1978-01-06'), [["BioInformatics", "Southampton"]]],
+  ["Robert", DateTime.parse('1978-01-07'), [["CompSci", "UPM"]]]
+]
+
 #collection on attribute
 class University < Goo::Base::Resource
   model :university, name_with: :name
@@ -82,6 +92,14 @@ class TestWhere < MiniTest::Unit::TestCase
           end
         end
       end
+      #STUDENTS.each do |st_data|
+        #st = Student.new(name: st_data[0], birth_date: st_data[1])
+        #programs = []
+        #st_data[2].each do |pr|
+        #  binding.pry
+          #Program.where(name: pr[0], universi
+        #end
+      #end
     rescue Exception => e
       binding.pry
     end
@@ -151,7 +169,21 @@ class TestWhere < MiniTest::Unit::TestCase
     assert Category.all.length == 7
   end
 
-  def test_embed
+  def test_where_1levels
+    programs = Program.where(name: "BioInformatics", university: [ name: "Stanford"  ])
+    assert programs.length == 1
+    assert programs.first.id.to_s["Stanford/BioInformatics"]
+  end
+
+  def test_where_2levels
+#    programs = Program.where (name: "BioInformatics", university: [ address: [ country: "US" ]])
+#    binding.pry
+  end
+
+  def test_where_1levels_inverse
+  end
+
+  def test_embed_include
     programs = Program.all(include: [ :name, university: [:name], category: [:code]] )
     assert programs.length == 9
     programs.each do |p|
@@ -174,7 +206,7 @@ class TestWhere < MiniTest::Unit::TestCase
     end
   end
 
-  def test_embed_with_inverse
+  def test_embed_include_with_inverse
     unis = University.all(include: [:name, programs: [:name]])
     unis.each do |u|
       assert_instance_of String, u.name
@@ -205,8 +237,8 @@ class TestWhere < MiniTest::Unit::TestCase
 
 
     #students enrolled in a specific program
-    #Student.where(program: Program.find("http://example.org/program/Stanford/Medicine"), 
-    #              include: [:name, :birth_date, programs: [:name]])
+    Student.where(program: Program.find("http://example.org/program/Stanford/Medicine"), 
+                  include: [:name, :birth_date, programs: [:name]])
 
     #Students in a university
     #Student.where(
