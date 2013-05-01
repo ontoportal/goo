@@ -72,8 +72,10 @@ module Goo
           custom_name = self.class.name_with
           if custom_name.instance_of?(Symbol)
             @id = id_from_attribute()
-          else custom_name
+          elsif custom_name
             @id = custom_name.call(self)
+          else
+            raise RuntimeError, "custom_name is nil. settings for this model are incorrect."
           end
         end
         return @id

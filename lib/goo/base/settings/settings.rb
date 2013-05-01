@@ -28,6 +28,9 @@ module Goo
 
           @model_settings = default_model_options.merge(options || {})
 
+          unless options.include?:name_with
+            raise ArgumentError, "The model `#{model_name}` definition should include the :name_with option"
+          end
           Goo.add_model(@model_name,self)
           @attribute_uris = {}
           @namespace = Goo.vocabulary(@model_settings[:namespace])

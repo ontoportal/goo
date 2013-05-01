@@ -1,10 +1,10 @@
 require_relative 'test_case'
 
-TestInit.configure_goo
+GooTest.configure_goo
 
 #collection on attribute
 class Issue < Goo::Base::Resource
-  model :issue, collection: :owner 
+  model :issue, collection: :owner, name_with: :description
   attribute :description, enforce: [ :existence, :unique]
   attribute :owner, enforce: [:user]
 
@@ -14,12 +14,12 @@ class Issue < Goo::Base::Resource
 end
 
 class User < Goo::Base::Resource
-  model :user
+  model :user, name_with: :name
   attribute :name, enforce: [ :existence, :unique ]
   attribute :issues, inverse: { on: Issue, attribute: :owner }
 end
 
-class TestCollection < TestCase
+class TestCollection < MiniTest::Unit::TestCase
   def initialize(*args)
     super(*args)
   end
@@ -40,20 +40,20 @@ class TestCollection < TestCase
     owner = Issue.find("issue1",collection: john).owner
 
     assert_equal(1,
-      count_pattern(
+      GooTest.count_pattern(
         "GRAPH #{owner.id.to_ntriples} { #{issue.id.to_ntriples} a ?x }" ))
     assert_equal(0,
-      count_pattern(
+      GooTest.count_pattern(
         "GRAPH #{owner.id.to_ntriples} { #{issue.id.to_ntriples} #{issue.class.attribute_uri(:owner).to_ntriples} ?x }" ))
 
     issue.delete
     assert_equal(0,
-      count_pattern(
+      GooTest.count_pattern(
         "GRAPH #{owner.id.to_ntriples} { #{issue.id.to_ntriples} a ?x }" ))
 
     john.delete
     assert_equal(0,
-      count_pattern(
+      GooTest.count_pattern(
         "#{john.id.to_ntriples} ?y ?x " ))
   end
 
@@ -69,7 +69,7 @@ class TestCollection < TestCase
     issue = Issue.find("issue1", collection: john) || 
       Issue.new(description: "issue1", owner: john).save()
     assert_equal(1,
-      count_pattern(
+      GooTest.count_pattern(
         "GRAPH #{john.id.to_ntriples} { #{issue.id.to_ntriples} a ?x }" ))
 
     assert !Issue.new(description: "issue1", owner: less).exist?
@@ -77,7 +77,7 @@ class TestCollection < TestCase
     issue = Issue.find("issue1", collection: less) || 
       Issue.new(description: "issue1", owner: less).save()
     assert_equal(1,
-      count_pattern(
+      GooTest.count_pattern(
         "GRAPH #{less.id.to_ntriples} { #{issue.id.to_ntriples} a ?x }" ))
 
     assert Issue.find("issue1", collection: less).exist?
