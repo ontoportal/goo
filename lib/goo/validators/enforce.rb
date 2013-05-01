@@ -56,13 +56,26 @@ module Goo
         errors_by_opt = {}
         enforce_opts.each do |opt|
           case opt 
+           when :unique
+             unless value.nil?
+               dup = Goo::SPARQL::Queries.duplicate_attribute_value?(inst,attr)
+               if dup
+                 add_error(opt, errors_by_opt, 
+                 "`#{attr}` must be unique. " +
+                 "There are other model instances with the same attribute value `#{value}`.")
+               end
+             end
            when :no_list
-             add_error(opt, errors_by_opt, 
-                       "`#{attr}` is defined as non Array - it cannot hold multiple values") if value.kind_of? Array
+             if value.kind_of? Array
+               add_error(opt, errors_by_opt, 
+                       "`#{attr}` is defined as non Array - it cannot hold multiple values") 
+             end
            when :existence
              add_error(opt, errors_by_opt, "`#{attr}` value cannot be nil") if value.nil?
            when :list, Array
-             add_error(opt, errors_by_opt, "`#{attr}` value must be an Array") if !value.nil? && !(value.kind_of? Array)
+             if !value.nil? && !(value.kind_of? Array)
+               add_error(opt, errors_by_opt, "`#{attr}` value must be an Array") 
+             end
            when :string, String
              add_error(opt, errors_by_opt, enforce_type(attr,String,value)) unless value.nil?
            when :integer, Fixnum

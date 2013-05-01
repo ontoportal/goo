@@ -4,6 +4,18 @@ require 'sparql/client/query'
 module Goo
   module SPARQL
     module Queries
+      def self.duplicate_attribute_value?(model,attr,store=:main)
+        value = model.instance_variable_get("@#{attr}")
+        if !value.instance_of? Array
+          so = Goo.sparql_query_client(store).ask.from(model.graph).
+            whether([:id, model.class.attribute_uri(attr), value]).
+            filter("?id != #{model.id.to_ntriples}")
+          return so.true?
+        else
+          #not yet support for unique arrays
+        end
+      end
+
       def self.model_exist(model,id=nil,store=:main)
         id = id || model.id
         so = Goo.sparql_query_client(store).ask.from(model.graph).

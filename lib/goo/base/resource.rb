@@ -41,12 +41,12 @@ module Goo
         end
 
         unless @persistent
-          uattr = self.class.unique_attribute
+          uattr = self.class.name_with.instance_of?(Symbol) ? self.class.name_with : :proc_naming
           if validation_errors[uattr].nil?
             begin
               if self.exist?(from_valid=true)
                 validation_errors[uattr] = validation_errors[uattr] || {}
-                validation_errors[uattr][:unique] = 
+                validation_errors[uattr][:duplicate] =
                   "There is already a persistent resource with id `#{@id.to_s}`"
               end
             rescue ArgumentError => e
@@ -198,7 +198,7 @@ module Goo
       # ##
       def self.find(id, *options)
         unless id.instance_of?(RDF::URI)
-          id = id_from_unique_attribute(unique_attribute(),id)
+          id = id_from_unique_attribute(name_with(),id)
         end
         options_load = { ids: [id], klass: self }.merge(options[-1] || {})
         if !self.collection_opts.nil? and !options_load.include?(:collection)

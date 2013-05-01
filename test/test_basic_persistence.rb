@@ -1,18 +1,19 @@
 require_relative 'test_case'
 
-TestInit.configure_goo
+GooTest.configure_goo
 
 
 class ArrayValues < Goo::Base::Resource
-  model :array_values
+  model :array_values, name_with: :name
   attribute :name, enforce: [ :existence, :unique ]
   attribute :many, enforce: [ :list, :string ]
 end
 
 class StatusPersistent < Goo::Base::Resource
-  model :status_persistent
+  model :status_persistent, name_with: :description
   attribute :description, enforce: [ :existence, :unique]
   attribute :active, enforce: [ :existence, :boolean ], namespace: :omv
+  attribute :code, enforce: [:unique]
 
   def initialize(attributes = {})
     super(attributes)
@@ -20,7 +21,7 @@ class StatusPersistent < Goo::Base::Resource
 end
 
 class PersonPersistent < Goo::Base::Resource
-  model :person_persistent
+  model :person_persistent, name_with: :name
   attribute :name, enforce: [ :existence, :string, :unique]
   attribute :multiple_values, enforce: [ :list, :existence, :integer, :min_3, :max_5 ]
   attribute :one_number, enforce: [ :existence, :integer ] #by default not a list
@@ -39,16 +40,30 @@ class PersonPersistent < Goo::Base::Resource
   end
 end
 
-class TestBasicPersistence < TestCase
+class TestBasicPersistence < MiniTest::Unit::TestCase
   def initialize(*args)
     super(*args)
   end
 
+  def _purge
+    objects = [ArrayValues, PersonPersistent, StatusPersistent]
+    objects.each do |obj|
+      obj.all.each do |st|
+        st.delete
+      end
+    end
+  end
+
+  def setup
+    _purge
+  end
+
+  def teardown
+    _purge
+  end
 
   def test_simple_save_delete
     st = StatusPersistent.new(description: "some text", active: true)
-    assert_equal("some text", st.description)
-    st = StatusPersistent.new({ description: "some text", active: true })
     assert_equal("some text", st.description)
     assert st.valid?
     assert !st.persistent?
@@ -61,6 +76,47 @@ class TestBasicPersistence < TestCase
     assert !st.exist?
     assert !st.persistent?
     assert !st.modified?
+  end
+
+  def test_unique_duplicates_error
+    StatusPersistent.all.each do |st|
+      st.delete
+    end
+    st = StatusPersistent.new(description: "some text", active: true)
+    assert st.valid?
+    st.save
+    st = StatusPersistent.new(description: "some text", active: true)
+    assert !st.valid?
+    assert_instance_of String, st.errors[:description][:duplicate]
+    st = StatusPersistent.new(description: "some text 2", active: true)
+    assert st.valid?
+    st.save
+    StatusPersistent.all.each do |st|
+      st.delete
+    end
+  end
+
+  def test_multiple_unique_attributes
+    st = StatusPersistent.new(description: "some text", active: true, code: "001")
+    assert st.valid?
+    st.save
+
+    #same object but new. We cannot a save duplicate id.
+    #code should not contains errors because we cannot tell apart the resources.
+    st = StatusPersistent.new(description: "some text", active: true, code: "001")
+    assert !st.valid?
+    assert_instance_of String, st.errors[:description][:duplicate]
+    assert nil == st.errors[:code]
+
+    #here a differente description therefore a different resource.
+    #code should contain a duplication error.
+    st = StatusPersistent.new(description: "some text 2", active: true, code: "001")
+    assert !st.valid?
+    assert_instance_of String, st.errors[:code][:unique]
+
+    st = StatusPersistent.new(description: "some text 2", active: true, code: "002")
+    assert st.valid?
+    st.save
   end
 
   def test_not_valid_save
@@ -135,7 +191,7 @@ class TestBasicPersistence < TestCase
     end
 
     assert !st_from_backend.fully_loaded?
-    assert (st_from_backend.missing_load_attributes.length == 1)
+    assert (st_from_backend.missing_load_attributes.length == 2)
     assert (st_from_backend.missing_load_attributes.include?(:description))
 
     assert nil == st_from_backend.delete
@@ -266,9 +322,9 @@ class TestBasicPersistence < TestCase
 
 
     person1.delete
-    assert 0, triples_for_subject(person1.id)
+    assert 0, GooTest.triples_for_subject(person1.id)
     person2.delete
-    assert 0, triples_for_subject(person2.id)
+    assert 0, GooTest.triples_for_subject(person2.id)
   end
 
 end

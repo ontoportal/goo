@@ -127,11 +127,8 @@ module Goo
           namespace = attribute_namespace(attr_name)
           vocab = Goo.vocabulary(namespace) #returns default for nil input
           @attribute_uris[attr_name] = vocab[attr_name]
-          if options[:enforce].include? :unique
-            unless @unique_attribute.nil?
-              raise ArgumentError, "Model `#{@model_name}` has two or more unique attributes."
-            end
-            @unique_attribute = attr_name
+          if options[:enforce].include?(:unique) and options[:enforce].include?(:list)
+            raise ArgumentError, ":list options cannot be combined with :list"            
           end
           set_range(attr_name)
         end
@@ -179,10 +176,6 @@ module Goo
         def namespace
           return @namespace
         end
-        def unique_attribute
-          return @unique_attribute
-        end
-
         def id_from_unique_attribute(attr,value_attr)
           if value_attr.nil?
             raise ArgumentError, "`#{attr}` value is nil. Id for resource cannot be generated."
