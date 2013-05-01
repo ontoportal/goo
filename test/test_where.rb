@@ -74,8 +74,8 @@ class TestWhere < MiniTest::Unit::TestCase
   def self.before_suite
     begin
       addresses = {}
-      addresses["Stanford"] = [ Address.new(line1: "bla", line2: "foo", country: "EN").save ]
-      addresses["Southampton"] = [ Address.new(line1: "bla", line2: "foo", country: "US").save ]
+      addresses["Stanford"] = [ Address.new(line1: "bla", line2: "foo", country: "US").save ]
+      addresses["Southampton"] = [ Address.new(line1: "bla", line2: "foo", country: "UK").save ]
       addresses["UPM"] = [ Address.new(line1: "bla", line2: "foo", country: "SP").save ]
       ["Stanford", "Southampton", "UPM"].each do |uni_name|
         if University.find(uni_name).nil?
@@ -176,8 +176,17 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_where_2levels
-#    programs = Program.where (name: "BioInformatics", university: [ address: [ country: "US" ]])
-#    binding.pry
+    programs = Program.where(name: "BioInformatics", university: [ address: [ country: "US" ]])
+    assert programs.length == 1
+    assert programs.first.id.to_s["Stanford/BioInformatics"]
+    programs = Program.where(name: "BioInformatics", university: [ address: [ country: "UK" ]])
+    assert programs.length == 1
+    assert programs.first.id.to_s["Southampton/BioInformatics"]
+   
+    #any program from universities in the US
+    programs = Program.where(university: [ address: [ country: "US" ]], include: [:name])
+    assert programs.length == 3
+    assert programs.map { |p| p.name }.sort == ["BioInformatics", "CompSci", "Medicine"]
   end
 
   def test_where_1levels_inverse
