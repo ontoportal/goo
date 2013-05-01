@@ -198,9 +198,20 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert !st_from_backend.exist?
   end
 
-  def test_update_unique
+  def test_update_name_with_attribute
     #fail when updating a unique field
-    binding.pry
+    st = StatusPersistent.new({ description: "some text", active: true })
+    st.save
+    assert st.persistent?
+
+    assert_raises ArgumentError do
+      st.description = "x"
+    end
+
+    from_backend = StatusPersistent.find(st.id)
+    assert_raises ArgumentError do
+      from_backend.description = "x"
+    end
   end
 
   def test_find_with_string

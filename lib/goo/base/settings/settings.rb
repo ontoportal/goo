@@ -148,6 +148,9 @@ module Goo
             @loaded_attributes.add(attr)
             value = args[0]
             unless args.last.instance_of?(Hash) and args.last[:on_load]
+              if self.persistent? and self.class.name_with == attr
+                raise ArgumentError, "`#{attr}` attribute is used to name this resource and cannot be modified."
+              end
               prev = self.instance_variable_get("@#{attr}")
               if !prev.nil? and !@modified_attributes.include?(attr)
                 if prev != value 
