@@ -77,11 +77,24 @@ module Goo
         optional_patterns = []
         graph_items_collection = nil
         inverse_klass_collection = nil
+        incl_embed = nil
         if incl
           #make it deterministic
-          incl = incl.to_a.sort rescue binding.pry
-          variables.concat(incl)
+          incl = incl.to_a
+          incl_direct = incl.select { |a| a.instance_of?(Symbol) }
+          variables.concat(incl_direct)
+          incl_embed = incl.select { |a| a.instance_of?(Hash) }
+          raise ArgumentError, "Not supported case for embed" if incl_embed.length > 1
+          incl.delete_if { |a| !a.instance_of?(Symbol) }
+          if incl_embed.length > 0
+            incl_embed = incl_embed.first
+            embed_variables = incl_embed.keys.sort
+            variables.concat(embed_variables)
+            incl.concat(embed_variables)
+            variables
+          end
           incl.each do |attr|
+            binding.pry if attr.instance_of? Hash
             graph, pattern = query_pattern(klass,attr)
             optional_patterns << pattern if pattern
             graphs << graph if graph
@@ -144,7 +157,6 @@ module Goo
               object = !pre ? [object] : (pre.dup << object)
             end
             if !models_by_id.include?(id) && v == :id
-              #a where call
               klass_model = klass.new
               klass_model.id = id
               klass_model.persistent = true

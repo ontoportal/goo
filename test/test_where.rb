@@ -33,7 +33,6 @@ class Program < Goo::Base::Resource
   def self.id_generator(p)
     return RDF::URI.new("http://example.org/program/#{p.university.name}/#{p.name}")
   end
-
 end
 
 class Category < Goo::Base::Resource
@@ -71,7 +70,8 @@ class TestWhere < GooTest::TestCase
             cs.each do |c|
               categories << (Category.find(c) || Category.new(code: c).save)
             end
-            prg = Program.new(name: p, category: categories, university: University.find(uni_name, include: [:name]))
+            prg = Program.new(name: p, category: categories, 
+                              university: University.find(uni_name, include: [:name]))
             binding.pry if !prg.valid?
             prg.save if !prg.exist?
           end
