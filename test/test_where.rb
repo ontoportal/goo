@@ -324,17 +324,17 @@ class TestWhere < MiniTest::Unit::TestCase
     end
   end
 
-  def test_where_and
+  def test_where_join_pattern
     #students in two programs from soton and stanford
     pattern = Goo::Base::Pattern.new(category: [ code: "Biology" ])
-            .and(category: [ code: "Chemistry" ])
+            .join(category: [ code: "Chemistry" ])
     #louis ok
     students = Student.where(enrolled: pattern)
     assert students.map { |x| x.id.to_s } == ["http://goo.org/default/student/Louis"] 
 
 
     pattern = Goo::Base::Pattern.new(category: [ code: "Mathematics" ])
-            .and(category: [ code: "Engineering" ])
+            .join(category: [ code: "Engineering" ])
     #daniel, robert, tim and john ok
     students = Student.where(enrolled: pattern)
     assert students.map { |x| x.id.to_s }.sort == ["http://goo.org/default/student/Daniel",
@@ -343,39 +343,59 @@ class TestWhere < MiniTest::Unit::TestCase
 
 
     pattern = Goo::Base::Pattern.new(category: [ code: "Mathematics" ])
-            .and(category: [ code: "Medicine" ])
+            .join(category: [ code: "Medicine" ])
     #daniel ko. a program with both categories not a student with both categories
     #no one
     students = Student.where(enrolled: pattern)
     assert students.length == 0
 
-    #??? how do I express a student in 1 program from two universities
-    pattern = Goo::Base::Pattern.new(university: [ name: "Stanford" ])
-            .and(university: [ name: "Southampton" ])
-            .or(university: [ name: "UPM" ])
+  end
 
-    Student.where(enrolled: pattern)
-    binding.pry
+  def test_where_join_3patterns
+    #students in two programs from soton and stanford
+    pattern = Goo::Base::Pattern.new(category: [ code: "Biology" ])
+            .join(category: [ code: "Chemistry" ])
+            .join(category: [ code: "Biology"])
 
+    #louis ok
+    students = Student.where(enrolled: pattern)
+    assert students.map { |x| x.id.to_s } == ["http://goo.org/default/student/Louis"] 
 
-    #using uris
+  end
 
-    #Student.where(
-    #  program: [university: University.find("Stanford").and(University.find("Southampton")) ],
-    #  include: [programs: [:name, university: [:location, :name]])
+  def test_where_join_pattern_direct
+    #students in programs with engineering and medicine
+    #Daniel is in two programs one has medicine (Bioinformatics) and engineering (CompSci)
+    pattern = Goo::Base::Pattern.new(enrolled: [ category: [ code: "Medicine"] ])
+                .join(enrolled: [ category: [ code: "Engineering"] ])
 
-    binding.pry
-
-    #Student.where(program: [ university: [ :name [] ]])
-
+    students = Student.where(pattern)
+    students.map { |x| x.id.to_s } == ["http://goo.org/default/student/Daniel"]
   end
 
   def test_where_or
-    #Student.where(
-    #  program: [university: University.find("Stanford").or(University.find("Southampton")) ],
-    #  include: [programs: [:name, university: [:location, :name]])
+    #programs in medicine or engineering
+    pattern = Pattern.new(code: "Medicine")
+                      .union(code: "Engineering")
+    prs = Program.where(category: pattern)
+    binding.pry
+
+    #equivalent
+    pattern = Pattern.new(category: [code: "Medicine"])
+                .union(category: [code: "Engineering"])
+    prs = Program.where(pattern: pattern)
+
+    #students named Daniel or Susan
+    
+    
+
+    #students at Stanford or Southamton
+
   end
 
+
+  def test_combine_join_union
+  end
 
   def test_filter
     #f = Filter.greater(DateTime.parse('2001-02-03')).less(DateTime.parse('2021-02-03'))
