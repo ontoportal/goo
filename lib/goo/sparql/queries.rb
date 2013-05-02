@@ -3,6 +3,24 @@ require 'sparql/client/query'
 
 module Goo
   module SPARQL
+
+    class PatternIteration
+
+      attr_reader :pattern
+      attr_reader :step
+
+      def initialize(pattern)
+        @pattern = pattern
+      end
+      def each
+        @pattern.patterns.each do |pat|
+        attr = pat.keys.first
+          value = pat[attr]
+          yield [attr,value] 
+        end
+      end
+    end
+
     module Queries
       def self.duplicate_attribute_value?(model,attr,store=:main)
         value = model.instance_variable_get("@#{attr}")
@@ -48,7 +66,7 @@ module Goo
       def self.patterns_for_filter(klass,attr,value,graphs,patterns,
                                    variables,internal_variables,subject=:id)
         next_pattern = nil 
-        if value.respond_to?(:each)
+        if value.respond_to?(:each) || value.instance_of?(PatternIteration) 
           next_pattern = value.instance_of?(Array) ? value.first : value
           value = "internal_join_var_#{internal_variables.length}".to_sym
           internal_variables << value
@@ -125,7 +143,6 @@ module Goo
             embed_variables = incl_embed.keys.sort
             variables.concat(embed_variables)
             incl.concat(embed_variables)
-            variables
           end
           incl.each do |attr|
             binding.pry if attr.instance_of? Hash
@@ -139,16 +156,9 @@ module Goo
           internal_variables = []
           filters.keys.sort.each do |attr|
             value = filters[attr]
-            if value.instance_of? Goo::Base::Pattern
-              value.patterns.each_index do |i|
-                pattern = value.patterns[i]
-                patterns_for_filter(klass,attr,pattern,graphs,patterns,
+            value = PatternIteration.new(value) if value.instance_of?(Goo::Base::Pattern)
+            patterns_for_filter(klass,attr,value,graphs,patterns,
                                variables,internal_variables)
-              end
-            else
-              patterns_for_filter(klass,attr,value,graphs,patterns,
-                                 variables,internal_variables)
-            end
             graphs.uniq!
           end
         end
