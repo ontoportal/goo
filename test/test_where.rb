@@ -324,16 +324,48 @@ class TestWhere < MiniTest::Unit::TestCase
     end
   end
 
-  def test_complex_where
-    #Countries that have some university with a student named Daniel
-
-  end
-
   def test_where_and
-    #I need a program in two unis
+    #students in two programs from soton and stanford
+    pattern = Goo::Base::Pattern.new(category: [ code: "Biology" ])
+            .and(category: [ code: "Chemistry" ])
+
+    #louis ok
+    students = Student.where(enrolled: pattern)
+
+    pattern = Goo::Base::Pattern.new(category: [ code: "Mathematics" ])
+            .and(category: [ code: "Engineering" ])
+    #daniel, robert, tim and john ok
+    students = Student.where(enrolled: pattern)
+    binding.pry
+
+    pattern = Goo::Base::Pattern.new(category: [ code: "Mathematics" ])
+            .and(category: [ code: "Medicine" ])
+    #daniel ko. a program with both categories not a student with both categories
+    #no one
+    students = Student.where(enrolled: pattern)
+    binding.pry
+
+
+    #??? how do I express a student in 1 program from two universities
+
+    pattern = Goo::Base::Pattern.new(university: [ name: "Stanford" ])
+            .and(university: [ name: "Southampton" ])
+            .or(university: [ name: "UPM" ])
+
+    Student.where(enrolled: pattern)
+    binding.pry
+
+
+    #using uris
+
     #Student.where(
     #  program: [university: University.find("Stanford").and(University.find("Southampton")) ],
     #  include: [programs: [:name, university: [:location, :name]])
+
+    binding.pry
+
+    #Student.where(program: [ university: [ :name [] ]])
+
   end
 
   def test_where_or

@@ -25,6 +25,7 @@ module Goo
 
       def self.query_pattern(klass,attr,value=nil,subject=:id)
         value = value.id if value.class.respond_to?(:model_settings)
+        klass.inverse?(attr) rescue binding.pry
         if klass.inverse?(attr)
           inverse_opts = klass.inverse_opts(attr)
           on_klass = inverse_opts[:on]
@@ -46,10 +47,9 @@ module Goo
 
       def self.patterns_for_filter(klass,attr,value,graphs,patterns,
                                    variables,internal_variables,subject=:id)
-
         next_pattern = nil 
-        if value.instance_of?(Array)
-          next_pattern = value.first #it is always an array of length 1
+        if value.respond_to?(:each)
+          next_pattern = value.instance_of?(Array) ? value.first : value
           value = "internal_join_var_#{internal_variables.length}".to_sym
           internal_variables << value
         end
@@ -139,8 +139,16 @@ module Goo
           internal_variables = []
           filters.keys.sort.each do |attr|
             value = filters[attr]
-            patterns_for_filter(klass,attr,value,graphs,patterns,
+            if value.instance_of? Goo::Base::Pattern
+              value.patterns.each_index do |i|
+                pattern = value.patterns[i]
+                patterns_for_filter(klass,attr,pattern,graphs,patterns,
                                variables,internal_variables)
+              end
+            else
+              patterns_for_filter(klass,attr,value,graphs,patterns,
+                                 variables,internal_variables)
+            end
             graphs.uniq!
           end
         end
