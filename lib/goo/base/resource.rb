@@ -221,8 +221,11 @@ module Goo
       def self.where(*options)
         filters = options.first || {}
         # ? a pattern right away and nothing else
-        if filters.kind_of?(Goo::Base::Pattern)
+        if filters.kind_of?(Goo::Base::Pattern)      
           filters = { :pattern => filters }
+          if options.length > 1 && options.last.instance_of?(Hash)
+            filters.merge!(options.last)
+          end
         end
         incl = filters.delete(:include) || []
         models = filters.delete(:models) || []

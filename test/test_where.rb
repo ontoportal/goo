@@ -404,9 +404,9 @@ class TestWhere < MiniTest::Unit::TestCase
   def test_where_union_direct
     #students named Daniel or Susan
     pattern = Goo::Base::Pattern.new(name: "Daniel")
-                .union(name: "Susan", include: [:name])
+                .union(name: "Susan", )
 
-    st = Student.where(pattern)
+    st = Student.where(pattern,include: [:name])
     assert st.length == 2
     assert st.first.name != st[1].name
     st.each do |p|
