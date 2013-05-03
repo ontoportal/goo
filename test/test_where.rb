@@ -414,6 +414,20 @@ class TestWhere < MiniTest::Unit::TestCase
     end
   end
 
+  def test_where_pattern_union_combined_with_join
+    union = Goo::Base::Pattern.new(name: "Daniel")
+        .union(name: "Louis")
+        .union(name: "Lee")
+        .union(name: "John")
+
+    join = Goo::Base::Pattern.new(category: [ code: "Medicine" ])
+            .join(category: [ code: "Chemistry" ])
+
+    st = Student.where(union, enrolled: join)
+    assert st.length == 1
+    assert st.first.id.to_s["Louis"]
+  end
+
   def test_combine_where_patterns
     pattern = Goo::Base::Pattern.new(name: "Daniel")
                 .union(name: "Susan")
