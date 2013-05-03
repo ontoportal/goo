@@ -45,8 +45,8 @@ module Goo
         end
       end
 
-      def self.patterns_for_filter(klass,attr,value,graphs,patterns,
-                                   variables,internal_variables,subject=:id)
+      def self.patterns_for_filter(klass,attr,value,graphs,patterns,unions,
+                                   variables,internal_variables,subject=:id,in_union=false)
         if value.respond_to?(:each) || value.instance_of?(Goo::Base::PatternIteration) 
           next_pattern = value.instance_of?(Array) ? value.first : value
           unless attr == :pattern
@@ -58,14 +58,22 @@ module Goo
         end
         unless attr == :pattern
           graph, pattern = query_pattern(klass,attr,value,subject)
-          patterns << pattern if pattern
+          if pattern
+            if !in_union
+              patterns << pattern
+            else
+              unions.last << pattern
+            end
+          end
           graphs << graph if graph
         end
         if next_pattern
           range = attr == :pattern ? klass : klass.range(attr) 
+          in_union = in_union || (next_pattern.instance_of?(Goo::Base::PatternIteration) && next_pattern.union?)
           next_pattern.each do |next_attr,next_value|
+            unions << [] if in_union
             patterns_for_filter(range, next_attr, next_value, graphs,
-                              patterns, variables, internal_variables, subject=value)
+                  patterns, unions, variables, internal_variables, subject=value, in_union)
           end
         end
       end
@@ -113,6 +121,7 @@ module Goo
         variables = [:id]
 
         patterns = [[ :id ,RDF.type, klass.uri_type]]
+        unions = []
         optional_patterns = []
         graph_items_collection = nil
         inverse_klass_collection = nil
@@ -144,7 +153,7 @@ module Goo
           filters.keys.sort.each do |attr|
             value = filters[attr]
             value = Goo::Base::PatternIteration.new(value) if value.kind_of?(Goo::Base::Pattern)
-            patterns_for_filter(klass,attr,value,graphs,patterns,
+            patterns_for_filter(klass,attr,value,graphs,patterns,unions,
                                variables,internal_variables)
             graphs.uniq!
           end
@@ -161,8 +170,13 @@ module Goo
         optional_patterns.each do |optional|
           select.optional(*[optional])
         end
+        select.union(unions) if unions.length > 0
+
         select.filter(filter_id_str)
         select.from(graphs)
+        if unions.length > 0
+          binding.pry
+        end
 
         found = Set.new
         list_attributes = klass.attributes(:list)

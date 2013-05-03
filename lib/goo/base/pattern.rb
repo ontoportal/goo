@@ -51,6 +51,9 @@ module Goo
       def each(&block)
         recursive_each(@patterns,&block)
       end
+      def union?
+        return @patterns.kind_of?(Union)
+      end
     end
 
   end #Base

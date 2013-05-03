@@ -366,22 +366,22 @@ class TestWhere < MiniTest::Unit::TestCase
   def test_where_join_pattern_direct
     #students in programs with engineering and medicine
     #Daniel is in two programs one has medicine (Bioinformatics) and engineering (CompSci)
-    pattern = Goo::Base::Pattern.new(enrolled: [ category: [ code: "Medicine"] ])
+    pattern = Goo::Base::Pattern.new(enrolled: [ category: [ code: "Chemistry"] ])
                 .join(enrolled: [ category: [ code: "Engineering"] ])
 
     students = Student.where(pattern)
     students.map { |x| x.id.to_s } == ["http://goo.org/default/student/Daniel"]
   end
 
-  def test_where_or
+  def test_where_union_pattern
     #programs in medicine or engineering
-    pattern = Pattern.new(code: "Medicine")
+    pattern = Goo::Base::Pattern.new(code: "Medicine")
                       .union(code: "Engineering")
     prs = Program.where(category: pattern)
     binding.pry
 
     #equivalent
-    pattern = Pattern.new(category: [code: "Medicine"])
+    pattern = Goo::Base::Pattern.new(category: [code: "Medicine"])
                 .union(category: [code: "Engineering"])
     prs = Program.where(pattern: pattern)
 
