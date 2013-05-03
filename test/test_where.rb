@@ -378,12 +378,27 @@ class TestWhere < MiniTest::Unit::TestCase
     pattern = Goo::Base::Pattern.new(code: "Medicine")
                       .union(code: "Engineering")
     prs = Program.where(category: pattern)
-    binding.pry
+    #all of them 9
+    assert prs.length == 9
+   
+    #programs in medicine or engineering
+    pattern = Goo::Base::Pattern.new(code: "Medicine")
+                      .union(code: "Chemistry")
+    prs = Program.where(category: pattern)
+    prs.each do |p|
+      assert p.id.to_s["BioInformatics"] || p.id.to_s["Medicine"]
+    end
+    assert prs.length == 6
 
-    #equivalent
+    #equivalent but now the triples get gathere in the union
     pattern = Goo::Base::Pattern.new(category: [code: "Medicine"])
-                .union(category: [code: "Engineering"])
+                .union(category: [code: "Chemistry"])
+    $DEBUG_GOO = true
     prs = Program.where(pattern: pattern)
+    prs.each do |p|
+      assert p.id.to_s["BioInformatics"] || p.id.to_s["Medicine"]
+    end
+    assert prs.length == 6
 
     #students named Daniel or Susan
     

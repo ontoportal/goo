@@ -69,9 +69,11 @@ module Goo
         end
         if next_pattern
           range = attr == :pattern ? klass : klass.range(attr) 
-          in_union = in_union || (next_pattern.instance_of?(Goo::Base::PatternIteration) && next_pattern.union?)
+          in_union = in_union || 
+                     ((next_pattern.instance_of?(Goo::Base::PatternIteration) && next_pattern.union?))
+          new_union_block = in_union && next_pattern.instance_of?(Goo::Base::PatternIteration)
           next_pattern.each do |next_attr,next_value|
-            unions << [] if in_union
+            unions << [] if new_union_block
             patterns_for_filter(range, next_attr, next_value, graphs,
                   patterns, unions, variables, internal_variables, subject=value, in_union)
           end
@@ -170,13 +172,10 @@ module Goo
         optional_patterns.each do |optional|
           select.optional(*[optional])
         end
-        select.union(unions) if unions.length > 0
+        select.union(*unions) if unions.length > 0
 
         select.filter(filter_id_str)
         select.from(graphs)
-        if unions.length > 0
-          binding.pry
-        end
 
         found = Set.new
         list_attributes = klass.attributes(:list)
