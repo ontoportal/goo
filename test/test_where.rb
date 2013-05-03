@@ -404,7 +404,7 @@ class TestWhere < MiniTest::Unit::TestCase
   def test_where_union_direct
     #students named Daniel or Susan
     pattern = Goo::Base::Pattern.new(name: "Daniel")
-                .union(name: "Susan", )
+                .union(name: "Susan")
 
     st = Student.where(pattern,include: [:name])
     assert st.length == 2
@@ -414,8 +414,20 @@ class TestWhere < MiniTest::Unit::TestCase
     end
   end
 
-
-  def test_combine_join_union
+  def test_combine_where_patterns
+    pattern = Goo::Base::Pattern.new(name: "Daniel")
+                .union(name: "Susan")
+    st = Student.where(pattern, enrolled: [ category: [ code: "Medicine" ]], 
+                          include: [ :name, enrolled: [ university: [ address: [ :country]]]])
+    assert st.length == 2
+    assert st.first.name != st[1].name
+    st.each do |p|
+      assert (p.name == "Susan" || p.name == "Daniel")
+      assert Array, p.enrolled
+      assert (p.name == "Susan" && p.enrolled.length == 1) || 
+        (p.name == "Daniel" && p.enrolled.length == 2) 
+      assert String, p.enrolled.first.university.address.first.country
+    end
   end
 
   def test_filter
