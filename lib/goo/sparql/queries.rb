@@ -49,14 +49,20 @@ module Goo
                                    variables,internal_variables,subject=:id)
         if value.respond_to?(:each) || value.instance_of?(Goo::Base::PatternIteration) 
           next_pattern = value.instance_of?(Array) ? value.first : value
-          value = "internal_join_var_#{internal_variables.length}".to_sym
-          internal_variables << value
+          unless attr == :pattern
+            value = "internal_join_var_#{internal_variables.length}".to_sym
+            internal_variables << value
+          else
+            value = :id
+          end
         end
-        graph, pattern = query_pattern(klass,attr,value,subject)
-        patterns << pattern if pattern
-        graphs << graph if graph
+        unless attr == :pattern
+          graph, pattern = query_pattern(klass,attr,value,subject)
+          patterns << pattern if pattern
+          graphs << graph if graph
+        end
         if next_pattern
-          range = klass.range(attr)
+          range = attr == :pattern ? klass : klass.range(attr) 
           next_pattern.each do |next_attr,next_value|
             patterns_for_filter(range, next_attr, next_value, graphs,
                               patterns, variables, internal_variables, subject=value)

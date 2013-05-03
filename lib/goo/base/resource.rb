@@ -220,6 +220,10 @@ module Goo
 
       def self.where(*options)
         filters = options.first || {}
+        # ? a pattern right away and nothing else
+        if filters.kind_of?(Goo::Base::Pattern)
+          filters = { :pattern => filters }
+        end
         incl = filters.delete(:include) || []
         models = filters.delete(:models) || []
 
