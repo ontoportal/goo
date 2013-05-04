@@ -45,7 +45,7 @@ module Goo
         end
       end
 
-      def self.patterns_for_filter(klass,attr,value,graphs,patterns,unions,
+      def self.patterns_for_match(klass,attr,value,graphs,patterns,unions,
                                    variables,internal_variables,subject=:id,in_union=false)
         if value.respond_to?(:each) || value.instance_of?(Goo::Base::PatternIteration) 
           next_pattern = value.instance_of?(Array) ? value.first : value
@@ -74,7 +74,7 @@ module Goo
           new_union_block = in_union && next_pattern.instance_of?(Goo::Base::PatternIteration)
           next_pattern.each do |next_attr,next_value|
             unions << [] if new_union_block
-            patterns_for_filter(range, next_attr, next_value, graphs,
+            patterns_for_match(range, next_attr, next_value, graphs,
                   patterns, unions, variables, internal_variables, subject=value, in_union)
           end
         end
@@ -89,7 +89,7 @@ module Goo
         klass = options[:klass]
         incl = options[:include]
         models = options[:models]
-        filters = options[:filters]
+        match = options[:match]
         collection = options[:collection]
         store = options[:store] || :main
 
@@ -134,6 +134,7 @@ module Goo
           incl_direct = incl.select { |a| a.instance_of?(Symbol) }
           variables.concat(incl_direct)
           incl_embed = incl.select { |a| a.instance_of?(Hash) }
+          binding.pry if incl_embed.length > 1
           raise ArgumentError, "Not supported case for embed" if incl_embed.length > 1
           incl.delete_if { |a| !a.instance_of?(Symbol) }
           if incl_embed.length > 0
@@ -149,20 +150,22 @@ module Goo
             graphs << graph if graph
           end
         end
-        if filters
+        if match
           #make it deterministic - for caching
           internal_variables = []
-          filters.keys.sort.each do |attr|
-            value = filters[attr]
+          match.keys.sort.each do |attr|
+            value = match[attr]
             value = Goo::Base::PatternIteration.new(value) if value.kind_of?(Goo::Base::Pattern)
-            patterns_for_filter(klass,attr,value,graphs,patterns,unions,
+            patterns_for_match(klass,attr,value,graphs,patterns,unions,
                                variables,internal_variables)
             graphs.uniq!
           end
         end
         filter_id = []
-        ids.each do |id|
-          filter_id << "?id = #{id.to_ntriples.to_s}"
+        if ids
+          ids.each do |id|
+            filter_id << "?id = #{id.to_ntriples.to_s}"
+          end
         end
         filter_id_str = filter_id.join " || "
 
@@ -250,7 +253,7 @@ module Goo
             next if attr_range.nil?
             range_objs = objects_new.select { |id,obj| obj.instance_of?(attr_range) }.values
             if range_objs.length > 0
-              attr_range.where(include: next_attrs, models: range_objs)
+              attr_range.where().models(range_objs).include(next_attrs).all
             end
           end
         end

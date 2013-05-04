@@ -130,4 +130,6 @@ module Goo
 
 end
 
-#require_relative "goo/validators/validators"
+Goo::Filter = Goo::Base::Filter
+Goo::Pattern = Goo::Base::Pattern
+

@@ -210,29 +210,12 @@ module Goo
         return models_by_id[id]
       end
 
-      def self.all(*options)
-        options = options.first || {}
-        unless options.length == 0 || (options.length == 1 && options[:include])
-          raise ArgumentError, ".all only accepts the include options" 
-        end
-        return self.where(options)
+      def self.where(*match)
+        return Goo::Base::Where.new(self,*match)
       end
 
-      def self.where(*options)
-        filters = options.first || {}
-        # ? a pattern right away and nothing else
-        if filters.kind_of?(Goo::Base::Pattern)      
-          filters = { :pattern => filters }
-          if options.length > 1 && options.last.instance_of?(Hash)
-            filters.merge!(options.last)
-          end
-        end
-        incl = filters.delete(:include) || []
-        models = filters.delete(:models) || []
-
-        options_load = { models: models, include: incl, filters: filters, klass: self }
-        models_by_id = Goo::SPARQL::Queries.model_load(options_load)
-        return models_by_id.values
+      def self.include(*options)
+        return Goo::Base::Where.new(self).include(*options)
       end
 
       protected

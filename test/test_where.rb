@@ -111,7 +111,8 @@ class TestWhere < MiniTest::Unit::TestCase
   def self.after_suite
     objects = [Student, University, Program, Category, Address]
     objects.each do |obj|
-      obj.all(include: obj.attributes).each do |i|
+      obj.where.include(obj.attributes).each do |i|
+
         i.delete
       end
     end
@@ -163,46 +164,60 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_all
-    cats = Category.all(include: Category.attributes)
+    cats = Category.where().include(Category.attributes).all
     cats.each do |cats|
       assert_instance_of String, cats.code
     end
-    assert University.all.length == 3
-    assert Address.all.length == 3
-    assert Category.all.length == 7
+    #equivalent
+    cats = Category.include(Category.attributes).all
+    cats.each do |cats|
+      assert_instance_of String, cats.code
+    end
+    assert University.where().length == 3
+    assert Address.where().length == 3
+    assert Category.where().length == 7
   end
 
   def test_where_1levels
-    programs = Program.where(name: "BioInformatics", university: [ name: "Stanford"  ])
+    programs = Program.where(name: "BioInformatics", university: [ name: "Stanford"  ]).all
     assert programs.length == 1
     assert programs.first.id.to_s["Stanford/BioInformatics"]
   end
 
   def test_where_2levels
-    programs = Program.where(name: "BioInformatics", university: [ address: [ country: "US" ]])
+    programs = Program.where(name: "BioInformatics", university: [ address: [ country: "US" ]]).all
     assert programs.length == 1
     assert programs.first.id.to_s["Stanford/BioInformatics"]
-    programs = Program.where(name: "BioInformatics", university: [ address: [ country: "UK" ]])
+    programs = Program.where(name: "BioInformatics", university: [ address: [ country: "UK" ]]).all
     assert programs.length == 1
     assert programs.first.id.to_s["Southampton/BioInformatics"]
    
     #any program from universities in the US
-    programs = Program.where(university: [ address: [ country: "US" ]], include: [:name])
+    programs = Program.where(university: [ address: [ country: "US" ]]).include([:name]).all
     assert programs.length == 3
     assert programs.map { |p| p.name }.sort == ["BioInformatics", "CompSci", "Medicine"]
   end
 
   def test_where_2levels_inverse
-    unis = University.where(address: [country: "US"], programs: [category: [code: "Biology"]])
+    unis = University.where(address: [country: "US"], programs: [category: [code: "Biology"]]).all
     assert unis.length == 1
     assert unis.first.id.to_s == "http://goo.org/default/university/Stanford"
-    unis = University.where(programs: [category: [code: "Biology"]], include: [:name])
+    unis = University.where(programs: [category: [code: "Biology"]]).include(:name).all
     assert unis.length == 3
     assert unis.map { |u| u.name }.sort == ["Southampton", "Stanford", "UPM"]
+
+    #equivalent
+    unis = University.where(address: [country: "US"])
+                   .and(programs: [category: [code: "Biology"]]).all
+    assert unis.length == 1
+    assert unis.first.id.to_s == "http://goo.org/default/university/Stanford"
   end
 
   def test_embed_include
-    programs = Program.all(include: [ :name, university: [:name], category: [:code]] )
+    programs = Program.include(:name)
+                  .include(university: [:name])
+                  .include(category: [:code]).all
+
     assert programs.length == 9
     programs.each do |p|
       assert_instance_of String, p.name
@@ -225,7 +240,7 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_embed_include_with_inverse
-    unis = University.all(include: [:name, programs: [:name]])
+    unis = University.include(:name, programs: [:name]).all
     unis.each do |u|
       assert_instance_of String, u.name
       assert_instance_of Array, u.programs
@@ -236,7 +251,7 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_embed_two_levels
-    unis = University.all(include: [:name, programs: [:name, category: [:code]]])
+    unis = University.include(:name, programs: [:name, category: [:code]]).all
     unis.each do |u|
       assert_instance_of String, u.name
       assert_instance_of Array, u.programs
@@ -255,8 +270,8 @@ class TestWhere < MiniTest::Unit::TestCase
 
     #students enrolled in a specific program
     students = Student.where(enrolled: 
-                             Program.find(RDF::URI.new("http://example.org/program/Stanford/BioInformatics")), 
-                  include: [:name, :birth_date, enrolled: [:name]])
+                             Program.find(RDF::URI.new("http://example.org/program/Stanford/BioInformatics")))
+                  .include(:name, :birth_date, enrolled: [:name]).all
     assert students.length == 2
     assert students.map { |x| x.name }.sort == ["Daniel","Susan"]
     
@@ -278,8 +293,8 @@ class TestWhere < MiniTest::Unit::TestCase
 
     #Students in a university
     students = Student.where(
-      enrolled: [ university: University.find("Stanford") ], 
-      include: [:name, :birth_date, enrolled: [category: [:code ]]])
+      enrolled: [ university: University.find("Stanford") ])
+      .include(:name, :birth_date, enrolled: [category: [:code ]]).all
     assert students.length == 3
     assert students.map { |x| x.name }.sort == ["Daniel","John","Susan"]
     students = students.sort_by { |x| x.name  }
@@ -302,13 +317,13 @@ class TestWhere < MiniTest::Unit::TestCase
     uniq_object_refs = categories.map { |x| x.object_id }.uniq
     assert uniq_object_refs.length == 6
 
-
   end
 
   def test_complex_include
     #Students in a university by name
-    students = Student.where(enrolled: [university: [name: "Stanford"]], 
-                  include: [:name, enrolled: [:name, university: [ :address ]]] )
+    students = Student.where(enrolled: [university: [name: "Stanford"]])
+                .include(:name)
+                .include(enrolled: [:name, university: [ :address ]]).all
 
     assert students.map { |x| x.name }.sort == ["Daniel","John","Susan"]
     students.each do |s|
@@ -325,11 +340,10 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_where_join_pattern
-    #students in two programs from soton and stanford
-    pattern = Goo::Base::Pattern.new(category: [ code: "Biology" ])
-            .join(category: [ code: "Chemistry" ])
     #louis ok
-    students = Student.where(enrolled: pattern)
+    students = Student.where(enrolled: [category: [ code: "Biology" ]])
+                        .and(enrolled: [category: [ code: "Chemistry" ]]).all
+
     assert students.map { |x| x.id.to_s } == ["http://goo.org/default/student/Louis"] 
 
 
@@ -432,7 +446,7 @@ class TestWhere < MiniTest::Unit::TestCase
     pattern = Goo::Base::Pattern.new(name: "Daniel")
                 .union(name: "Susan")
     st = Student.where(pattern, enrolled: [ category: [ code: "Medicine" ]], 
-                          include: [ :name, enrolled: [ university: [ address: [ :country]]]])
+                          include: [ :name, enrolled: [ university: [ address: [ :country ]]]])
     assert st.length == 2
     assert st.first.name != st[1].name
     st.each do |p|
@@ -445,8 +459,18 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_filter
-    #f = Filter.greater(DateTime.parse('2001-02-03')).less(DateTime.parse('2021-02-03'))
-    #student = Student.where(birth_date: f, include: [:name, programs: [:name], :birth_date])
+    #current limitation filter applies only to one attribute only.
+    #filter_birth_date = Goo::Filter.new(:birth_date) > DateTime.parse('2001-02-03')
+    #st = Student.where(filters: [filter_birth_date], include: [:name,:birth_date])
+
+    #filter_birth_date = Goo::Filter.new(:birth_date) > DateTime.parse('2001-02-03')
+    #st = Student.where(filters: [filter_birth_date], include: [:name,:birth_date])
+    #      .filter(Goo::Filter.new(:birth_date) > DateTime.parse('2001-02-03'))
+
+    #Student.filter(filter)
+
+#    f = Filter.new.greater(DateTime.parse('2001-02-03')).or.less(DateTime.parse('2021-02-03'))
+#    st = Student.where(birth_date: f, include: [:name, programs: [:name], :birth_date])
   end
 
   def test_aggregated
