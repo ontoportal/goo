@@ -13,16 +13,7 @@ module Goo
       end
 
       def process_query
-        # ? a pattern right away and nothing else
-        #if @match.kind_of?(Goo::Base::Pattern)      
-        #  @match = { :pattern => match }
-        #  if options.length > 1 && options.last.instance_of?(Hash)
-        #    @match.merge!(options.last)
-        #  end
-        #end
-
         @include << @include_embed if @include_embed.length > 0
-
 
         options_load = { models: @models, include: @include, match: @match, klass: @klass }
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
@@ -81,7 +72,7 @@ module Goo
         and_match = options.first
         and_match.each do |k,v|
           if @match.include?(k)
-            binding.pry
+            @match[k] = Goo::Pattern.new(*@match[k]).join(*v)
           else
             @match[k] = v
           end

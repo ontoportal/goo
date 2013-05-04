@@ -346,11 +346,9 @@ class TestWhere < MiniTest::Unit::TestCase
 
     assert students.map { |x| x.id.to_s } == ["http://goo.org/default/student/Louis"] 
 
-
-    pattern = Goo::Base::Pattern.new(category: [ code: "Mathematics" ])
-            .join(category: [ code: "Engineering" ])
     #daniel, robert, tim and john ok
-    students = Student.where(enrolled: pattern)
+    students = Student.where(enrolled: [category: [ code: "Mathematics" ]])
+                          .and(enrolled: [category: [ code: "Engineering" ]]).all
     assert students.map { |x| x.id.to_s }.sort == ["http://goo.org/default/student/Daniel",
     "http://goo.org/default/student/John","http://goo.org/default/student/Robert",
     "http://goo.org/default/student/Tim"] 
@@ -360,7 +358,7 @@ class TestWhere < MiniTest::Unit::TestCase
             .join(category: [ code: "Medicine" ])
     #daniel ko. a program with both categories not a student with both categories
     #no one
-    students = Student.where(enrolled: pattern)
+    students = Student.where(enrolled: pattern).all
     assert students.length == 0
 
   end
