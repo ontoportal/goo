@@ -64,7 +64,8 @@ module Goo
         if next_pattern
           range = klass.range(attr) 
           in_union = in_union || 
-                     ((next_pattern.instance_of?(Goo::Base::PatternIteration) && next_pattern.union?))
+                     ((next_pattern.instance_of?(Goo::Base::PatternIteration) && 
+                       next_pattern.union?))
           new_union_block = in_union && next_pattern.instance_of?(Goo::Base::PatternIteration)
           next_pattern.each do |next_attr,next_value|
             unions << [] if new_union_block

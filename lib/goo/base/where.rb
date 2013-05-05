@@ -80,10 +80,16 @@ module Goo
         self
       end
 
-      def union
-      end
-
-      def join
+      def or(*options)
+        and_match = options.first
+        and_match.each do |k,v|
+          if @match.include?(k)
+            @match[k] = Goo::Pattern.new(*@match[k]).union(*v)
+          else
+            @match[k] = v
+          end
+        end
+        self
       end
 
       def order

@@ -370,42 +370,32 @@ class TestWhere < MiniTest::Unit::TestCase
             .join(category: [ code: "Biology"])
 
     #louis ok
-    students = Student.where(enrolled: pattern)
+    students = Student.where(enrolled: pattern).all
     assert students.map { |x| x.id.to_s } == ["http://goo.org/default/student/Louis"] 
 
-  end
-
-  def test_where_join_pattern_direct
-    #students in programs with engineering and medicine
-    #Daniel is in two programs one has medicine (Bioinformatics) and engineering (CompSci)
-    pattern = Goo::Base::Pattern.new(enrolled: [ category: [ code: "Chemistry"] ])
-                .join(enrolled: [ category: [ code: "Engineering"] ])
-
-    students = Student.where(pattern)
-    students.map { |x| x.id.to_s } == ["http://goo.org/default/student/Daniel"]
   end
 
   def test_where_union_pattern
     #programs in medicine or engineering
     pattern = Goo::Base::Pattern.new(code: "Medicine")
                       .union(code: "Engineering")
-    prs = Program.where(category: pattern)
+    prs = Program.where(category: pattern).all
     #all of them 9
     assert prs.length == 9
    
     #programs in medicine or engineering
     pattern = Goo::Base::Pattern.new(code: "Medicine")
                       .union(code: "Chemistry")
-    prs = Program.where(category: pattern)
+    prs = Program.where(category: pattern).all
     prs.each do |p|
       assert p.id.to_s["BioInformatics"] || p.id.to_s["Medicine"]
     end
     assert prs.length == 6
 
-    #equivalent but now the triples get gathere in the union
-    pattern = Goo::Base::Pattern.new(category: [code: "Medicine"])
-                .union(category: [code: "Chemistry"])
-    prs = Program.where(pattern: pattern)
+    #directly in where
+    #programs in medicine or engineering
+    prs = Program.where(category: [code: "Medicine"])
+                   .or(category: [code: "Chemistry"]).all
     prs.each do |p|
       assert p.id.to_s["BioInformatics"] || p.id.to_s["Medicine"]
     end
