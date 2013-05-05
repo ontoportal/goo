@@ -428,11 +428,19 @@ binding.pry
     assert st.first.id.to_s["Louis"]
   end
 
-  def combine_where_patterns
-    pattern = Goo::Base::Pattern.new(name: "Daniel")
-                .union(name: "Susan")
-    st = Student.where(pattern, enrolled: [ category: [ code: "Medicine" ]], 
-                          include: [ :name, enrolled: [ university: [ address: [ :country ]]]])
+  def test_combine_where_patterns_with_include
+    st = Student.where(name: "Daniel")
+                       .or(name: "Susan")
+                       .and(enrolled: [ category: [ code: "Medicine" ]]).all
+    st.length == 2
+    st.each do |p|
+      assert (p.id.to_s["Susan"] || p.id.to_s["Daniel"])
+    end
+
+    st = Student.where(name: "Daniel")
+                       .or(name: "Susan")
+                       .and(enrolled: [ category: [ code: "Medicine" ]]) 
+                          .include(:name, enrolled: [ university: [ address: [ :country ]]]).all
     assert st.length == 2
     assert st.first.name != st[1].name
     st.each do |p|

@@ -48,7 +48,6 @@ module Goo
       def self.walk_pattern(klass, match_patterns, graphs, patterns, unions, 
                                 variables, internal_variables)
         match_patterns.each do |match,in_union|
-          binding.pry if $DEBUG_GOO
           unions << [] if in_union
           match.each do |attr,value|
             patterns_for_match(klass, attr, value, graphs, patterns,
