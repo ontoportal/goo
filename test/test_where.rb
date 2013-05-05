@@ -365,12 +365,11 @@ class TestWhere < MiniTest::Unit::TestCase
 
   def test_where_join_3patterns
     #students in two programs from soton and stanford
-    pattern = Goo::Base::Pattern.new(category: [ code: "Biology" ])
-            .join(category: [ code: "Chemistry" ])
-            .join(category: [ code: "Biology"])
-
     #louis ok
-    students = Student.where(enrolled: pattern).all
+    students = Student.where(enrolled: [category: [ code: "Biology" ]])
+                        .and(enrolled: [category: [ code: "Chemistry" ]])
+                        .and(enrolled: [category: [ code: "Biology" ]])
+                        .all
     assert students.map { |x| x.id.to_s } == ["http://goo.org/default/student/Louis"] 
 
   end
