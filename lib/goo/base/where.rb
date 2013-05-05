@@ -5,7 +5,7 @@ module Goo
 
       def initialize(klass,*match_patterns)
         @klass = klass
-        @match = match_patterns.first
+        @pattern = match_patterns.first.nil? ? nil : Pattern.new(match_patterns.first) 
         @models = nil
         @include = []
         @include_embed = {}
@@ -15,7 +15,7 @@ module Goo
       def process_query
         @include << @include_embed if @include_embed.length > 0
 
-        options_load = { models: @models, include: @include, match: @match, klass: @klass }
+        options_load = { models: @models, include: @include, graph_match: @pattern, klass: @klass }
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
         @result = models_by_id.values
       end
@@ -70,25 +70,13 @@ module Goo
 
       def and(*options)
         and_match = options.first
-        and_match.each do |k,v|
-          if @match.include?(k)
-            @match[k] = Goo::Pattern.new(*@match[k]).join(*v)
-          else
-            @match[k] = v
-          end
-        end
+        @pattern = @pattern.join(and_match)
         self
       end
 
       def or(*options)
-        and_match = options.first
-        and_match.each do |k,v|
-          if @match.include?(k)
-            @match[k] = Goo::Pattern.new(*@match[k]).union(*v)
-          else
-            @match[k] = v
-          end
-        end
+        or_match = options.first
+        @pattern = @pattern.union(or_match)
         self
       end
 

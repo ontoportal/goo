@@ -35,24 +35,23 @@ module Goo
         @patterns = patterns
       end
 
-      def recursive_each(patterns,&block)
+      def recursive_each(patterns,pre_union,&block)
+        binding.pry if $DEBUG_GOO
+        union = (pre_union || patterns.kind_of?(Union)) && (!patterns.kind_of?(Join))
         patterns = patterns.patterns if patterns.kind_of?(Pattern)
         patterns.each do |pat|
           if pat.kind_of?(Pattern)
-            recursive_each(pat.patterns,&block)
+            union = (union || pre_union || pat.kind_of?(Union)) && (!pat.kind_of?(Join))
+            binding.pry if $DEBUG_GOO
+            recursive_each(pat.patterns,union,&block)
           else
-            attr = pat.keys.first
-            value = pat[attr]
-            yield [attr,value] 
+            yield [pat,union]
           end
         end
       end
 
       def each(&block)
-        recursive_each(@patterns,&block)
-      end
-      def union?
-        return @patterns.kind_of?(Union)
+        recursive_each(@patterns,false,&block)
       end
     end
 

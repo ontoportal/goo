@@ -133,7 +133,7 @@ class TestWhere < MiniTest::Unit::TestCase
       end
     end
 
-    st = University.where(name: "Stanford", include: University.attributes)
+    st = University.where(name: "Stanford").include(University.attributes).all
     assert st.length == 1
     st = st.first
     assert assert st.instance_of?(University)
@@ -143,7 +143,7 @@ class TestWhere < MiniTest::Unit::TestCase
     end
     #
     #all includes inverse
-    st = University.where(name: "Stanford", include: University.attributes(:all))
+    st = University.where(name: "Stanford").include(University.attributes(:all)).all
     assert st.length == 1
     st = st.first
     assert st.instance_of?(University)
@@ -377,60 +377,59 @@ class TestWhere < MiniTest::Unit::TestCase
 
   def test_where_union_pattern
     #programs in medicine or engineering
-    pattern = Goo::Base::Pattern.new(code: "Medicine")
-                      .union(code: "Engineering")
-    prs = Program.where(category: pattern).all
+    prs = Program.where(category: [code: "Medicine"])
+                        .or(category: [code: "Engineering"]).all
     #all of them 9
     assert prs.length == 9
    
     #programs in medicine or engineering
-    pattern = Goo::Base::Pattern.new(code: "Medicine")
-                      .union(code: "Chemistry")
-    prs = Program.where(category: pattern).all
-    prs.each do |p|
-      assert p.id.to_s["BioInformatics"] || p.id.to_s["Medicine"]
-    end
-    assert prs.length == 6
-
-    #directly in where
-    #programs in medicine or engineering
     prs = Program.where(category: [code: "Medicine"])
-                   .or(category: [code: "Chemistry"]).all
+                        .or(category: [code: "Chemistry"]).all
     prs.each do |p|
       assert p.id.to_s["BioInformatics"] || p.id.to_s["Medicine"]
     end
     assert prs.length == 6
-
   end
 
-  def test_where_union_direct
-    #students named Daniel or Susan
-    pattern = Goo::Base::Pattern.new(name: "Daniel")
-                .union(name: "Susan")
+  def where_direct_attributes
+    st = Student.where(name: "Daniel")
+                  .or(name: "Louis").all
 
-    st = Student.where(pattern,include: [:name])
-    assert st.length == 2
-    assert st.first.name != st[1].name
-    st.each do |p|
-      assert (p.name == "Susan" || p.name == "Daniel")
-    end
+#                  .or(name: "Lee")
+#                  .or(name: "John").all
+    
+binding.pry
+    assert st.length == 4
+
+    st = Student.where(name: "Daniel")
+                  .and(name: "John").all
+    assert st.length == 0
+
+    st = Student.where(name: "Daniel")
+                  .and(birth_date: DateTime.parse('1978-01-04')).all
+    assert st.length == 1
+    assert st.first.id.to_s["Daniel"]
+
+    st = Student.where(name: "Daniel")
+                  .or(name: "Louis")
+                  .and(birth_date: DateTime.parse('1978-01-04'))
+    assert st.length == 1
+    assert st.first.id.to_s["Daniel"]
   end
 
   def test_where_pattern_union_combined_with_join
-    union = Goo::Base::Pattern.new(name: "Daniel")
-        .union(name: "Louis")
-        .union(name: "Lee")
-        .union(name: "John")
-
-    join = Goo::Base::Pattern.new(category: [ code: "Medicine" ])
-            .join(category: [ code: "Chemistry" ])
-
-    st = Student.where(union, enrolled: join)
+    st = Student.where(name: "Daniel")
+                  .or(name: "Louis")
+                  .or(name: "Lee")
+                  .or(name: "John")
+                  .and(enrolled: [category: [ code: "Medicine" ]])
+                  .and(enrolled: [category: [ code: "Chemistry" ]]).all
+    
     assert st.length == 1
     assert st.first.id.to_s["Louis"]
   end
 
-  def test_combine_where_patterns
+  def combine_where_patterns
     pattern = Goo::Base::Pattern.new(name: "Daniel")
                 .union(name: "Susan")
     st = Student.where(pattern, enrolled: [ category: [ code: "Medicine" ]], 

@@ -45,9 +45,22 @@ module Goo
         end
       end
 
+      def self.walk_pattern(klass, match_patterns, graphs, patterns, unions, 
+                                variables, internal_variables)
+        match_patterns.each do |match,in_union|
+          binding.pry if $DEBUG_GOO
+          unions << [] if in_union
+          match.each do |attr,value|
+            patterns_for_match(klass, attr, value, graphs, patterns,
+                               unions, variables, internal_variables,
+                               subject=:id,in_union=in_union)
+          end
+        end
+      end
+
       def self.patterns_for_match(klass,attr,value,graphs,patterns,unions,
                                    variables,internal_variables,subject=:id,in_union=false)
-        if value.respond_to?(:each) || value.instance_of?(Goo::Base::PatternIteration) 
+        if value.respond_to?(:each)
           next_pattern = value.instance_of?(Array) ? value.first : value
           value = "internal_join_var_#{internal_variables.length}".to_sym
           internal_variables << value
@@ -63,12 +76,7 @@ module Goo
         graphs << graph if graph
         if next_pattern
           range = klass.range(attr) 
-          in_union = in_union || 
-                     ((next_pattern.instance_of?(Goo::Base::PatternIteration) && 
-                       next_pattern.union?))
-          new_union_block = in_union && next_pattern.instance_of?(Goo::Base::PatternIteration)
           next_pattern.each do |next_attr,next_value|
-            unions << [] if new_union_block
             patterns_for_match(range, next_attr, next_value, graphs,
                   patterns, unions, variables, internal_variables, subject=value, in_union)
           end
@@ -84,7 +92,7 @@ module Goo
         klass = options[:klass]
         incl = options[:include]
         models = options[:models]
-        match = options[:match]
+        graph_match = options[:graph_match]
         collection = options[:collection]
         store = options[:store] || :main
 
@@ -145,16 +153,13 @@ module Goo
             graphs << graph if graph
           end
         end
-        if match
+        if graph_match
           #make it deterministic - for caching
           internal_variables = []
-          match.keys.sort.each do |attr|
-            value = match[attr]
-            value = Goo::Base::PatternIteration.new(value) if value.kind_of?(Goo::Base::Pattern)
-            patterns_for_match(klass,attr,value,graphs,patterns,unions,
-                               variables,internal_variables)
-            graphs.uniq!
-          end
+          graph_match_iteration = Goo::Base::PatternIteration.new(graph_match) 
+          walk_pattern(klass,graph_match_iteration,graphs,patterns,unions,
+                             variables,internal_variables)
+          graphs.uniq!
         end
         filter_id = []
         if ids
