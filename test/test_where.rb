@@ -390,14 +390,11 @@ class TestWhere < MiniTest::Unit::TestCase
     assert prs.length == 6
   end
 
-  def where_direct_attributes
+  def test_where_direct_attributes
     st = Student.where(name: "Daniel")
-                  .or(name: "Louis").all
-
-#                  .or(name: "Lee")
-#                  .or(name: "John").all
-    
-binding.pry
+                  .or(name: "Louis")
+                  .or(name: "Lee")
+                  .or(name: "John").all
     assert st.length == 4
 
     st = Student.where(name: "Daniel")
@@ -414,6 +411,7 @@ binding.pry
                   .and(birth_date: DateTime.parse('1978-01-04'))
     assert st.length == 1
     assert st.first.id.to_s["Daniel"]
+
   end
 
   def test_where_pattern_union_combined_with_join
