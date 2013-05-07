@@ -55,8 +55,13 @@ module Goo
           end
           filter_var = inspected_patterns[filter_pattern_match]
           if !filter_operation.value.instance_of?(Goo::Filter)
-            filter_operations << ("?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
-              " #{RDF::Literal.new(filter_operation.value).to_ntriples}")
+            unless filter_operation.operator == :unbound
+              filter_operations << ("?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
+                " #{RDF::Literal.new(filter_operation.value).to_ntriples}")
+            else
+              filter_operations << "!BOUND(?#{filter_var.to_s})"
+              return :optional
+            end
           else
             filter_operations << "#{sparql_op_string(filter_operation.operator)}" 
             query_filter_sparql(klass,filter_operation.value,filter_patterns,
@@ -67,8 +72,7 @@ module Goo
 
       def self.query_pattern(klass,attr,value=nil,subject=:id)
         value = value.id if value.class.respond_to?(:model_settings)
-        klass.inverse?(attr) rescue binding.pry
-        if klass.inverse?(attr)
+        if klass.attributes(:all).include?(attr) && klass.inverse?(attr)
           inverse_opts = klass.inverse_opts(attr)
           on_klass = inverse_opts[:on]
           inverse_klass = on_klass.respond_to?(:model_name) ? on_klass: Goo.models[on_klass]
@@ -82,9 +86,22 @@ module Goo
           predicate = inverse_klass.attribute_uri(inverse_opts[:attribute])
           return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, subject ]]
         else
-          predicate = klass.attribute_uri(attr)
+          predicate = nil
+          if attr.is_a?(Symbol) 
+            predicate = klass.attribute_uri(attr)
+            if predicate.nil?
+              binding.pry
+              predicate=Goo.vocabulary(nil)[attr]
+            end
+          elsif attr.is_a?(RDF::URI)
+            predicate = attr
+          else
+            raise ArgumentError, "Unknown attribute param for query `#{attr}`"
+          end
+          #unknown predicate
           return [klass.uri_type, [ subject , predicate , value.nil? ? attr : value]]
         end
+
       end
 
       def self.walk_pattern(klass, match_patterns, graphs, patterns, unions, 
@@ -223,12 +240,18 @@ module Goo
           inspected_patterns = {}
           query_filters.each do |query_filter|
             filter_operations = []
-            query_filter_sparql(klass,query_filter,filter_patterns,filter_graphs,
+            type = query_filter_sparql(klass,query_filter,filter_patterns,filter_graphs,
                                                 filter_operations, internal_variables,
                                                  inspected_patterns)
             query_filter_str << filter_operations.join(" ")
             graphs.concat(filter_graphs) if filter_graphs.length > 0
-            patterns.concat(filter_patterns) if filter_patterns.length > 0
+            if filter_patterns.length > 0
+              if type == :optional
+                optional_patterns.concat(filter_patterns)
+              else
+                patterns.concat(filter_patterns)
+              end
+            end
           end
         end
 

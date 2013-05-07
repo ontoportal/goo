@@ -44,6 +44,12 @@ module Goo
         @filter_tree << FILTER_TUPLE.new(:and,value)
         self
       end
+
+      def unbound
+        @filter_tree << FILTER_TUPLE.new(:unbound,nil)
+        self
+      end
+
     end
   end
 end

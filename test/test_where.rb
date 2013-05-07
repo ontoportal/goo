@@ -60,6 +60,7 @@ class Student < Goo::Base::Resource
   attribute :name, enforce: [ :existence, :unique ]
   attribute :enrolled, enforce: [:list, :program]
   attribute :birth_date, enforce: [:date_time, :existence]
+  attribute :awards, enforce: [:list]
 end
 
 
@@ -95,6 +96,9 @@ class TestWhere < MiniTest::Unit::TestCase
       end
       STUDENTS.each do |st_data|
         st = Student.new(name: st_data[0], birth_date: st_data[1])
+        if st.name["Daniel"] || st.name["Susan"]
+          st.awards = st.name["Daniel"] ? ["award1" , "award2"] : ["award1"]
+        end
         programs = []
         st_data[2].each do |pr|
           pr = Program.where(name: pr[0], university: [name: pr[1] ])
@@ -489,22 +493,17 @@ class TestWhere < MiniTest::Unit::TestCase
     st = Student.where.filter(f).all
     assert st.map { |x| x.id.to_s } == ["http://goo.org/default/student/Louis"]
 
-    f = Goo::Filter.new(:enrolled).unbound
+    #students without awards
+    f = Goo::Filter.new(:awards).unbound
     st = Student.where.filter(f)
-                      .include(:name,:birth_date)
+                      .include(:name)
                       .all
-                              
+    assert st.map { |x| x.name }.sort == ["John","Tim","Louis","Lee","Robert"].sort
+
+    #unbound on some non existing property
     f = Goo::Filter.new(enrolled: [ :xxx ]).unbound
     st = Student.where.filter(f).all
-
-    #filter_birth_date = Goo::Filter.new(:birth_date) > DateTime.parse('2001-02-03')
-    #st = Student.where(filters: [filter_birth_date], include: [:name,:birth_date])
-    #      .filter(Goo::Filter.new(:birth_date) > DateTime.parse('2001-02-03'))
-
-    #Student.filter(filter)
-
-#    f = Filter.new.greater(DateTime.parse('2001-02-03')).or.less(DateTime.parse('2021-02-03'))
-#    st = Student.where(birth_date: f, include: [:name, programs: [:name], :birth_date])
+    assert st.length == 7
   end
 
   def test_aggregated
