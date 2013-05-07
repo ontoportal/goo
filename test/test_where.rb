@@ -453,7 +453,45 @@ class TestWhere < MiniTest::Unit::TestCase
   def test_filter
     #current limitation filter applies only to one attribute only.
     #filter_birth_date = Goo::Filter.new(:birth_date) > DateTime.parse('2001-02-03')
-    #st = Student.where(filters: [filter_birth_date], include: [:name,:birth_date])
+
+    f = Goo::Filter.new(:birth_date) > DateTime.parse('1978-01-03')
+    st = Student.where.filter(f).all
+    assert st.map { |x| x.id.to_s }.sort == ["http://goo.org/default/student/Daniel",
+ "http://goo.org/default/student/Lee",
+ "http://goo.org/default/student/Louis",
+ "http://goo.org/default/student/Robert"]
+
+    f = (Goo::Filter.new(:birth_date) <= DateTime.parse('1978-01-01'))
+          .or(Goo::Filter.new(:birth_date) >= DateTime.parse('1978-01-07'))
+    $DEBUG_GOO = true
+    st = Student.where.filter(f).all
+    assert st.map { |x| x.id.to_s }.sort == [
+ "http://goo.org/default/student/Robert",
+ "http://goo.org/default/student/Susan"]
+    binding.pry
+
+    f = (Goo::Filter.new(:birth_date) <= DateTime.parse('1978-01-01'))\
+          or (Goo::Filter.new(:name) == "Daniel")
+    st = Student.where.filter(f).all
+    binding.pry
+
+
+    f = (Goo::Filter.new(:birth_date) > DateTime.parse('1978-01-01'))\
+          and (Goo::Filter.new(:birth_date) < DateTime.parse('1978-01-07'))
+    st = Student.where.filter(f).all
+    binding.pry
+
+
+    f = Goo::Filter.new(enrolled: [ :credits ]) > 10
+    st = Student.where.filter(f).all
+
+    f = Goo::Filter.new(:enrolled).unbound
+    st = Student.where.filter(f)
+                      .include(:name,:birth_date)
+                      .all
+                              
+    f = Goo::Filter.new(enrolled: [ :xxx ]).unbound
+    st = Student.where.filter(f).all
 
     #filter_birth_date = Goo::Filter.new(:birth_date) > DateTime.parse('2001-02-03')
     #st = Student.where(filters: [filter_birth_date], include: [:name,:birth_date])

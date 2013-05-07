@@ -10,12 +10,16 @@ module Goo
         @include = []
         @include_embed = {}
         @result = nil
+        @filters = nil
       end
 
       def process_query
         @include << @include_embed if @include_embed.length > 0
 
-        options_load = { models: @models, include: @include, graph_match: @pattern, klass: @klass }
+        options_load = { models: @models, include: @include,
+                         graph_match: @pattern, klass: @klass,
+                         filters: @filters }
+
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
         @result = models_by_id.values
       end
@@ -83,7 +87,9 @@ module Goo
       def order
       end
 
-      def filter
+      def filter(filter)
+        (@filters ||= []) << filter
+        self
       end
 
       def aggregate
