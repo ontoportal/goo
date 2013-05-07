@@ -90,7 +90,6 @@ module Goo
           if attr.is_a?(Symbol) 
             predicate = klass.attribute_uri(attr)
             if predicate.nil?
-              binding.pry
               predicate=Goo.vocabulary(nil)[attr]
             end
           elsif attr.is_a?(RDF::URI)

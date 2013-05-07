@@ -233,10 +233,10 @@ class TestWhere < MiniTest::Unit::TestCase
       assert p.id.to_s[p.university.name]
       PROGRAMS_AND_CATEGORIES.each do |x|
         if p.id.to_s[x[0]]
-          assert x[1].length == p.category.length
+          assert x[2].length == p.category.length
           p.category.each do |c|
             assert_instance_of String, c.code
-            assert (x[1].index c.code)
+            assert (x[2].index c.code)
           end
           break
         end
