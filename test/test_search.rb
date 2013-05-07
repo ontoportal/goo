@@ -2,22 +2,34 @@ require_relative 'test_case'
 
 TestInit.configure_goo
 
-
 def get_doc(res)
-  attrs = {
+  doc = {
+      :resource_id => res.resource_id.value,
+      :prefLabel => res.prefLabel,
+      :synonym => res.synonym,
+      :notation => res.notation,
       :submissionAcronym => res.submissionAcronym,
-      :submissionId => res.submissionId
+      :submissionId => res.submissionId,
+      :definition => res.definition
   }
+  all_attrs = res.attributes.dup
+  all_attrs.delete :internals
+  all_attrs.delete :uuid
+  all_attrs.delete :id
+  props = []
 
-  object_id = res.resource_id.value
-  doc = res.attributes.dup
-  doc.delete :internals
-  doc.delete :uuid
-
-  doc = doc.merge(attrs)
-
-  doc[:resource_id] = object_id
-
+  all_attrs.each do |attr_key, attr_val|
+    if (!doc.include?(attr_key))
+      if (attr_val.is_a?(Array))
+        attr_val.uniq!
+        attr_val.map { |val| props << val.value.strip }
+      else
+        props << attr_val.value.strip
+      end
+    end
+  end
+  props.uniq!
+  doc[:property] = props
   return doc
 end
 
@@ -31,8 +43,11 @@ class TermSearch < Goo::Base::Resource
   attribute :submissionId, :not_nil => true, :single_value => true
 
   # dummy attributes to validate non-searchable fileds
-  attribute :semanticType
+  attribute :notation
   attribute :umlsCui
+  attribute :prop1
+  attribute :prop2
+  attribute :prop3
 
   search_options :index_id => lambda { |t| "#{t.id}_#{t.submissionAcronym}_#{t.submissionId}" },
                  :document => lambda { |t| get_doc(t) }
@@ -50,21 +65,26 @@ class TestModelSearch < TestCase
         :id => "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Melanoma",
         :prefLabel => "Melanoma",
         :synonym => ["Cutaneous Melanoma", "Skin Cancer", "Malignant Melanoma"],
-        :definition => "Melanoma refers to a malignant skin cancer",
+        :definition => ["Melanoma refers to a malignant skin cancer"],
         :submissionAcronym => "NCIT",
         :submissionId => 2,
-        :semanticType => "Neoplastic Process",
-        :umlsCui => "C0025202"
+        :notation => "Melanoma",
+        :umlsCui => "C0025202",
+        :prop1 => ["test prop1 [1] for Melanoma", "test prop1 [2] for Melanoma"],
+        :prop2 => "another prop 2 for Melanoma"
       ),
       TermSearch.new(
-          :id => "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Neoplasm",
-          :prefLabel => "Neoplasm",
-          :synonym => ["tumor", "Neoplasms", "NEOPLASMS BENIGN", "MALIGNANT AND UNSPECIFIED (INCL CYSTS AND POLYPS)", "Neoplasia", "Neoplastic Growth"],
-          :definition => "A benign or malignant tissue growth resulting from uncontrolled cell proliferation. Benign neoplastic cells resemble normal cells without exhibiting significant cytologic atypia, while malignant cells exhibit overt signs such as dysplastic features, atypical mitotic figures, necrosis, nuclear pleomorphism, and anaplasia. Representative examples of benign neoplasms include papillomas, cystadenomas, and lipomas; malignant neoplasms include carcinomas, sarcomas, lymphomas, and leukemias.",
-          :submissionAcronym => "NCIT",
-          :submissionId => 2,
-          :semanticType => "Neoplastic Process",
-          :umlsCui => "C0375111"
+        :id => "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Neoplasm",
+        :prefLabel => "Neoplasm",
+        :synonym => ["tumor", "Neoplasms", "NEOPLASMS BENIGN", "MALIGNANT AND UNSPECIFIED (INCL CYSTS AND POLYPS)", "Neoplasia", "Neoplastic Growth"],
+        :definition => ["A benign or malignant tissue growth resulting from uncontrolled cell proliferation. Benign neoplastic cells resemble normal cells without exhibiting significant cytologic atypia, while malignant cells exhibit overt signs such as dysplastic features, atypical mitotic figures, necrosis, nuclear pleomorphism, and anaplasia. Representative examples of benign neoplasms include papillomas, cystadenomas, and lipomas; malignant neoplasms include carcinomas, sarcomas, lymphomas, and leukemias."],
+        :submissionAcronym => "NCIT",
+        :submissionId => 2,
+        :notation => "Neoplasm",
+        :umlsCui => "C0375111",
+        :prop1 => ["test prop1 [1] for Neoplasm", "test prop1 [2] for Neoplasm"],
+        :prop2 => "another prop 2 for Neoplasm",
+        :prop3 => "this is prop3 for Neoplasm"
       )
     ]
   end
