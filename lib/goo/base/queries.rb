@@ -546,6 +546,7 @@ eos
 
       filter = ""
       if all_attributes
+        vars = " * "
         patterns[graph_id] << "?subject ?predicate ?object ."
         filter = "FILTER (!isBlank(?object))"
       end
@@ -579,7 +580,11 @@ eos
         vars = "(COUNT(?subject) as ?count)"
       elsif offset_page
         page = "OFFSET #{offset_page} LIMIT #{size_page}"
-        vars = "?subject"
+        if all_attributes
+          vars = " * "
+        else
+          vars = "?subject"
+        end
       end
 
       if items
