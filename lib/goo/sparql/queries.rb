@@ -4,6 +4,19 @@ require 'sparql/client/query'
 module Goo
   module SPARQL
     module Queries
+
+      def self.sparql_op_string(op)
+        case op
+        when :or
+          return "||"
+        when :and
+          return "&&"
+        when :==
+          return "="
+        end
+        return op.to_s
+      end
+
       def self.duplicate_attribute_value?(model,attr,store=:main)
         value = model.instance_variable_get("@#{attr}")
         if !value.instance_of? Array
@@ -24,25 +37,30 @@ module Goo
       end
 
       def self.query_filter_sparql(klass,filter,filter_patterns,filter_graphs,
-                                   filter_operations,internal_variables)
+                                   filter_operations,internal_variables,inspected_patterns)
         #create a object variable to project the value in the filter
         filter.filter_tree.each do |filter_operation|
           filter_pattern_match = {}
           if filter.pattern.instance_of?(Symbol)
             filter_pattern_match[filter.pattern] = []
+          else
+            filter_pattern_match = filter.pattern
           end
-          attr = filter_pattern_match.keys.first
-          patterns_for_match(klass, attr, filter_pattern_match[attr], filter_graphs, filter_patterns,
-                                 [],internal_variables,
-                                 subject=:id,in_union=false)
-          filter_var = internal_variables.last
+          unless inspected_patterns.include?(filter_pattern_match)
+            attr = filter_pattern_match.keys.first
+            patterns_for_match(klass, attr, filter_pattern_match[attr], filter_graphs, filter_patterns,
+                                   [],internal_variables,
+                                   subject=:id,in_union=false)
+            inspected_patterns[filter_pattern_match] = internal_variables.last
+          end
+          filter_var = inspected_patterns[filter_pattern_match]
           if !filter_operation.value.instance_of?(Goo::Filter)
-            filter_operations << ("?#{filter_var.to_s} #{filter_operation.operator.to_s} " +
+            filter_operations << ("?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
               " #{RDF::Literal.new(filter_operation.value).to_ntriples}")
           else
-            filter_operations << "#{filter_operation.operator.to_s}" 
-            query_filter_sparql(klass,filter,filter_operation.value,
-                                filter_graphs,filter_operations,internal_variables)
+            filter_operations << "#{sparql_op_string(filter_operation.operator)}" 
+            query_filter_sparql(klass,filter_operation.value,filter_patterns,
+                                filter_graphs,filter_operations,internal_variables,inspected_patterns)
           end
         end
       end
@@ -83,8 +101,12 @@ module Goo
 
       def self.patterns_for_match(klass,attr,value,graphs,patterns,unions,
                                   internal_variables,subject=:id,in_union=false)
-        if value.respond_to?(:each)
+        if value.respond_to?(:each) || value.instance_of?(Symbol)
           next_pattern = value.instance_of?(Array) ? value.first : value
+
+          #for filters
+          next_pattern = { next_pattern => [] } if next_pattern.instance_of?(Symbol)
+
           value = "internal_join_var_#{internal_variables.length}".to_sym
           internal_variables << value
         end
@@ -198,15 +220,18 @@ module Goo
         if query_filters
           filter_patterns = []
           filter_graphs = []
+          inspected_patterns = {}
           query_filters.each do |query_filter|
             filter_operations = []
             query_filter_sparql(klass,query_filter,filter_patterns,filter_graphs,
-                                                filter_operations, internal_variables)
+                                                filter_operations, internal_variables,
+                                                 inspected_patterns)
             query_filter_str << filter_operations.join(" ")
             graphs.concat(filter_graphs) if filter_graphs.length > 0
             patterns.concat(filter_patterns) if filter_patterns.length > 0
           end
         end
+
 
         client = Goo.sparql_query_client(store)
         select = client.select(*variables).distinct()
@@ -223,6 +248,7 @@ module Goo
           end
         end
         select.from(graphs)
+        binding.pry if $DEBUG_GOO
 
         found = Set.new
         list_attributes = klass.attributes(:list)

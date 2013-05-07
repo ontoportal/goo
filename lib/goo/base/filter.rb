@@ -35,6 +35,11 @@ module Goo
         self
       end
 
+      def ==(value)
+        @filter_tree << FILTER_TUPLE.new(:==,value)
+        self
+      end
+
       def and(value)
         @filter_tree << FILTER_TUPLE.new(:and,value)
         self

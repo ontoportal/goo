@@ -2,9 +2,9 @@ require_relative 'test_case'
 
 GooTest.configure_goo
 
-PROGRAMS_AND_CATEGORIES = [ ["BioInformatics",["Medicine","Biology","Computer Science"]],
-            ["CompSci",["Engineering","Mathematics","Computer Science", "Electronics"]],
-            ["Medicine", ["Medicine", "Chemistry", "Biology"]]]
+PROGRAMS_AND_CATEGORIES = [ ["BioInformatics", 8, ["Medicine","Biology","Computer Science"]],
+            ["CompSci", 5, ["Engineering","Mathematics","Computer Science", "Electronics"]],
+            ["Medicine",10, ["Medicine", "Chemistry", "Biology"]]]
 
 STUDENTS = [
   ["Susan", DateTime.parse('1978-01-01'), [["BioInformatics", "Stanford"]] ],
@@ -44,6 +44,7 @@ class Program < Goo::Base::Resource
   attribute :students, inverse: { on: :student, attribute: :enrolled }
   attribute :university, enforce: [ :existence, :university ]
   attribute :category, enforce: [ :existence, :category, :list ]
+  attribute :credits, enforce: [ :existence, :integer]
   def self.id_generator(p)
     return RDF::URI.new("http://example.org/program/#{p.university.name}/#{p.name}")
   end
@@ -80,12 +81,12 @@ class TestWhere < MiniTest::Unit::TestCase
       ["Stanford", "Southampton", "UPM"].each do |uni_name|
         if University.find(uni_name).nil?
           University.new(name: uni_name, address: addresses[uni_name]).save
-          PROGRAMS_AND_CATEGORIES.each do |p,cs|
+          PROGRAMS_AND_CATEGORIES.each do |p,credits,cs|
             categories = []
             cs.each do |c|
               categories << (Category.find(c) || Category.new(code: c).save)
             end
-            prg = Program.new(name: p, category: categories, 
+            prg = Program.new(name: p, category: categories, credits: credits,
                               university: University.find(uni_name, include: [:name]))
             binding.pry if !prg.valid?
             prg.save if !prg.exist?
@@ -463,27 +464,30 @@ class TestWhere < MiniTest::Unit::TestCase
 
     f = (Goo::Filter.new(:birth_date) <= DateTime.parse('1978-01-01'))
           .or(Goo::Filter.new(:birth_date) >= DateTime.parse('1978-01-07'))
-    $DEBUG_GOO = true
     st = Student.where.filter(f).all
     assert st.map { |x| x.id.to_s }.sort == [
  "http://goo.org/default/student/Robert",
  "http://goo.org/default/student/Susan"]
-    binding.pry
 
-    f = (Goo::Filter.new(:birth_date) <= DateTime.parse('1978-01-01'))\
-          or (Goo::Filter.new(:name) == "Daniel")
+    f = (Goo::Filter.new(:birth_date) <= DateTime.parse('1978-01-01'))
+          .or(Goo::Filter.new(:name) == "Daniel")
     st = Student.where.filter(f).all
-    binding.pry
+    assert st.map { |x| x.id.to_s }.sort == [
+ "http://goo.org/default/student/Daniel",
+ "http://goo.org/default/student/Susan"]
 
-
-    f = (Goo::Filter.new(:birth_date) > DateTime.parse('1978-01-01'))\
-          and (Goo::Filter.new(:birth_date) < DateTime.parse('1978-01-07'))
+    f = (Goo::Filter.new(:birth_date) > DateTime.parse('1978-01-02'))
+          .and(Goo::Filter.new(:birth_date) < DateTime.parse('1978-01-06'))
     st = Student.where.filter(f).all
-    binding.pry
+    assert st.map { |x| x.id.to_s }.sort == [
+ "http://goo.org/default/student/Daniel",
+ "http://goo.org/default/student/Louis",
+ "http://goo.org/default/student/Tim"]
 
 
-    f = Goo::Filter.new(enrolled: [ :credits ]) > 10
+    f = Goo::Filter.new(enrolled: [ :credits ]) > 8
     st = Student.where.filter(f).all
+    assert st.map { |x| x.id.to_s } == ["http://goo.org/default/student/Louis"]
 
     f = Goo::Filter.new(:enrolled).unbound
     st = Student.where.filter(f)
