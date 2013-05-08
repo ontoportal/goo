@@ -559,24 +559,7 @@ class TestWhere < MiniTest::Unit::TestCase
       assert (u.name == "UPM" &&  u.aggregates.first.value == 2) ||
           (u.aggregates.first.value == 3)
     end
-    
 
-    #universities with more than 3 students
-    #universities where students per program is > 20 
-    #
-    #universities with more than two addresses in the US
-  end
-
-  def test_where_with_lambda
-  end
-
-  def test_unbound
-    #unbound ... like with no parents
-    #not exist SPARQL 1.1
-  end
-
-  def test_multiple
-    #one student in two programs
   end
 
 end
