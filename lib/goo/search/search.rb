@@ -1,8 +1,6 @@
 require 'rsolr'
 
 module Goo
-
-
   module Search
 
     def self.included(base)
