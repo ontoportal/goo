@@ -25,19 +25,19 @@ class TestCollection < MiniTest::Unit::TestCase
   end
 
   def test_collection
-    john = User.find("John", include: [:name]) || 
+    john = User.find("John").include(:name).first || 
       User.new(name: "John").save()
-    issue = Issue.find("issue1", collection: john) || 
+    issue = Issue.find("issue1", collection: john).first || 
       Issue.new(description: "issue1", owner: john).save()
     assert !Issue.find("issue1", collection: john).nil?
     assert_raises ArgumentError do
-      Issue.find("issue1")
+      Issue.find("issue1").first
     end
     assert issue.owner.id == john.id
 
     #same reference
-    assert john.object_id == Issue.find("issue1",collection: john).owner.object_id
-    owner = Issue.find("issue1",collection: john).owner
+    assert john.object_id == Issue.find("issue1",collection: john).first.owner.object_id
+    owner = Issue.find("issue1",collection: john).first.owner
 
     assert_equal(1,
       GooTest.count_pattern(
@@ -61,12 +61,12 @@ class TestCollection < MiniTest::Unit::TestCase
     #exist? should use collection
     #same ids in different collections can save
     #different  
-    john = User.find("John", include: [:name]) || 
+    john = User.find("John").include(:name).first || 
       User.new(name: "John").save()
-    less = User.find("Less", include: [:name]) || 
+    less = User.find("Less").include(:name).first || 
       User.new(name: "Less").save()
 
-    issue = Issue.find("issue1", collection: john) || 
+    issue = Issue.find("issue1", collection: john).first || 
       Issue.new(description: "issue1", owner: john).save()
     assert_equal(1,
       GooTest.count_pattern(
@@ -74,45 +74,36 @@ class TestCollection < MiniTest::Unit::TestCase
 
     assert !Issue.new(description: "issue1", owner: less).exist?
     #different owner
-    issue = Issue.find("issue1", collection: less) || 
+    issue = Issue.find("issue1", collection: less).first || 
       Issue.new(description: "issue1", owner: less).save()
     assert_equal(1,
       GooTest.count_pattern(
         "GRAPH #{less.id.to_ntriples} { #{issue.id.to_ntriples} a ?x }" ))
 
-    assert Issue.find("issue1", collection: less).exist?
-    assert Issue.find("issue1", collection: john).exist?
-    Issue.find("issue1", collection: john).delete
-    Issue.find("issue1", collection: less).delete
+    assert Issue.find("issue1", collection: less).first.exist?
+    assert Issue.find("issue1", collection: john).first.exist?
+    Issue.find("issue1", collection: john).first.delete
+    Issue.find("issue1", collection: less).first.delete
     john.delete
     less.delete
   end
 
   def test_inverse_on_collection
-    john = User.find("John", include: [:name]) || 
+    skip "Not supported inverse on collection"
+
+    john = User.find("John").include(:name).first || 
       User.new(name: "John").save()
     5.times do |i|
       Issue.new(description: "issue_#{i}", owner: john).save
     end
     
-    User.find("John",include: [:issues]).issues
-    User.find("John",include: [issues: [:desciption]]).issues
+    binding.pry
+    User.find("John",include: [:issues]).first.issues
+    User.find("John",include: [issues: [:desciption]]).first.issues
 
     5.times do |i|
       Issue.find("issue_#{i}", collection: john).delete
     end
-  end
-
-  def test_change_owner_changes_collections
-    binding.pry
-  end
-
-  def test_multiple_collection
-    #something like a read only object
-    #that collection: :all
-    #returns an aggregation
-    #it cannot be save
-    #collection attribute returns multiple owners
   end
 
 end
