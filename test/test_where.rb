@@ -85,10 +85,10 @@ class TestWhere < MiniTest::Unit::TestCase
           PROGRAMS_AND_CATEGORIES.each do |p,credits,cs|
             categories = []
             cs.each do |c|
-              categories << (Category.find(c) || Category.new(code: c).save)
+              categories << (Category.find(c).first || Category.new(code: c).save)
             end
             prg = Program.new(name: p, category: categories, credits: credits,
-                              university: University.find(uni_name, include: [:name]))
+                              university: University.find(uni_name).include(:name).first )
             binding.pry if !prg.valid?
             prg.save if !prg.exist?
           end
@@ -106,7 +106,7 @@ class TestWhere < MiniTest::Unit::TestCase
           programs << pr
         end
         st.enrolled= programs
-        st.save
+        st.save rescue binding.pry
       end
     rescue Exception => e
       binding.pry
@@ -275,7 +275,7 @@ class TestWhere < MiniTest::Unit::TestCase
 
     #students enrolled in a specific program
     students = Student.where(enrolled: 
-                             Program.find(RDF::URI.new("http://example.org/program/Stanford/BioInformatics")))
+                             Program.find(RDF::URI.new("http://example.org/program/Stanford/BioInformatics")).first)
                   .include(:name, :birth_date, enrolled: [:name]).all
     assert students.length == 2
     assert students.map { |x| x.name }.sort == ["Daniel","Susan"]
@@ -298,7 +298,7 @@ class TestWhere < MiniTest::Unit::TestCase
 
     #Students in a university
     students = Student.where(
-      enrolled: [ university: University.find("Stanford") ])
+      enrolled: [ university: University.find("Stanford").first ])
       .include(:name, :birth_date, enrolled: [category: [:code ]]).all
     assert students.length == 3
     assert students.map { |x| x.name }.sort == ["Daniel","John","Susan"]

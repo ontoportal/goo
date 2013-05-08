@@ -200,28 +200,36 @@ module Goo
         graph_items_collection = nil
         inverse_klass_collection = nil
         incl_embed = nil
+        unmapped = nil
         if incl
-          #make it deterministic
-          incl = incl.to_a
-          incl_direct = incl.select { |a| a.instance_of?(Symbol) }
-          variables.concat(incl_direct)
-          incl_embed = incl.select { |a| a.instance_of?(Hash) }
-          binding.pry if incl_embed.length > 1
-          raise ArgumentError, "Not supported case for embed" if incl_embed.length > 1
-          incl.delete_if { |a| !a.instance_of?(Symbol) }
-          if incl_embed.length > 0
-            incl_embed = incl_embed.first
-            embed_variables = incl_embed.keys.sort
-            variables.concat(embed_variables)
-            incl.concat(embed_variables)
-          end
-          incl.each do |attr|
-            binding.pry if attr.instance_of? Hash
-            graph, pattern = query_pattern(klass,attr)
-            optional_patterns << pattern if pattern
-            graphs << graph if graph
+          if incl.first == :unmapped
+            patterns << [:id, :predicate, :object]
+            variables = [:id, :predicate, :object]
+            unmapped = true
+          else
+            #make it deterministic
+            incl = incl.to_a
+            incl_direct = incl.select { |a| a.instance_of?(Symbol) }
+            variables.concat(incl_direct)
+            incl_embed = incl.select { |a| a.instance_of?(Hash) }
+            binding.pry if incl_embed.length > 1
+            raise ArgumentError, "Not supported case for embed" if incl_embed.length > 1
+            incl.delete_if { |a| !a.instance_of?(Symbol) }
+            if incl_embed.length > 0
+              incl_embed = incl_embed.first
+              embed_variables = incl_embed.keys.sort
+              variables.concat(embed_variables)
+              incl.concat(embed_variables)
+            end
+            incl.each do |attr|
+              binding.pry if attr.instance_of? Hash
+              graph, pattern = query_pattern(klass,attr)
+              optional_patterns << pattern if pattern
+              graphs << graph if graph
+            end
           end
         end
+
         internal_variables = []
         if graph_match
           #make it deterministic - for caching
@@ -312,6 +320,16 @@ module Goo
         select.each_solution do |sol|
           found.add(sol[:id])
           id = sol[:id]
+          if !models_by_id.include?(id)
+            klass_model = klass.new
+            klass_model.id = id
+            klass_model.persistent = true
+            models_by_id[id] = klass_model
+          end
+          if unmapped
+            models_by_id[id].unmapped_set(sol[:predicate],sol[:object])
+            next
+          end
           variables.each do |v|
             next if v == :id and models_by_id.include?(id)
             if (v != :id) && !all_attributes.include?(v)
@@ -332,12 +350,8 @@ module Goo
             if object.kind_of?(RDF::URI) && v != :id
               if objects_new.include?(object)
                 object = objects_new[object]
-              else
-                range = klass.range(v)
-                range_object = range.new
-                range_object.id = object
-                range_object.persistent = true
-                object = range_object
+              elsif klass.range(v)
+                object = klass.range_object(v,object)
                 objects_new[object.id] = object
               end
             end
@@ -345,12 +359,7 @@ module Goo
             if object and list_attributes.include?(v)
               pre = models_by_id[id].instance_variable_get("@#{v}")
               object = !pre ? [object] : (pre.dup << object)
-            end
-            if !models_by_id.include?(id) && v == :id
-              klass_model = klass.new
-              klass_model.id = id
-              klass_model.persistent = true
-              models_by_id[id] = klass_model
+              object.uniq!
             end
             models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
           end
@@ -387,7 +396,7 @@ module Goo
             next if attr_range.nil?
             range_objs = objects_new.select { |id,obj| obj.instance_of?(attr_range) }.values
             if range_objs.length > 0
-              attr_range.where().models(range_objs).include(next_attrs).all
+              attr_range.where().models(range_objs).in(collection).include(next_attrs).all
             end
           end
         end

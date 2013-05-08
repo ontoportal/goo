@@ -129,7 +129,7 @@ module Goo
           shape_attribute(attr_name)
           namespace = attribute_namespace(attr_name)
           vocab = Goo.vocabulary(namespace) #returns default for nil input
-          @attribute_uris[attr_name] = vocab[attr_name]
+          @attribute_uris[attr_name] = vocab[options[:property] || attr_name]
           if options[:enforce].include?(:unique) and options[:enforce].include?(:list)
             raise ArgumentError, ":list options cannot be combined with :list"            
           end

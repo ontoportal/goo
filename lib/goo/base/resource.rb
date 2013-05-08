@@ -13,6 +13,7 @@ module Goo
       attr_reader :modified_attributes
       attr_reader :errors
       attr_reader :aggregates
+      attr_reader :unmapped
 
       attr_reader :id
 
@@ -22,6 +23,7 @@ module Goo
         @previous_values = nil
         @persistent = false
         @aggregates = nil
+        @unmapped = nil
 
         attributes = args[0] || {}
         opt_symbols = Goo.resource_options
@@ -114,6 +116,11 @@ module Goo
         return Set.new(self.class.attributes) - @loaded_attributes
       end
 
+      def unmapped_set(attribute,value)
+        @unmapped ||= {}
+        (@unmapped[attribute] ||= []) << value
+      end
+
       def delete
         raise ArgumentError, "This object is not persistent and cannot be deleted" if !@persistent
 
@@ -145,6 +152,29 @@ module Goo
         end
         col = collection
         return col ? col.id : nil
+      end
+
+      def map_attributes
+        if @unmapped.nil?
+          raise ArgumentError, "Resource.map_attributes only works for :unmapped instances"
+        end
+        list_attrs = self.class.attributes(:list)
+        self.class.attributes.each do |attr|
+          attr_uri = self.class.attribute_uri(attr)
+          if @unmapped.include?(attr_uri)
+            object = @unmapped[attr_uri]
+            object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
+            if self.class.range(attr)
+              object = object.map { |o| o.is_a?(RDF::URI) ? self.class.range_object(attr,o) : o }
+            end
+            unless list_attrs.include?(attr)
+              object = object.first
+            end 
+            self.send("#{attr}=",object, on_load: true) 
+          else
+            self.send("#{attr}=",nil, on_load: true)
+          end
+        end
       end
 
       def collection
@@ -205,17 +235,24 @@ module Goo
       ###
       # Class level methods
       # ##
+
+      def self.range_object(attr,id)
+        klass_range = self.range(attr)
+        return nil if klass_range.nil?
+        range_object = klass_range.new
+        range_object.id = id
+        range_object.persistent = true
+        return range_object
+      end
+
       def self.find(id, *options)
         unless id.instance_of?(RDF::URI)
           id = id_from_unique_attribute(name_with(),id)
         end
         options_load = { ids: [id], klass: self }.merge(options[-1] || {})
-        if !self.collection_opts.nil? and !options_load.include?(:collection)
-          raise ArgumentError, "Collection needed call `#{self.name}.find`"
-        end
         options_load[:find] = true
         where = Goo::Base::Where.new(self)
-        where.options_load = options_load
+        where.where_options_load = options_load
         return where
       end
 

@@ -5,7 +5,7 @@ module Goo
 
       AGGREGATE_PATTERN = Struct.new(:pattern,:aggregate)
 
-      attr_accessor :options_load
+      attr_accessor :where_options_load
 
       def initialize(klass,*match_patterns)
         @klass = klass
@@ -16,17 +16,22 @@ module Goo
         @result = nil
         @filters = nil
         @aggregate = nil
-        @options_load = nil
+        @where_options_load = nil
       end
 
       def process_query
+        binding.pry if $DEBUG_GOO 
         @include << @include_embed if @include_embed.length > 0
 
         options_load = { models: @models, include: @include,
                          graph_match: @pattern, klass: @klass,
                          filters: @filters , aggregate: @aggregate}
 
-        options_load.merge! @options_load if @options_load
+        options_load.merge!(@where_options_load) if @where_options_load
+
+        if !@klass.collection_opts.nil? and !options_load.include?(:collection)
+          raise ArgumentError, "Collection needed call `#{@klass.name}.find`"
+        end
 
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
         @result = models_by_id.values
@@ -72,6 +77,7 @@ module Goo
           @include << opt if opt.instance_of?(Symbol)
           @include_embed.merge!(opt) if opt.instance_of?(Hash)
         end
+        @include = [:unmapped] if @include.include? :unspecified
         self
       end
       
@@ -95,6 +101,13 @@ module Goo
       def order
       end
 
+      def in(collection)
+        if collection
+          (@where_options_load ||= {})[:collection] = collection
+        end
+        self
+      end
+
       def filter(filter)
         (@filters ||= []) << filter
         self
@@ -105,6 +118,9 @@ module Goo
         self
       end
 
+      def nil?
+        self.first.nil?
+      end
     end
   end
 end
