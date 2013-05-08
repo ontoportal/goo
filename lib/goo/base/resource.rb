@@ -363,7 +363,7 @@ module Goo
         page_n = args[0].delete(:page) || 1
         raise ArgumentError, "page must be a number > 0" if (page_n < 1 or !(page_n.kind_of? Fixnum))
         size = args[0].delete(:size) || 20
-        load_attrs = args.delete(:load_attrs)
+        load_attrs = args[0].delete(:load_attrs)
 
         offset = (page_n-1) * size
 
@@ -376,7 +376,7 @@ module Goo
 
         #third fills the collection with the attributes
         if items_hash.length > 0 and count > 0
-          items = self.where(args[-1].merge({ items: items_hash }))
+          items = self.where(args[-1].merge({ items: items_hash, load_attrs: load_attrs }))
         else
           items = []
         end
