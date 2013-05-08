@@ -7,6 +7,7 @@ require "set"
 require "uri"
 require "uuid"
 require 'rsolr'
+require 'rest_client'
 
 require_relative "goo/sparql/sparql"
 require_relative "goo/base/base"
