@@ -213,8 +213,10 @@ module Goo
         if !self.collection_opts.nil? and !options_load.include?(:collection)
           raise ArgumentError, "Collection needed call `#{self.name}.find`"
         end
-        models_by_id = Goo::SPARQL::Queries.model_load(options_load)
-        return models_by_id[id]
+        options_load[:find] = true
+        where = Goo::Base::Where.new(self)
+        where.options_load = options_load
+        return where
       end
 
       def self.where(*match)

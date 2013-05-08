@@ -5,6 +5,8 @@ module Goo
 
       AGGREGATE_PATTERN = Struct.new(:pattern,:aggregate)
 
+      attr_accessor :options_load
+
       def initialize(klass,*match_patterns)
         @klass = klass
         @pattern = match_patterns.first.nil? ? nil : Pattern.new(match_patterns.first) 
@@ -14,6 +16,7 @@ module Goo
         @result = nil
         @filters = nil
         @aggregate = nil
+        @options_load = nil
       end
 
       def process_query
@@ -22,6 +25,8 @@ module Goo
         options_load = { models: @models, include: @include,
                          graph_match: @pattern, klass: @klass,
                          filters: @filters , aggregate: @aggregate}
+
+        options_load.merge! @options_load if @options_load
 
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
         @result = models_by_id.values
