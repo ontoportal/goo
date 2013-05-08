@@ -58,6 +58,8 @@ class GooTest
         conf.add_namespace(:metadata, RDF::Vocabulary.new("http://goo.org/metadata/"))
         conf.add_namespace(:foaf, RDF::Vocabulary.new("http://xmlns.com/foaf/0.1/"))
         conf.add_namespace(:rdf, RDF::Vocabulary.new("http://www.w3.org/1999/02/22-rdf-syntax-ns#"))
+        conf.add_namespace(:nemo, RDF::Vocabulary.new(
+          "http://purl.bioontology.org/NEMO/ontology/NEMO_annotation_properties.owl#"))
 
         conf.add_sparql_backend(:main, query: "http://localhost:9000/sparql/",
                                 data: "http://localhost:9000/data/",
