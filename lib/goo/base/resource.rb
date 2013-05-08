@@ -361,7 +361,7 @@ module Goo
       def self.page(*args)
         args[0] = [] if args[0].nil?
         page_n = args[0].delete(:page) || 1
-        raise ArgumentError, "page mush be a number > 0" if (page_n < 1 or !(page_n.kind_of? Fixnum))
+        raise ArgumentError, "page must be a number > 0" if (page_n < 1 or !(page_n.kind_of? Fixnum))
         size = args[0].delete(:size) || 20
         load_attrs = args.delete(:load_attrs)
 
