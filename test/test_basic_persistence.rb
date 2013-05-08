@@ -33,7 +33,7 @@ class PersonPersistent < Goo::Base::Resource
             
   attribute :friends, enforce: [ :list, PersonPersistent ]
   attribute :status, enforce: [ :status_persistent ],
-  			default: lambda { |record| StatusPersistent.find("single") }
+  			default: lambda { |record| StatusPersistent.find("single").first }
 
   def initialize(attributes = {})
     super(attributes)
@@ -48,7 +48,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
   def _purge
     objects = [ArrayValues, PersonPersistent, StatusPersistent]
     objects.each do |obj|
-      obj.all.each do |st|
+      obj.where.all.each do |st|
         st.delete
       end
     end
@@ -79,7 +79,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
   end
 
   def test_unique_duplicates_error
-    StatusPersistent.all.each do |st|
+    StatusPersistent.where.all.each do |st|
       st.delete
     end
     st = StatusPersistent.new(description: "some text", active: true)
@@ -91,7 +91,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     st = StatusPersistent.new(description: "some text 2", active: true)
     assert st.valid?
     st.save
-    StatusPersistent.all.each do |st|
+    StatusPersistent.where.all.each do |st|
       st.delete
     end
   end
@@ -133,7 +133,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert st.persistent?
     
     id = st.id
-    st_from_backend = StatusPersistent.find(id)
+    st_from_backend = StatusPersistent.find(id).first
     assert_instance_of StatusPersistent, st_from_backend
     assert (st_from_backend.kind_of? Goo::Base::Resource)
     assert_equal id, st_from_backend.id
@@ -151,7 +151,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert !st_from_backend.exist?
 
     not_existent_id = RDF::URI("http://some.bogus.id/x")
-    st_from_backend = StatusPersistent.find(not_existent_id)
+    st_from_backend = StatusPersistent.find(not_existent_id).first
     assert st_from_backend.nil?
   end
 
@@ -161,7 +161,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert st.persistent?
     
     id = st.id
-    st_from_backend = StatusPersistent.find(id, include: StatusPersistent.attributes )
+    st_from_backend = StatusPersistent.find(id).include(StatusPersistent.attributes).first
     assert (st_from_backend.persistent?)
     assert (!st_from_backend.modified?)
 
@@ -181,7 +181,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert st.persistent?
     
     id = st.id
-    st_from_backend = StatusPersistent.find(id, include: [ :active ] )
+    st_from_backend = StatusPersistent.find(id).include(:active).first
     assert (st_from_backend.persistent?)
     assert (!st_from_backend.modified?)
 
@@ -208,7 +208,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
       st.description = "x"
     end
 
-    from_backend = StatusPersistent.find(st.id)
+    from_backend = StatusPersistent.find(st.id).first
     assert_raises ArgumentError do
       from_backend.description = "x"
     end
@@ -218,13 +218,13 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     st = StatusPersistent.new({ description: "some text", active: true })
     st.save
     assert st.persistent?
-    st_from_backend = StatusPersistent.find("some text", include: [ :active ] )
+    st_from_backend = StatusPersistent.find("some text").include(:active).first
     assert_instance_of(StatusPersistent, st_from_backend)
     assert_equal(st.id, st_from_backend.id)
     assert_equal(true, st_from_backend.active)
     st_from_backend.delete
 
-    st_from_backend = StatusPersistent.find("not there")
+    st_from_backend = StatusPersistent.find("not there").first
     assert st_from_backend.nil?
   end
 
@@ -238,7 +238,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     st.save
     assert(!st.modified?)
 
-    st_from_backend = StatusPersistent.find(st.id, include: [ :active ] )
+    st_from_backend = StatusPersistent.find(st.id).include(:active).first
     assert (st_from_backend.persistent?)
     assert !st_from_backend.modified?
     assert_equal(false, st_from_backend.active)
@@ -256,7 +256,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert arr.persistent?
     assert arr.exist?
 
-    arr_from_backend = ArrayValues.find(arr.id, include: ArrayValues.attributes)
+    arr_from_backend = ArrayValues.find(arr.id).include(ArrayValues.attributes).first
     assert_equal ["a", "b"], arr_from_backend.many.sort
 
     assert_raises RuntimeError do
@@ -266,7 +266,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     arr_from_backend.many = ["A","B","C"]
     arr_from_backend.save
 
-    arr_from_backend = ArrayValues.find(arr.id, include: ArrayValues.attributes)
+    arr_from_backend = ArrayValues.find(arr.id).include(ArrayValues.attributes).first
     assert_equal ["A","B","C"], arr_from_backend.many.sort
 
     arr_from_backend.delete
@@ -276,7 +276,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
 
   def test_person_save
     st = StatusPersistent.new(description: "single", active: true)
-    st = st.exist? ? StatusPersistent.find("single") : st.save
+    st = st.exist? ? StatusPersistent.find("single").first : st.save
 
     person = PersonPersistent.new
     person.name = "John"
@@ -295,7 +295,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert_instance_of(DateTime, person.created)
     assert_equal(nil, person.friends)
 
-    person_from_backend = PersonPersistent.find("John", include: PersonPersistent.attributes)
+    person_from_backend = PersonPersistent.find("John").include(PersonPersistent.attributes).first
     assert_equal(person.status.id, person_from_backend.status.id)
     assert_equal(nil, person_from_backend.friends)
     assert_equal(person.name, person_from_backend.name)
@@ -310,7 +310,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
 
   def test_friends
     st = StatusPersistent.new(description: "single", active: true)
-    st = st.exist? ? StatusPersistent.find("single") : st.save
+    st = st.exist? ? StatusPersistent.find("single").first : st.save
     person1 = PersonPersistent.new(name: "John", multiple_values: [1,2,3,4], one_number: 99,
                                    birth_date: DateTime.parse('2001-02-03T04:05:06.12'))
 
@@ -327,7 +327,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert person2.valid?
     person2.save
 
-    from_backend = PersonPersistent.find(person2.id, include: [:friends])
+    from_backend = PersonPersistent.find(person2.id).include(:friends)
     assert_equal 1, person2.friends.length
     assert_equal person1.id, person2.friends.first.id
 
