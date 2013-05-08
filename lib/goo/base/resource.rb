@@ -3,6 +3,7 @@ require_relative "settings/settings"
 
 module Goo
   module Base
+    AGGREGATE_VALUE = Struct.new(:attribute,:aggregate,:value)
 
     class Resource
       include Goo::Base::Settings
@@ -11,6 +12,7 @@ module Goo
       attr_reader :loaded_attributes
       attr_reader :modified_attributes
       attr_reader :errors
+      attr_reader :aggregates
 
       attr_reader :id
 
@@ -19,6 +21,7 @@ module Goo
         @modified_attributes = Set.new
         @previous_values = nil
         @persistent = false
+        @aggregates = nil
 
         attributes = args[0] || {}
         opt_symbols = Goo.resource_options
@@ -159,6 +162,10 @@ module Goo
         else
           binding.pry
         end
+      end
+      
+      def add_aggregate(attribute,aggregate,value)
+        (@aggregates ||= []) << AGGREGATE_VALUE.new(attribute,aggregate,value)
       end
 
       def save

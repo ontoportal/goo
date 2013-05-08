@@ -3,6 +3,8 @@ module Goo
 
     class Where
 
+      AGGREGATE_PATTERN = Struct.new(:pattern,:aggregate)
+
       def initialize(klass,*match_patterns)
         @klass = klass
         @pattern = match_patterns.first.nil? ? nil : Pattern.new(match_patterns.first) 
@@ -11,6 +13,7 @@ module Goo
         @include_embed = {}
         @result = nil
         @filters = nil
+        @aggregate = nil
       end
 
       def process_query
@@ -18,7 +21,7 @@ module Goo
 
         options_load = { models: @models, include: @include,
                          graph_match: @pattern, klass: @klass,
-                         filters: @filters }
+                         filters: @filters , aggregate: @aggregate}
 
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
         @result = models_by_id.values
@@ -92,8 +95,11 @@ module Goo
         self
       end
 
-      def aggregate
+      def aggregate(agg,pattern)
+        (@aggregate ||= []) << AGGREGATE_PATTERN.new(pattern,agg) 
+        self
       end
+
     end
   end
 end

@@ -507,16 +507,60 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_aggregated
-    #agg = Aggregate.count(:enrolled) #programs_count as default
-    #agg = Aggregate.count(:enrolled, attribute: :programs_count)
+    #students and awards default
+    sts = Student.include(:name).aggregate(:count,:awards).all
+    assert sts.length == 2
+    sts.each do |st|
+      agg = st.aggregates.first
+      assert agg.attribute == :awards
+      assert agg.aggregate == :count
+      if st.name == "Susan"
+        assert agg.value == 1
+      elsif st.name == "Daniel"
+        assert agg.value == 2
+      end
+    end
 
-    #student = Student.all(include: agg)
+    sts = Student.include(:name).aggregate(:count, :enrolled).all
+    sts.each do |st|
+      assert (st.name == "Daniel" && st.aggregates.first.value == 2) ||
+                st.aggregates.first.value == 1
+    end
 
     #students enrolled in more than 1 program and get the programs name
-    #student = Student.where(programs_count: Filter.greater(2).less(10) , 
-    #                        include: [agg, :name, :birth_date])
+    sts = Student.include(:name).aggregate(:count, :enrolled)
+                    .all
+                    .select { |x| x.aggregates.first.value > 1 }
 
+    assert sts.length == 1
+    assert sts.first.name == "Daniel"
+
+    #Categories per student program categories
+    sts = Student.include(:name).aggregate(:count, enrolled: [:category]).all
+    assert sts.length == 7
+    data = { "Tim" => 4, "John" => 4, "Susan" => 3, 
+      "Daniel" => 6, "Louis" => 3, "Lee" => 3, "Robert" => 4 }
+    sts.each do |st|
+      assert st.aggregates.first.value == data[st.name]
+    end
+    
+    
+    #Inverse
     #universities with more than 3 programs
+    us = University.include(:name).aggregate(:count, :programs).all
+    assert us.length == 3
+    us.each do |u|
+      assert u.aggregates.first.value == 3
+    end
+
+    #double inverse
+    us = University.include(:name).aggregate(:count, programs: [:students]).all
+    us.each do |u|
+      assert (u.name == "UPM" &&  u.aggregates.first.value == 2) ||
+          (u.aggregates.first.value == 3)
+    end
+    
+
     #universities with more than 3 students
     #universities where students per program is > 20 
     #

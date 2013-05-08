@@ -39,12 +39,16 @@ module Goo
         union = (pre_union || patterns.kind_of?(Union))
         union &&= !patterns.kind_of?(Join)
         sub_patterns = patterns.kind_of?(Pattern) ? patterns.patterns : patterns
-        sub_patterns.each do |pat|
-          if pat.kind_of?(Pattern)
-            union = (union || pre_union || pat.kind_of?(Union)) && (!pat.kind_of?(Join))
-            recursive_each(pat.patterns,union,&block)
-          else
-            yield [pat,union && !patterns.kind_of?(Join)]
+        if sub_patterns.is_a?(Symbol)
+          yield [{sub_patterns=>[]}, false]
+        else
+          sub_patterns.each do |pat|
+            if pat.kind_of?(Pattern)
+              union = (union || pre_union || pat.kind_of?(Union)) && (!pat.kind_of?(Join))
+              recursive_each(pat.patterns,union,&block)
+            else
+              yield [pat,union && !patterns.kind_of?(Join)]
+            end
           end
         end
       end

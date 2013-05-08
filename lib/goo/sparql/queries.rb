@@ -50,7 +50,7 @@ module Goo
             attr = filter_pattern_match.keys.first
             patterns_for_match(klass, attr, filter_pattern_match[attr], filter_graphs, filter_patterns,
                                    [],internal_variables,
-                                   subject=:id,in_union=false)
+                                   subject=:id,in_union=false,in_aggregate=false)
             inspected_patterns[filter_pattern_match] = internal_variables.last
           end
           filter_var = inspected_patterns[filter_pattern_match]
@@ -104,19 +104,21 @@ module Goo
       end
 
       def self.walk_pattern(klass, match_patterns, graphs, patterns, unions, 
-                                internal_variables)
+                                internal_variables,in_aggregate=false)
         match_patterns.each do |match,in_union|
           unions << [] if in_union
+          match = match.is_a?(Symbol) ? { match => [] } : match
           match.each do |attr,value|
             patterns_for_match(klass, attr, value, graphs, patterns,
                                unions,internal_variables,
-                               subject=:id,in_union=in_union)
+                               subject=:id,in_union=in_union,in_aggregate=in_aggregate)
           end
         end
       end
 
       def self.patterns_for_match(klass,attr,value,graphs,patterns,unions,
-                                  internal_variables,subject=:id,in_union=false)
+                                  internal_variables,subject=:id,in_union=false,
+                                  in_aggregate=false)
         if value.respond_to?(:each) || value.instance_of?(Symbol)
           next_pattern = value.instance_of?(Array) ? value.first : value
 
@@ -124,6 +126,9 @@ module Goo
           next_pattern = { next_pattern => [] } if next_pattern.instance_of?(Symbol)
 
           value = "internal_join_var_#{internal_variables.length}".to_sym
+          if in_aggregate
+            value = "#{attr}_agg_#{in_aggregate}".to_sym
+          end
           internal_variables << value
         end
         graph, pattern = query_pattern(klass,attr,value,subject)
@@ -139,7 +144,8 @@ module Goo
           range = klass.range(attr) 
           next_pattern.each do |next_attr,next_value|
             patterns_for_match(range, next_attr, next_value, graphs,
-                  patterns, unions, internal_variables, subject=value, in_union)
+                  patterns, unions, internal_variables, subject=value, 
+                  in_union, in_aggregate)
           end
         end
       end
@@ -154,6 +160,7 @@ module Goo
         incl = options[:include]
         models = options[:models]
         query_filters = options[:filters]
+        aggregate = options[:aggregate]
         graph_match = options[:graph_match]
         collection = options[:collection]
         store = options[:store] || :main
@@ -254,6 +261,27 @@ module Goo
           end
         end
 
+        aggregate_vars = nil
+        aggregate_projections = nil
+        if aggregate
+          aggregate.each do |agg|
+            agg_patterns = []
+            graph_match_iteration = Goo::Base::PatternIteration.new(Goo::Base::Pattern.new(agg.pattern))
+            walk_pattern(klass,graph_match_iteration,graphs,agg_patterns,unions,
+                             internal_variables,in_aggregate=agg.aggregate)
+            if agg_patterns.length > 0
+              projection = "#{internal_variables.last.to_s}_projection".to_sym
+              aggregate_on_attr = internal_variables.last.to_s
+              aggregate_on_attr = aggregate_on_attr[0..aggregate_on_attr.index("_agg_")-1].to_sym rescue binding.pry
+              (aggregate_projections ||={})[projection] = [agg.aggregate, aggregate_on_attr]
+              (aggregate_vars ||= []) << [ internal_variables.last,
+                                projection,
+                               agg.aggregate ]
+              variables << projection
+              patterns.concat(agg_patterns)
+            end
+          end
+        end
 
         client = Goo.sparql_query_client(store)
         select = client.select(*variables).distinct()
@@ -269,17 +297,31 @@ module Goo
             select.filter(f)
           end
         end
+        if aggregate_vars
+
+          select.options[:group_by]=[:id]
+          select.options[:count]=aggregate_vars
+        end
         select.from(graphs)
-        binding.pry if $DEBUG_GOO
+        select.distinct(true)
 
         found = Set.new
-        list_attributes = klass.attributes(:list)
+        list_attributes = Set.new(klass.attributes(:list))
+        all_attributes = Set.new(klass.attributes(:all))
         objects_new = {}
         select.each_solution do |sol|
           found.add(sol[:id])
           id = sol[:id]
           variables.each do |v|
             next if v == :id and models_by_id.include?(id)
+            if (v != :id) && !all_attributes.include?(v)
+              if aggregate_projections.include?(v)
+                conf = aggregate_projections[v]
+                models_by_id[id].add_aggregate(conf[1], conf[0], sol[v].object)
+              end
+              #TODO otther schemaless things
+              next
+            end
             #group for multiple values
             object = sol[v] ? sol[v] : nil
             if object and  !(object.kind_of? RDF::URI)
