@@ -20,12 +20,15 @@ class StatusPersistent < Goo::Base::Resource
   end
 end
 
+CONTACT_DATA = Struct.new(:line1,:line2)
 class PersonPersistent < Goo::Base::Resource
   model :person_persistent, name_with: :name
   attribute :name, enforce: [ :existence, :string, :unique]
   attribute :multiple_values, enforce: [ :list, :existence, :integer, :min_3, :max_5 ]
   attribute :one_number, enforce: [ :existence, :integer ] #by default not a list
   attribute :birth_date, enforce: [ :existence, :date_time ]
+  
+  attribute :contact_data, enforce: [ :list, CONTACT_DATA]
 
   attribute :created, enforce: [ DateTime ],
             default: lambda { |record| DateTime.now },
@@ -336,6 +339,32 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert 0, GooTest.triples_for_subject(person1.id)
     person2.delete
     assert 0, GooTest.triples_for_subject(person2.id)
+  end
+
+  def test_range
+    assert PersonPersistent == PersonPersistent.range(:friends)
+    assert StatusPersistent == PersonPersistent.range(:status)
+    assert PersonPersistent.range(:contact_data).new.kind_of?Struct
+  end
+
+  def test_bnode
+
+    st = StatusPersistent.new(description: "single", active: true)
+    st = st.exist? ? StatusPersistent.find("single").first : st.save
+    person1 = PersonPersistent.new(name: "John", multiple_values: [1,2,3,4], one_number: 99,
+                                   birth_date: DateTime.parse('2001-02-03T04:05:06.12'))
+    person1.contact_data= [CONTACT_DATA.new("line1 value","line2 value")]
+    assert person1.valid?
+    person1.save
+
+    from_backend = PersonPersistent.find("John").include(:birth_date, :contact_data).first
+    assert from_backend.contact_data.line1 == "line1 value"
+    assert from_backend.contact_data.line2 == "line2 value"
+
+    $DEBUG_GOO = true
+    person1.delete
+    assert 0, GooTest.triples_for_subject(person1.id)
+    st.delete
   end
 
 end

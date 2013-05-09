@@ -101,7 +101,7 @@ module Goo
 
         def set_range(attr)
           @model_settings[:attributes][attr][:enforce].each do |opt|
-            if Goo.models.include?(opt) || opt.respond_to?(:model_name)
+            if Goo.models.include?(opt) || opt.respond_to?(:model_name) || (opt.respond_to?(:new) && opt.new.kind_of?(Struct))
               opt = Goo.models[opt] if opt.instance_of?(Symbol)
               @model_settings[:range][attr]=opt
               break

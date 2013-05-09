@@ -15,15 +15,15 @@ module Goo
         @include_embed = {}
         @result = nil
         @filters = nil
+        @ids = nil
         @aggregate = nil
         @where_options_load = nil
       end
 
       def process_query
-        binding.pry if $DEBUG_GOO 
         @include << @include_embed if @include_embed.length > 0
 
-        options_load = { models: @models, include: @include,
+        options_load = { models: @models, include: @include, ids: @ids,
                          graph_match: @pattern, klass: @klass,
                          filters: @filters , aggregate: @aggregate}
 
@@ -104,6 +104,13 @@ module Goo
       def in(collection)
         if collection
           (@where_options_load ||= {})[:collection] = collection
+        end
+        self
+      end
+
+      def ids(ids)
+        if ids
+          @ids = ids
         end
         self
       end

@@ -133,9 +133,12 @@ module Goo
           Goo::SPARQL::Queries.model_load(options_load)
         end
 
-        graph_delete = Goo::SPARQL::Triples.model_delete_triples(self)
+        graph_delete,bnode_delete = Goo::SPARQL::Triples.model_delete_triples(self)
 
         begin
+          bnode_delete.each do |attr,delete_query|
+            Goo.sparql_update_client.update(delete_query)
+          end
           Goo.sparql_update_client.delete_data(graph_delete, graph: self.graph)
         rescue Exception => e
           binding.pry
@@ -203,6 +206,7 @@ module Goo
         raise Goo::Base::NotValidException, "Object is not valid. Check errors." unless valid?
 
         graph_insert, graph_delete = Goo::SPARQL::Triples.model_update_triples(self)
+        binding.pry if $DEBUG_GOO
         graph = self.graph() 
         if graph_delete and graph_delete.size > 0
           begin

@@ -5,6 +5,8 @@ module Goo
   module SPARQL
     module Queries
 
+      BNODES_TUPLES = Struct.new(:id,:attribute)
+
       def self.sparql_op_string(op)
         case op
         when :or
@@ -48,7 +50,8 @@ module Goo
           end
           unless inspected_patterns.include?(filter_pattern_match)
             attr = filter_pattern_match.keys.first
-            patterns_for_match(klass, attr, filter_pattern_match[attr], filter_graphs, filter_patterns,
+            patterns_for_match(klass, attr, filter_pattern_match[attr],
+                               filter_graphs, filter_patterns,
                                    [],internal_variables,
                                    subject=:id,in_union=false,in_aggregate=false)
             inspected_patterns[filter_pattern_match] = internal_variables.last
@@ -56,7 +59,8 @@ module Goo
           filter_var = inspected_patterns[filter_pattern_match]
           if !filter_operation.value.instance_of?(Goo::Filter)
             unless filter_operation.operator == :unbound
-              filter_operations << ("?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
+              filter_operations << ( 
+                "?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
                 " #{RDF::Literal.new(filter_operation.value).to_ntriples}")
             else
               filter_operations << "!BOUND(?#{filter_var.to_s})"
@@ -65,7 +69,8 @@ module Goo
           else
             filter_operations << "#{sparql_op_string(filter_operation.operator)}" 
             query_filter_sparql(klass,filter_operation.value,filter_patterns,
-                                filter_graphs,filter_operations,internal_variables,inspected_patterns)
+                                filter_graphs,filter_operations,
+                                internal_variables,inspected_patterns)
           end
         end
       end
@@ -201,8 +206,20 @@ module Goo
         inverse_klass_collection = nil
         incl_embed = nil
         unmapped = nil
+        bnode_extraction = nil
         if incl
-          if incl.first == :unmapped
+          if incl.first and incl.first.is_a?(Hash) and incl.first.include?:bnode
+            #limitation only one level BNODE
+            bnode_conf = incl.first[:bnode]
+            klass_attr = bnode_conf.keys.first
+            bnode_extraction=klass_attr
+            bnode = RDF::Node.new
+            patterns << [:id, klass.attribute_uri(klass_attr), bnode]
+            bnode_conf[klass_attr].each do |in_bnode_attr|
+              variables << in_bnode_attr
+              patterns << [bnode, Goo.vocabulary(nil)[in_bnode_attr], in_bnode_attr]
+            end
+          elsif incl.first == :unmapped
             patterns << [:id, :predicate, :object]
             variables = [:id, :predicate, :object]
             unmapped = true
@@ -274,13 +291,14 @@ module Goo
         if aggregate
           aggregate.each do |agg|
             agg_patterns = []
-            graph_match_iteration = Goo::Base::PatternIteration.new(Goo::Base::Pattern.new(agg.pattern))
+            graph_match_iteration = 
+              Goo::Base::PatternIteration.new(Goo::Base::Pattern.new(agg.pattern))
             walk_pattern(klass,graph_match_iteration,graphs,agg_patterns,unions,
                              internal_variables,in_aggregate=agg.aggregate)
             if agg_patterns.length > 0
               projection = "#{internal_variables.last.to_s}_projection".to_sym
               aggregate_on_attr = internal_variables.last.to_s
-              aggregate_on_attr = aggregate_on_attr[0..aggregate_on_attr.index("_agg_")-1].to_sym rescue binding.pry
+              aggregate_on_attr = aggregate_on_attr[0..aggregate_on_attr.index("_agg_")-1].to_sym 
               (aggregate_projections ||={})[projection] = [agg.aggregate, aggregate_on_attr]
               (aggregate_vars ||= []) << [ internal_variables.last,
                                 projection,
@@ -306,7 +324,6 @@ module Goo
           end
         end
         if aggregate_vars
-
           select.options[:group_by]=[:id]
           select.options[:count]=aggregate_vars
         end
@@ -320,6 +337,16 @@ module Goo
         select.each_solution do |sol|
           found.add(sol[:id])
           id = sol[:id]
+          if bnode_extraction
+            struct = klass.range(bnode_extraction).new
+            variables.each do |v|
+              next if v == :id
+              svalue = sol[v]
+              struct[v] = svalue.is_a?(RDF::Node) ? svalue : svalue.object
+            end
+            models_by_id[sol[:id]].send("#{bnode_extraction}=",struct)
+            next
+          end
           if !models_by_id.include?(id)
             klass_model = klass.new
             klass_model.id = id
@@ -342,6 +369,16 @@ module Goo
             end
             #group for multiple values
             object = sol[v] ? sol[v] : nil
+
+            #bnodes
+            if object.kind_of?(RDF::Node) && object.anonymous? && incl.include?(v)
+              range = klass.range(v)
+              if range.respond_to?(:new)
+                objects_new[object] = BNODES_TUPLES.new(id,v)
+              end
+              next
+            end
+
             if object and  !(object.kind_of? RDF::URI)
               object = object.object
             end
@@ -364,6 +401,7 @@ module Goo
             models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
           end
         end
+        return models_by_id if bnode_extraction
 
         if collection and klass.collection_opts.instance_of?(Symbol)
           collection_attribute = klass.collection_opts
@@ -398,6 +436,21 @@ module Goo
             if range_objs.length > 0
               attr_range.where().models(range_objs).in(collection).include(next_attrs).all
             end
+          end
+        end
+
+        #bnodes
+        bnodes = objects_new.select { |id,obj| id.is_a?(RDF::Node) && id.anonymous? }
+        if bnodes.length > 0
+          #group by attribute
+          attrs = bnodes.map { |x,y| y.attribute }.uniq
+          attrs.each do |attr|
+            struct = klass.range(attr)
+            bnode_attrs = struct.new.to_h.keys 
+            ids = bnodes.select { |x,y| y.attribute == attr }.map{ |x,y| y.id }
+            klass.where.models(models_by_id.select { |x,y| ids.include?(x) }.values)
+                          .in(collection)
+                          .include(bnode: { attr => bnode_attrs}).all
           end
         end
          
