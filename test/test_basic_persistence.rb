@@ -336,9 +336,9 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
 
 
     person1.delete
-    assert 0, GooTest.triples_for_subject(person1.id)
+    assert 0 == GooTest.triples_for_subject(person1.id)
     person2.delete
-    assert 0, GooTest.triples_for_subject(person2.id)
+    assert 0 == GooTest.triples_for_subject(person2.id)
   end
 
   def test_range
@@ -358,11 +358,43 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     person1.save
 
     from_backend = PersonPersistent.find("John").include(:birth_date, :contact_data).first
-    assert from_backend.contact_data.line1 == "line1 value"
-    assert from_backend.contact_data.line2 == "line2 value"
+    assert from_backend.contact_data.class == Array
+    assert from_backend.contact_data.length == 1
+    assert from_backend.contact_data.first.line1 == "line1 value"
+    assert from_backend.contact_data.first.line2 == "line2 value"
 
-    person1.delete
-    assert 0, GooTest.triples_for_subject(person1.id)
+    person2 = PersonPersistent.new(name: "Lewis", multiple_values: [1,2,3,4], one_number: 99,
+                                   birth_date: DateTime.parse('2001-02-03T04:05:06.12'))
+
+    person2.contact_data= [CONTACT_DATA.new("p2 line1 value","p2 line2 value"),
+                            CONTACT_DATA.new("p2 line1 value X","p2 line2 value Y")]
+    person2.save
+
+    pps = PersonPersistent.where.include(:name,:contact_data).all
+    pps.each do |pp|
+      if pp.name == "John"
+        assert pp.contact_data.length == 1
+        assert pp.contact_data.first.line1 == "line1 value"
+        assert pp.contact_data.first.line2 == "line2 value"
+      elsif pp.name == "Lewis"
+        assert pp.contact_data.length == 2
+        pp.contact_data.each do |s|
+          assert (s.line1 == "p2 line1 value" && s.line2 == "p2 line2 value") ||
+                    (s.line1 == "p2 line1 value X" && s.line2 == "p2 line2 value Y")
+        end
+      else
+        assert false
+      end
+    end
+
+    pps.each do |p|
+      p.delete
+    end
+
+    assert 0 == GooTest.triples_for_subject(person1.id)
+    assert 0 == GooTest.triples_for_subject(person2.id)
+    assert 0 == GooTest.count_pattern("?p #{Goo.vocabulary(nil)[:line1].to_ntriples} ?o")
+    assert 0 == GooTest.count_pattern("?p #{Goo.vocabulary(nil)[:line2].to_ntriples} ?o")
     st.delete
   end
 

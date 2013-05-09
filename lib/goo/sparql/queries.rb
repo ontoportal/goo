@@ -344,6 +344,11 @@ module Goo
               svalue = sol[v]
               struct[v] = svalue.is_a?(RDF::Node) ? svalue : svalue.object
             end
+            if list_attributes.include?(bnode_extraction)
+              pre = models_by_id[sol[:id]].instance_variable_get("@#{bnode_extraction}")
+              pre = pre ? (pre.dup << struct) : [struct] 
+              struct = pre
+            end
             models_by_id[sol[:id]].send("#{bnode_extraction}=",struct)
             next
           end
