@@ -361,7 +361,6 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert from_backend.contact_data.line1 == "line1 value"
     assert from_backend.contact_data.line2 == "line2 value"
 
-    $DEBUG_GOO = true
     person1.delete
     assert 0, GooTest.triples_for_subject(person1.id)
     st.delete
