@@ -137,7 +137,17 @@ module Goo
         end
    
         def attribute_uri(attr)
-          return @attribute_uris[attr]
+          uri = @attribute_uris[attr]
+          return uri unless uri.nil?
+          attr_string = attr.to_s
+          Goo.namespaces.keys.each do |ns|
+            nss = ns.to_s
+            if attr_string.start_with?(nss)
+              return Goo.vocabulary(ns)[attr_string[nss.length+1..-1]]
+            end
+          end
+          #default
+          return Goo.vocabulary(nil)[attr]
         end
 
         def shape_attribute(attr)

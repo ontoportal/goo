@@ -94,9 +94,6 @@ module Goo
           predicate = nil
           if attr.is_a?(Symbol) 
             predicate = klass.attribute_uri(attr)
-            if predicate.nil?
-              predicate=Goo.vocabulary(nil)[attr]
-            end
           elsif attr.is_a?(RDF::URI)
             predicate = attr
           else
@@ -168,6 +165,8 @@ module Goo
         aggregate = options[:aggregate]
         graph_match = options[:graph_match]
         collection = options[:collection]
+        page = options[:page]
+        count = options[:count]
         store = options[:store] || :main
 
         if ids and models
@@ -217,7 +216,7 @@ module Goo
             patterns << [:id, klass.attribute_uri(klass_attr), bnode]
             bnode_conf[klass_attr].each do |in_bnode_attr|
               variables << in_bnode_attr
-              patterns << [bnode, Goo.vocabulary(nil)[in_bnode_attr], in_bnode_attr]
+              patterns << [bnode, klass.attribute_uri(in_bnode_attr), in_bnode_attr]
             end
           elsif incl.first == :unmapped
             patterns << [:id, :predicate, :object]
@@ -310,6 +309,7 @@ module Goo
         end
 
         client = Goo.sparql_query_client(store)
+        variables = [:count_var] if count
         select = client.select(*variables).distinct()
         select.where(*patterns)
         optional_patterns.each do |optional|
@@ -327,6 +327,13 @@ module Goo
           select.options[:group_by]=[:id]
           select.options[:count]=aggregate_vars
         end
+        if count
+          select.options[:count]=[[:id,:count_var,:count]]
+        end
+        if page
+          offset = (page[:page_i]-1) * page[:page_size]
+          select.slice(offset,page[:page_size])
+        end
         select.from(graphs)
         select.distinct(true)
 
@@ -335,6 +342,9 @@ module Goo
         all_attributes = Set.new(klass.attributes(:all))
         objects_new = {}
         select.each_solution do |sol|
+          if count
+            return sol[:count_var].object
+          end
           found.add(sol[:id])
           id = sol[:id]
           if bnode_extraction

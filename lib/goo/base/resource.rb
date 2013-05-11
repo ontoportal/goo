@@ -260,6 +260,10 @@ module Goo
         return where
       end
 
+      def self.in(collection)
+        return where.in(collection)
+      end
+
       def self.where(*match)
         return Goo::Base::Where.new(self,*match)
       end

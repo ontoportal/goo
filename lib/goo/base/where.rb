@@ -18,9 +18,12 @@ module Goo
         @ids = nil
         @aggregate = nil
         @where_options_load = nil
+        @count = nil
+        @page_i = nil
+        @page_size = nil
       end
 
-      def process_query
+      def process_query()
         @include << @include_embed if @include_embed.length > 0
 
         options_load = { models: @models, include: @include, ids: @ids,
@@ -28,13 +31,30 @@ module Goo
                          filters: @filters , aggregate: @aggregate}
 
         options_load.merge!(@where_options_load) if @where_options_load
-
         if !@klass.collection_opts.nil? and !options_load.include?(:collection)
           raise ArgumentError, "Collection needed call `#{@klass.name}.find`"
         end
 
+        if @page_i
+          page_options = options_load.dup
+          page_options.delete(:include)
+          if !@count
+            page_options[:count] = :count 
+            @count = Goo::SPARQL::Queries.model_load(page_options).to_i
+          end
+          page_options.delete :count
+          page_options[:page] = { page_i: @page_i, page_size: @page_size }
+          models_by_id = Goo::SPARQL::Queries.model_load(page_options)
+          options_load[:models] = models_by_id.values
+        end
+
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
-        @result = models_by_id.values
+        unless @page_i
+          @result = models_by_id.values
+        else
+          @result = Goo::Base::Page.new(@page_i,@page_size,@count,models_by_id.values)
+        end
+        @result
       end
 
       def all
@@ -67,6 +87,17 @@ module Goo
       def last
         process_query unless @result
         @result.last
+      end
+
+      def page(i,size=nil)
+        @page_i = i
+        if size
+          @page_size = size
+        elsif @page_size.nil?
+          @page_size = 50
+        end
+        @result = nil
+        self
       end
 
       def include(*options)
