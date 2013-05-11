@@ -402,9 +402,16 @@ module Goo
             if object.kind_of?(RDF::URI) && v != :id
               if objects_new.include?(object)
                 object = objects_new[object]
-              elsif klass.range(v)
-                object = klass.range_object(v,object)
-                objects_new[object.id] = object
+              else
+                range_for_v = klass.range(v)
+                if range_for_v 
+                  unless range_for_v.inmutable?
+                    object = klass.range_object(v,object)
+                    objects_new[object.id] = object
+                  else
+                    object = range_for_v.find(object).first
+                  end
+                end
               end
             end
 

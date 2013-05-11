@@ -145,6 +145,9 @@ module Goo
         end
         @persistent = false
         @modified = true
+        if self.class.inmutable? && self.class.inm_instances
+          self.class.load_inmutable_instances
+        end
         return nil
       end
 
@@ -206,7 +209,6 @@ module Goo
         raise Goo::Base::NotValidException, "Object is not valid. Check errors." unless valid?
 
         graph_insert, graph_delete = Goo::SPARQL::Triples.model_update_triples(self)
-        binding.pry if $DEBUG_GOO
         graph = self.graph() 
         if graph_delete and graph_delete.size > 0
           begin
@@ -228,13 +230,15 @@ module Goo
 
         @modified_attributes = Set.new
         @persistent = true
+        if self.class.inmutable? && self.class.inm_instances
+          self.class.load_inmutable_instances
+        end
         return self
       end
 
       def previous_values
         return @previous_values
       end
-
 
       ###
       # Class level methods
@@ -252,6 +256,11 @@ module Goo
       def self.find(id, *options)
         unless id.instance_of?(RDF::URI)
           id = id_from_unique_attribute(name_with(),id)
+        end
+        if self.inmutable? && self.inm_instances && self.inm_instances[id]
+          w = Goo::Base::Where.new(self)
+          w.instance_variable_set("@result", [self.inm_instances[id]])
+          return w
         end
         options_load = { ids: [id], klass: self }.merge(options[-1] || {})
         options_load[:find] = true

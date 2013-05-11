@@ -24,7 +24,11 @@ module Goo
           @model_name = model_name.to_sym
           
           #a hash with options is expected
-          options = args[1]
+          options = args.last
+          @inmutable = (args.include? :inmutable)
+          if @inmutable
+            @inm_instances = nil
+          end
 
           @model_settings = default_model_options.merge(options || {})
 
@@ -64,6 +68,10 @@ module Goo
           end
           return @model_settings[:attributes].keys.
             select{ |k| @model_settings[:attributes][k][:inverse].nil? }
+        end
+
+        def inmutable?
+          return @inmutable
         end
 
         def collection?(attr)
@@ -202,6 +210,20 @@ module Goo
 
         def name_with
           return @model_settings[:name_with]
+        end
+
+        def load_inmutable_instances
+          #TODO this should be SYNC
+          @inm_instances = nil
+          ins = self.where.include(self.attributes).all
+          @inm_instances = {}
+          ins.each do |ins|
+            @inm_instances[ins.id] = ins
+          end
+        end
+
+        def inm_instances
+          @inm_instances
         end
       end
     end

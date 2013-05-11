@@ -58,6 +58,11 @@ module Goo
       end
 
       def all
+        if @result.nil? && @klass.inmutable? && @klass.inm_instances
+          if @pattern.nil? && @filters.nil? 
+            @result = @klass.inm_instances.values
+          end
+        end
         process_query unless @result
         @result
       end
