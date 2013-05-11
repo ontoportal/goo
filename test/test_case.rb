@@ -58,6 +58,8 @@ class GooTest
         conf.add_namespace(:metadata, RDF::Vocabulary.new("http://goo.org/metadata/"))
         conf.add_namespace(:foaf, RDF::Vocabulary.new("http://xmlns.com/foaf/0.1/"))
         conf.add_namespace(:rdf, RDF::Vocabulary.new("http://www.w3.org/1999/02/22-rdf-syntax-ns#"))
+        conf.add_namespace(:tiger, RDF::Vocabulary.new("http://www.census.gov/tiger/2002/vocab#"))
+        conf.add_namespace(:bioportal, RDF::Vocabulary.new("http://data.bioontology.org/"))
         conf.add_namespace(:nemo, RDF::Vocabulary.new(
           "http://purl.bioontology.org/NEMO/ontology/NEMO_annotation_properties.owl#"))
 
