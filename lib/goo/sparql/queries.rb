@@ -163,12 +163,18 @@ module Goo
         models = options[:models]
         query_filters = options[:filters]
         aggregate = options[:aggregate]
+        read_only = options[:read_only]
         graph_match = options[:graph_match]
         order_by = options[:order_by]
         collection = options[:collection]
         page = options[:page]
         count = options[:count]
         store = options[:store] || :main
+        klass_struct = nil
+        if read_only
+          direct_incl = !incl ? [] : incl.select { |a| a.instance_of?(Symbol) }
+          klass_struct = klass.struct_object(direct_incl)
+        end
 
         if ids and models
           raise ArgumentError, "Inconsistent call , either models or IDs"
@@ -190,7 +196,8 @@ module Goo
           end
         elsif ids
           ids.each do |id|
-            models_by_id[id] = klass.new
+            models_by_id[id] = klass_struct ? klass_struct.new : klass.new
+            models_by_id[id].klass = klass if klass_struct
             models_by_id[id].id = id
           end
         else #a where without models
@@ -378,9 +385,10 @@ module Goo
             next
           end
           if !models_by_id.include?(id)
-            klass_model = klass.new
+            klass_model = klass_struct ? klass_struct.new : klass.new 
             klass_model.id = id
-            klass_model.persistent = true
+            klass_model.persistent = true unless klass_struct
+            klass_model.klass = klass if klass_struct
             models_by_id[id] = klass_model
           end
           if unmapped
@@ -421,8 +429,10 @@ module Goo
                 range_for_v = klass.range(v)
                 if range_for_v 
                   unless range_for_v.inmutable?
-                    object = klass.range_object(v,object)
-                    objects_new[object.id] = object
+                    if read_only
+                      object = klass.range_object(v,object)
+                      objects_new[object.id] = object
+                    end
                   else
                     object = range_for_v.find(object).first
                   end
@@ -435,7 +445,11 @@ module Goo
               object = !pre ? [object] : (pre.dup << object)
               object.uniq!
             end
-            models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
+            if klass_struct
+              models_by_id[id][v] = object
+            else
+              models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
+            end
           end
         end
         return models_by_id if bnode_extraction

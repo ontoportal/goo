@@ -14,7 +14,7 @@ module TestIndex
     def setup
     end
 
-    def self.before_suite_xxxx
+    def self.before_suite_xxx
       graph = RDF::URI.new(Test::Models::DATA_ID)
 
       database = Test::Models::Database.new
@@ -52,7 +52,7 @@ module TestIndex
 
     def test_index
       db = Test::Models::Database.find(RDF::URI.new(Test::Models::DATA_ID)).first
-      page = Test::Models::Line.in(db).index_as("line_collection",max=1000)
+      page = Test::Models::Line.in(db).index_as("line_collection")
       
       res_from_index = Test::Models::Line.where
                 .in(db)

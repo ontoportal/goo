@@ -24,6 +24,7 @@ module Goo
         @index_key = nil
         @order_by = nil
         @indexing = false
+        @read_only = false
       end
 
       def process_query()
@@ -37,7 +38,7 @@ module Goo
         options_load = { models: @models, include: @include, ids: @ids,
                          graph_match: @pattern, klass: @klass,
                          filters: @filters, aggregate: @aggregate,
-                         order_by: @order_by }
+                         order_by: @order_by , read_only: @read_only }
 
         options_load.merge!(@where_options_load) if @where_options_load
         if !@klass.collection_opts.nil? and !options_load.include?(:collection)
@@ -99,6 +100,7 @@ module Goo
 
       def index_as(index_key,max=nil)
         @indexing = true
+        @read_only = true
         raise ArgumentError, "Need redis configuration to index" unless Goo.redis_client
         rclient = Goo.redis_client
         if @include.length > 0
@@ -241,6 +243,11 @@ module Goo
 
       def with_index(index_key)
         @index_key = index_key
+        self
+      end
+
+      def read_only
+        @read_only = true
         self
       end
     end

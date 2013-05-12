@@ -225,6 +225,15 @@ module Goo
         def inm_instances
           @inm_instances
         end
+
+        def struct_object(attrs)
+          attrs = attrs.dup
+          attrs << :id
+          attrs << :klass
+          attrs << collection_opts if collection_opts
+          return Struct.new(*attrs)
+        end
+
       end
     end
   end
