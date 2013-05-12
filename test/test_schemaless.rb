@@ -112,5 +112,41 @@ module TestSChemaless
       assert k.parents.first.label == "cognitive_process"
     end
 
+
+    def test_index_order_by
+      ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
+
+      Klass.in(ontology).order_by(label: :asc).index_as("my_ontology_by_labels")
+
+      first_page = Klass
+                      .in(ontology)
+                      .with_index("my_ontology_by_labels")
+                      .include(:label, :synonym)
+                      .page(1, 100).all
+
+      prev_label = nil
+      first_page.each do |k|
+        (assert prev_label <= k.label) if prev_label
+        prev_label = k.label
+      end
+
+    end
+
+    def test_index_roots
+      ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
+      f = Goo::Filter.new(:parents).unbound
+      Klass.in(ontology)
+                .filter(f)
+                .index_as("my_ontology_roots")
+
+      roots = Klass.in(ontology)
+                .with_index("my_ontology_roots")
+                .include(:label)
+                .all
+      roots.each do |r|
+        #roots have no parents
+        assert Klass.find(r.id).in(ontology).include(:parents).first.parents.nil?
+      end
+    end
   end
 end

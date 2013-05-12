@@ -8,6 +8,7 @@ require "uri"
 require "uuid"
 require 'rsolr'
 require 'rest_client'
+require 'redis'
 
 require_relative "goo/sparql/sparql"
 require_relative "goo/base/base"
@@ -27,6 +28,7 @@ module Goo
   @@search_connection = nil
 
   @@default_namespace = nil
+  @@redis_client = nil
   @@namespaces = {}
 
   def self.add_namespace(shortcut, namespace,default=false)
@@ -56,6 +58,12 @@ module Goo
     @@search_backends[name] = opts
   end
 
+  def self.add_redis_backend(*opts)
+    host = opts.delete :host
+    port = opts.delete(:port) || 6379
+    @@redis_client = Redis.new host: host, port: port
+  end
+
   def self.configure_sanity_check()
     unless @@namespaces.length > 0
       raise ArgumentError, "Namespaces needs to be provided."
@@ -82,6 +90,10 @@ module Goo
 
   def self.configure?
     return @@configure_flag
+  end
+
+  def self.redis_client
+    return @@redis_client
   end
 
   def self.namespaces

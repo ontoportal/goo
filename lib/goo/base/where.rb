@@ -21,21 +21,50 @@ module Goo
         @count = nil
         @page_i = nil
         @page_size = nil
+        @index_key = nil
+        @order_by = nil
+        @indexing = false
       end
 
       def process_query()
+
+        if @order_by && !@indexing
+          raise ArgumentError, "Order by support is restricted to only offline indexing"
+        end
+
         @include << @include_embed if @include_embed.length > 0
 
         options_load = { models: @models, include: @include, ids: @ids,
                          graph_match: @pattern, klass: @klass,
-                         filters: @filters , aggregate: @aggregate}
+                         filters: @filters, aggregate: @aggregate,
+                         order_by: @order_by }
 
         options_load.merge!(@where_options_load) if @where_options_load
         if !@klass.collection_opts.nil? and !options_load.include?(:collection)
-          raise ArgumentError, "Collection needed call `#{@klass.name}.find`"
+          binding.pry
+          raise ArgumentError, "Collection needed call `#{@klass.name}`"
         end
 
-        if @page_i
+        ids = nil
+        if @index_key
+          raise ArgumentError, "Redis is not configured" unless Goo.redis_client
+          rclient = Goo.redis_client
+          cache_key = cache_key_for_index(@index_key)
+          raise ArgumentError, "Index not found" unless rclient.exists(cache_key)
+          if @page_i
+            if !@count
+              @count = rclient.llen(cache_key)
+            end
+            rstart = (@page_i -1) * @page_size 
+            rstop = (rstart + @page_size) -1
+            ids = rclient.lrange(cache_key,rstart,rstop)
+          else
+            ids = rclient.lrange(cache_key,0,-1)
+          end
+          ids = ids.map { |i| RDF::URI.new(i) }
+        end
+
+        if @page_i && !@index_key
           page_options = options_load.dup
           page_options.delete(:include)
           if !@count
@@ -48,6 +77,13 @@ module Goo
           options_load[:models] = models_by_id.values
         end
 
+        if @indexing
+          #do not care about include values
+          @result = Goo::Base::Page.new(@page_i,@page_size,@count,models_by_id.values)
+          return @result
+        end
+
+        options_load[:ids] = ids if ids
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
         unless @page_i
           @result = models_by_id.values
@@ -55,6 +91,42 @@ module Goo
           @result = Goo::Base::Page.new(@page_i,@page_size,@count,models_by_id.values)
         end
         @result
+      end
+
+      def cache_key_for_index(index_key)
+        return "goo:#{@klass.name}:#{index_key}"
+      end
+
+      def index_as(index_key,max=nil)
+        @indexing = true
+        raise ArgumentError, "Need redis configuration to index" unless Goo.redis_client
+        rclient = Goo.redis_client
+        if @include.length > 0
+          raise ArgumentError, "Index is performend on Where objects without attributes included"
+        end
+        page_i_index = 1
+        page_size_index = 400 
+        temporal_key = "goo:#{@klass.name}:#{index_key}:tmp"
+        final_key = cache_key_for_index(index_key)
+        count = 0
+        start = Time.now
+        stop = false
+        begin
+          page = self.page(page_i_index,page_size_index).all
+          count += page.length
+          ids = page.map { |x| x.id }
+          rclient.pipelined do
+            ids.each do |id|
+              rclient.rpush temporal_key, id.to_s
+            end
+          end
+          page_i_index += 1
+          puts "Indexed #{count}/#{page.aggregate} - #{Time.now - start} sec."
+          stop = !max.nil? && (count > max)
+        end while (page.next? && !stop)
+        rclient.rename temporal_key, final_key
+        puts "Indexed #{rclient.llen(final_key)} at #{final_key}"
+        return rclient.llen(final_key)
       end
 
       def all
@@ -134,7 +206,9 @@ module Goo
         self
       end
 
-      def order
+      def order_by(*opts)
+        @order_by = opts
+        self
       end
 
       def in(collection)
@@ -164,7 +238,11 @@ module Goo
       def nil?
         self.first.nil?
       end
+
+      def with_index(index_key)
+        @index_key = index_key
+        self
+      end
     end
   end
 end
-

@@ -50,7 +50,28 @@ module TestIndex
       assert l.end.tiger_long == "-121.745853"
     end
 
+    def test_index
+      db = Test::Models::Database.find(RDF::URI.new(Test::Models::DATA_ID)).first
+      page = Test::Models::Line.in(db).index_as("line_collection",max=1000)
+      
+      res_from_index = Test::Models::Line.where
+                .in(db)
+                .with_index("line_collection")
+                .include(:start,:end)
+                .page(2,10).all
+
+      res_not_index = Test::Models::Line.where
+                .in(db)
+                .include(:start,:end)
+                .page(2,10).all
+
+      res_not_index.each_index do |x|
+        assert res_not_index[x].start == res_from_index[x].start
+      end
+    end
+
     def test_page_all_lines
+      skip "enable for benchmark"
       db = Test::Models::Database.find(RDF::URI.new(Test::Models::DATA_ID)).first
       page = Test::Models::Line.in(db).page(1,5).all
       assert page.length == 5
@@ -60,7 +81,6 @@ module TestIndex
       assert page.next?
       assert !page.prev?
 
-
       page = Test::Models::Line.in(db).page(1,5).include(:start,:end).all
       page.each do |line|
         assert line.start.is_a?(Struct)
@@ -69,7 +89,7 @@ module TestIndex
 
       page_i = 1
       total = 0
-      pagination = Test::Models::Line.in(db).include(:start,:end).page(page_i,1000)
+      pagination = Test::Models::Line.in(db).include(:start,:end).page(page_i,100)
       begin
         t0 = Time.now
         page = pagination.page(page_i).all

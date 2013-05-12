@@ -164,6 +164,7 @@ module Goo
         query_filters = options[:filters]
         aggregate = options[:aggregate]
         graph_match = options[:graph_match]
+        order_by = options[:order_by]
         collection = options[:collection]
         page = options[:page]
         count = options[:count]
@@ -307,6 +308,15 @@ module Goo
             end
           end
         end
+        order_by = nil if count
+        if order_by
+          order_by = order_by.first
+          #simple ordering ... needs to use pattern inspection
+          order_by.each do |attr,direction|
+            quad = query_pattern(klass,attr,nil,:id)
+            patterns << quad[1]
+          end
+        end
 
         client = Goo.sparql_query_client(store)
         variables = [:count_var] if count
@@ -316,8 +326,13 @@ module Goo
           select.optional(*[optional])
         end
         select.union(*unions) if unions.length > 0
+        if order_by
+          order_by_str = order_by.map { |attr,order| "#{order.to_s.upcase}(?#{attr})" }
+          select.order_by(*order_by_str)
+        end
 
         select.filter(filter_id_str)
+        select.filter("!isBLANK(?id)")
         if query_filter_str.length > 0
           query_filter_str.each do |f|
             select.filter(f)

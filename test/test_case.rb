@@ -68,7 +68,7 @@ class GooTest
                                 update: "http://localhost:9000/update/",
                                 options: { rules: :NONE })
         conf.add_search_backend(:main, service: "http://ncbo-dev-app-02.stanford.edu:8080/solr/" )
-
+        conf.add_redis_backend(:host => "localhost")
       end
     end
   end
