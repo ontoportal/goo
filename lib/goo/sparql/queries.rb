@@ -471,9 +471,11 @@ module Goo
         #remove from models_by_id elements that were not touched
         models_by_id.select! { |k,m| found.include?(k) }
 
-        if options[:ids] #newly loaded
-          models_by_id.each do |k,m|
-            m.persistent=true
+        unless read_only
+          if options[:ids] #newly loaded
+            models_by_id.each do |k,m|
+              m.persistent=true
+            end
           end
         end
 

@@ -26,6 +26,18 @@ module TestReadOnly
         assert st.id.class == RDF::URI
       end
     end
+
+    def test_struct_find
+      st = Student.find(RDF::URI.new("http://goo.org/default/student/Tim"))
+                .read_only
+                .include(:name,:birth_date)
+                .first
+      assert st.kind_of?(Struct)
+      assert st.id == RDF::URI.new("http://goo.org/default/student/Tim")
+      assert st.name == "Tim"
+      assert st.birth_date.kind_of?(DateTime)
+    end
+
     def test_embed_struct
       skip "not yet supported"
 
