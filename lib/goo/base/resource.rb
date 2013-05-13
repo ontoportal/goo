@@ -5,6 +5,8 @@ module Goo
   module Base
     AGGREGATE_VALUE = Struct.new(:attribute,:aggregate,:value)
 
+    # Resource is the main aaa
+    # @author Manuel Salvadores
     class Resource
       include Goo::Base::Settings
       #include Goo::Search
@@ -259,7 +261,7 @@ module Goo
         end
         if self.inmutable? && self.inm_instances && self.inm_instances[id]
           w = Goo::Base::Where.new(self)
-          w.instance_variable_set("@result", [self.inm_instances[id]])
+          w.instance_variable_set("@result", [self..inm_instances[id]])
           return w
         end
         options_load = { ids: [id], klass: self }.merge(options[-1] || {})

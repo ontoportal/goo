@@ -15,7 +15,7 @@ module Test
       model :user, name_with: :username
       attribute :username, enforce: [:existence, :unique]
       attribute :email, enforce: [:existence, :email]
-      attribute :roles, enforce: [:list, :user, :existence]
+      attribute :roles, enforce: [:list, :roles, :existence]
       attribute :created, enforce: [ DateTime ],
                 default: lambda { |record| DateTime.now }
     end 
