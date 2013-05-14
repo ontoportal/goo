@@ -429,9 +429,12 @@ module Goo
                 range_for_v = klass.range(v)
                 if range_for_v 
                   unless range_for_v.inmutable?
-                    if read_only
+                    if !read_only
                       object = klass.range_object(v,object)
                       objects_new[object.id] = object
+                    else
+                      #depedent read only
+                      binding.pry
                     end
                   else
                     object = range_for_v.find(object).first
