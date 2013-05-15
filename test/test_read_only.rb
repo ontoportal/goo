@@ -39,11 +39,11 @@ module TestReadOnly
     end
 
     def test_embed_struct
-      skip "not yet supported"
-
+      skip "not yet"
       students = Student.where(enrolled: [university: [name: "Stanford"]])
                 .include(:name)
-                .include(enrolled: [:name, university: [ :address ]]).all
+                .include(enrolled: [:name, university: [ :address ]])
+                .read_only.all
       binding.pry
     end
   end

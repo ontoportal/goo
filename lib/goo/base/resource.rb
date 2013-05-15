@@ -261,7 +261,7 @@ module Goo
         end
         if self.inmutable? && self.inm_instances && self.inm_instances[id]
           w = Goo::Base::Where.new(self)
-          w.instance_variable_set("@result", [self..inm_instances[id]])
+          w.instance_variable_set("@result", [self.inm_instances[id]])
           return w
         end
         options_load = { ids: [id], klass: self }.merge(options[-1] || {})

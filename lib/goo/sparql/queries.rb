@@ -171,9 +171,20 @@ module Goo
         count = options[:count]
         store = options[:store] || :main
         klass_struct = nil
+        embed_struct = nil
         if read_only
           direct_incl = !incl ? [] : incl.select { |a| a.instance_of?(Symbol) }
-          klass_struct = klass.struct_object(direct_incl)
+          incl_embed = incl.select { |a| a.instance_of?(Hash) }.first
+          klass_struct = klass.struct_object(direct_incl + incl_embed.keys)
+          embed_struct = {}
+          incl_embed.each do |k,vals|
+            attrs_struct = []
+            vals.each do |v|
+              attrs_struct << v unless v.kind_of?(Hash)
+              attrs_struct.concat(v.keys) if v.kind_of?(Hash)
+            end
+            embed_struct[k] = klass.range(k).struct_object(attrs_struct)
+          end
         end
 
         if ids and models
@@ -236,9 +247,9 @@ module Goo
             incl_direct = incl.select { |a| a.instance_of?(Symbol) }
             variables.concat(incl_direct)
             incl_embed = incl.select { |a| a.instance_of?(Hash) }
-            binding.pry if incl_embed.length > 1
             raise ArgumentError, "Not supported case for embed" if incl_embed.length > 1
             incl.delete_if { |a| !a.instance_of?(Symbol) }
+            
             if incl_embed.length > 0
               incl_embed = incl_embed.first
               embed_variables = incl_embed.keys.sort
@@ -434,7 +445,9 @@ module Goo
                       objects_new[object.id] = object
                     else
                       #depedent read only
-                      binding.pry
+                      struct = embed_struct[v].new
+                      struct.id = object
+                      objects_new[id] = struct
                     end
                   else
                     object = range_for_v.find(object).first
