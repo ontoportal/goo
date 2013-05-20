@@ -175,15 +175,17 @@ module Goo
         if read_only
           direct_incl = !incl ? [] : incl.select { |a| a.instance_of?(Symbol) }
           incl_embed = incl.select { |a| a.instance_of?(Hash) }.first
-          klass_struct = klass.struct_object(direct_incl + incl_embed.keys)
+          klass_struct = klass.struct_object(direct_incl + (incl_embed ? incl_embed.keys : []))
           embed_struct = {}
-          incl_embed.each do |k,vals|
-            attrs_struct = []
-            vals.each do |v|
-              attrs_struct << v unless v.kind_of?(Hash)
-              attrs_struct.concat(v.keys) if v.kind_of?(Hash)
+          if incl_embed
+            incl_embed.each do |k,vals|
+              attrs_struct = []
+              vals.each do |v|
+                attrs_struct << v unless v.kind_of?(Hash)
+                attrs_struct.concat(v.keys) if v.kind_of?(Hash)
+              end
+              embed_struct[k] = klass.range(k).struct_object(attrs_struct)
             end
-            embed_struct[k] = klass.range(k).struct_object(attrs_struct)
           end
         end
 
