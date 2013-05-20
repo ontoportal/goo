@@ -87,8 +87,12 @@ module Test
         puts "created note #{i}"
       end
     end
-      2000.times do |i|
-        ont = Ontology.where(acronym: "ontology #{Random.rand(20)}").all.first
+      500.times do |i|
+        ont_id = 0
+        begin
+          ont_id = Random.rand(5)+180
+        end
+        ont = Ontology.where(acronym: "ontology #{ont_id}").all.first
         owner = User.where(username: "user#{i % 200}name").include(:username).all.first
         n = Note.new(content: "content " * 60, owner: owner, ontology: ont)
         n.save
@@ -265,6 +269,13 @@ eos
           csv <<  b
         end
       end
+    end
+
+    def self.benchmark_all
+      benchmark_naive_fast
+      benchmark_naive_query
+      benchmark_query_goo_fast
+      benchmark_query_goo
     end
   end
 end
