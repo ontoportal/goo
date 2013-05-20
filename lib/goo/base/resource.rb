@@ -228,7 +228,7 @@ module Goo
         end
 
         #after save all attributes where loaded
-        @loaded_attributes = Set.new(self.class.attributes)
+        @loaded_attributes = Set.new(self.class.attributes).union(@loaded_attributes)
 
         @modified_attributes = Set.new
         @persistent = true
