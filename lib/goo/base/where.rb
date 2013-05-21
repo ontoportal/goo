@@ -42,7 +42,6 @@ module Goo
 
         options_load.merge!(@where_options_load) if @where_options_load
         if !@klass.collection_opts.nil? and !options_load.include?(:collection)
-          binding.pry
           raise ArgumentError, "Collection needed call `#{@klass.name}`"
         end
 

@@ -145,6 +145,7 @@ module Goo
         end
    
         def attribute_uri(attr)
+          raise ArgumentError, ":id cannot be treated as predicate for .where, use find " if attr == :id
           uri = @attribute_uris[attr]
           return uri unless uri.nil?
           attr_string = attr.to_s

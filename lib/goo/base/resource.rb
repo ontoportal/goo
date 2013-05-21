@@ -57,7 +57,7 @@ module Goo
                   "There is already a persistent resource with id `#{@id.to_s}`"
               end
             rescue ArgumentError => e
-              validation_errors[uattr][:unique] = e.message
+              (validation_errors[uattr] ||= {})[:existence] = e.message
             end 
           end
         end
@@ -76,6 +76,10 @@ module Goo
 
       def id
         if @id.nil?
+          if self.class.name_with == :id
+            raise ArgumentError, ":id must be set if configured in name_with"
+            return nil
+          end
           custom_name = self.class.name_with
           if custom_name.instance_of?(Symbol)
             @id = id_from_attribute()
@@ -256,6 +260,9 @@ module Goo
       end
 
       def self.find(id, *options)
+        if !id.instance_of?(RDF::URI) && self.name_with == :id
+          id = RDF::URI.new(id)
+        end
         unless id.instance_of?(RDF::URI)
           id = id_from_unique_attribute(name_with(),id)
         end
@@ -285,9 +292,10 @@ module Goo
 
       protected
       def id_from_attribute()
-          uattr = self.class.name_with
-          uvalue = self.send("#{uattr}")
-          return self.class.id_from_unique_attribute(uattr,uvalue)
+        binding.pry if $DEBUG_GOO      
+        uattr = self.class.name_with
+        uvalue = self.send("#{uattr}")
+        return self.class.id_from_unique_attribute(uattr,uvalue)
       end
 
     end

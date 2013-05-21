@@ -12,7 +12,7 @@ module TestSChemaless
   end 
 
   class Klass < Goo::Base::Resource
-    model :class, namespace: :owl, name_with: lambda { |k| k.id },
+    model :class, namespace: :owl, name_with: :id,
            collection: :ontology
     attribute :ontology, enforce: [:ontology]
 
