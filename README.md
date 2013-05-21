@@ -13,7 +13,7 @@
 
 *Goo* models are defined by extending [Resource](/docs/Goo/Base/Resource) and providing one [model]() definition and [attribute]() definitions. The example below provides defines a `User` model with two attributes `username` and `email`. In this model:
 
-```
+```ruby
 require 'goo'
 
 class User < Goo::Base::Resource
@@ -297,15 +297,90 @@ This capability is important when dealing with scenarios of data integration of 
 
 
 ##Configuration
+Configuration is set by passing code block to `Goo.configure`. The `conf` object responds to calls to:
+
+  * add_namespace: With this call we set the relation between Ruby symbols used in the DSL and RDF Vocabularies.
+  * add_sparql_backend: This call is to provide the endpoints of the SPARQL server. There are three endpoints `query`, `update` and `data`.
+  * add_redis_backend: The Redis host can be optionally added using this call. This is only required if indexes are used.
+  
+
+```ruby
+Goo.configure do |conf|
+    conf.add_namespace(:omv, RDF::Vocabulary.new("http://omv.org/ontology/"))
+    conf.add_namespace(:skos, RDF::Vocabulary.new("http://www.w3.org/2004/02/skos/core#"))
+    conf.add_namespace(:owl, RDF::Vocabulary.new("http://www.w3.org/2002/07/owl#"))
+    conf.add_namespace(:rdfs, RDF::Vocabulary.new("http://www.w3.org/2000/01/rdf-schema#"))
+    conf.add_namespace(:goo, RDF::Vocabulary.new("http://goo.org/default/"),default=true)
+    conf.add_sparql_backend(:main, query: "http://localhost:9000/sparql/",
+                            data: "http://localhost:9000/data/",
+                            update: "http://localhost:9000/update/",
+                            options: { rules: :NONE })
+    conf.add_redis_backend(:host => "localhost")
+end
+```
+
 
 ##Advance Topics
 
 ###Collections and Named Graphs
 
+Collections allow to save objects in a specific named graph and information can be attached to the named to implement data provenance. So say you have terms that belong to a website and the website URL is going to be the ID of the named graph. Additionally we have some data about the web site.
+
+```ruby
+require 'goo'
+
+class Term < Goo::Base::Resource
+  model :term, name_with: :name, collection: :website
+  attribute :name, enforce: [:existence, :unique]
+  attribute :extracted_from, enforce: [:website]
+end
+
+class Website < Goo::Base::Resource
+   model :website, name_with: :url
+   attribute :url, enforce [:existence, :unique]
+   attribute :author, enforce [:user]
+end
+
+website = Website.new(url: "http://example.com", author: some_user).save
+
+#saving
+t = Term.new(name: "some term", extracted_from: website).save
+
+#searching
+terms = Term.where( some_search_pattern ).in(website).all
+
+```
+
+Chaining the search with `.in( provenance_object )` will constrain the search to just the graph of a specific object. 
+
 ###Caching and Indexing
+When implementing pagination, we normally return statistical information about the number of resources across all pages, number of pages, links to next and previous pages and the information about the resources contained in the current page. In SPARQL, pagination happens at the level of triples. In Goo, we provide built-in capabilities to cache this pagination-related data. This approach works best for resources that are mostly read-only or for resources where getting the most recent information is not critical (e.g., the ontology information)
+The example below shows the indexing of ontology classes by label and its use to access a page of information.
+
+```ruby
+ontology = Ontology.find(RDF::URI.new(ONT_ID))
+#index
+Klass.in(ontology).order_by(label: :asc).index_as("my_index")
+
+#search with the index
+first_page = Klass.in(ontology).with_index("my_index")
+              .include(:label, :synonym).page(1, 100)
+```
 
 ###Fast retrieval of read-only objects
 
+ In most dynamic languages, objects can be expensive data structures and one can save memory and CPU time by using cheaper data containers. The Ruby platform provides the `Struct` class. Simple benchmarks show that the instantiation of `Struct` objects can be up to 63% faster than Goo Resource objects. This is mainly due to the internal objects that Goo maintains to track each object's state. These internal objects are of no use when the application is only reading and not writing. 
+To trigger the retrieval of read-only objects in Goo we call the `.read_only` when issuing a query, i.e:
+
+```ruby
+User.where.include(:username, :email).read_only
+```
+
 ###Aggregators
 
+documentation TODO just an example ...
+
+
 ###Profiler
+
+Implemented … documentation TODO
