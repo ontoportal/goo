@@ -106,32 +106,32 @@ class TestModelComplex < MiniTest::Unit::TestCase
   def test_two_resources_same_id
     s1 = Submission.new(name: "sub1")
     if s1.exist?
-      s1 = Submission.find("sub1")
+      s1 = Submission.find("sub1").first
     else
       s1.save
     end
     s2 = Submission.new(name: "sub2")
     if s2.exist?
-      s2 = Submission.find("sub2")
+      s2 = Submission.find("sub2").first
     else
       s2.save
     end
 
     [s1, s2].each do |s|
-      terms = Term.where submission: s
+      terms = Term.where.in(s).all
       terms.each do |t|
         t.delete
       end
     end
 
     t0 = Term.new( prefLabel: "labelX" )
-    t0.resource_id = RDF::URI.new("http://someiri.org/term0")
+    t0.id = RDF::URI.new("http://someiri.org/term0")
     t1 = Term.new( prefLabel: "label1" )
-    t1.resource_id = RDF::URI.new("http://someiri.org/term")
+    t1.id = RDF::URI.new("http://someiri.org/term")
     t0.submission = s1
     t1.submission = s1
     t2 = Term.new( prefLabel: "label2" )
-    t2.resource_id = RDF::URI.new("http://someiri.org/term")
+    t2.id = RDF::URI.new("http://someiri.org/term")
     t2.submission = s2
 
     assert t0.valid?
@@ -142,17 +142,17 @@ class TestModelComplex < MiniTest::Unit::TestCase
     t1.save
     t2.save
 
-   t1x = Term.find(RDF::URI.new("http://someiri.org/term"), submission: s1)
-   assert t1x.prefLabel.value ==  "label1"
-   t2x = Term.find(RDF::URI.new("http://someiri.org/term"), submission: s2)
-   assert t2x.prefLabel.value ==  "label2"
+   t1x = Term.find(RDF::URI.new("http://someiri.org/term")).in(s1).include(Term.attributes).first
+   assert t1x.prefLabel ==  "label1"
+   t2x = Term.find(RDF::URI.new("http://someiri.org/term")).in(s2).include(Term.attributes).first
+   assert t2x.prefLabel ==  "label2"
 
-   termsS2 = Term.where submission: s2
+   termsS2 = Term.where.in(s2).all
    assert termsS2.length == 1
-   termsS1 = Term.where submission: s1
+   termsS1 = Term.where.in(s1).all
    assert termsS1.length == 2
    [s1, s2].each do |s|
-     terms = Term.where submission: s
+     terms = Term.where.in(s).all
      terms.each do |t|
        t.delete
      end
