@@ -293,18 +293,17 @@ class TestModelComplex < MiniTest::Unit::TestCase
     unless submission.exist?
       submission.save
     else
-      submission = Submission.find("submission1")
+      submission = Submission.find("submission1").first
     end
 
-    terms = Term.where submission: submission
+    terms = Term.in(submission)
     terms.each do |t|
-      assert t.internals.collection.kind_of? Submission
       t.delete
-      assert_equal 0, count_pattern("GRAPH <#{t.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
+      assert_equal 0, GooTest.count_pattern("GRAPH #{t.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }")
     end
 
     vehicle = Term.new
-    vehicle.resource_id = RDF::URI.new "http://someiri.org/vehicle"
+    vehicle.id = RDF::URI.new "http://someiri.org/vehicle"
     vehicle.submission = submission
     vehicle.prefLabel = "vehicle"
     vehicle.synonym = ["transport", "vehicles"]
@@ -312,21 +311,21 @@ class TestModelComplex < MiniTest::Unit::TestCase
     vehicle.save
 
     #on demand
-    terms = Term.where submission: submission
+    terms = Term.in(submission).include(:synonym,:definition).all
     assert terms.length == 1
     assert terms.first.synonym.sort ==  ["transport", "vehicles"]
-    assert terms.first.definition ==  []
+    assert terms.first.definition ==  nil
 
     #preload
-    terms = Term.where submission: submission, :load_attrs => [:synonym, :definition]
+    terms = Term.in(submission).include(:synonym, :definition).all
     assert terms.length == 1
     assert terms.first.synonym.sort ==  ["transport", "vehicles"]
-    assert terms.first.definition ==  []
+    assert terms.first.definition ==  nil
 
     #with find
-    term = Term.find RDF::URI.new("http://someiri.org/vehicle"), :submission => submission, :load_attrs => [:prefLabel, :synonym, :definition]
+    term = Term.find(RDF::URI.new("http://someiri.org/vehicle")).in(submission).include(:prefLabel, :synonym, :definition).first
     assert term.synonym.sort ==  ["transport", "vehicles"]
-    assert term.definition ==  []
+    assert term.definition ==  nil
     assert term.prefLabel == "vehicle"
 
   end
