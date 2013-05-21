@@ -181,6 +181,7 @@ admin = Role.find("admin").include(Role.attributes).first
 #include all the attributes - including inverse
 admin = Role.find("admin").include(Role.attributes(:all)).first
 
+
 ```
 
 Note: `include` is also avalaible for the `Resource.where` API call.
@@ -197,6 +198,8 @@ users = User.where(lastname: "paul", role: [ Role.find("admin").first ]).all
 users = User.where(lastname: "paul", role: Role.find("admin").first)
                     include(:username, :birthdate).all
 
+#iteratively including attributes
+Users.where.models(users).include(:some_extra_attr).all
 ```
 
 The options passed into `where` reassembles a graph matching structure and can be read as follows;
