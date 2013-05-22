@@ -41,6 +41,7 @@ module Goo
 
   def self.add_sparql_backend(name, *opts)
     opts = opts[0]
+    @@sparql_backends = @@sparql_backends.dup
     @@sparql_backends[name] = opts
     @@sparql_backends[name][:query]=Goo::SPARQL::Client.new(opts[:query],
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded" })
@@ -48,6 +49,7 @@ module Goo
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded" })
     @@sparql_backends[name][:data]=Goo::SPARQL::Client.new(opts[:data],
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded" })
+    @@sparql_backends.freeze
   end
 
   def self.add_search_backend(name, *opts)
@@ -55,7 +57,9 @@ module Goo
     unless opts.include? :service
       raise ArgumentError, "Search backend configuration must contains a host list."
     end
+    @@search_backends = @@search_backends.dup
     @@search_backends[name] = opts
+    @@search_backends.freeze
   end
 
   def self.add_redis_backend(*opts)
