@@ -214,6 +214,14 @@ module Goo
           return namespace[model_name.to_s + '/' + uri_last_fragment]
         end
 
+        def enum(attribute,*values)
+          include Goo::Base::Enum
+          (@model_settings[:enum] = {})[:initialize] = false
+          @model_settings[:enum][:attribute] = attribute
+          @model_settings[:enum][:values] = values.first
+          @model_settings[:enum][:lock] = Mutex.new
+        end
+
         def name_with
           return @model_settings[:name_with]
         end
