@@ -106,21 +106,22 @@ module Goo
       end
 
       def self.walk_pattern(klass, match_patterns, graphs, patterns, unions, 
-                                internal_variables,in_aggregate=false)
+                                internal_variables,in_aggregate=false,query_options={})
         match_patterns.each do |match,in_union|
           unions << [] if in_union
           match = match.is_a?(Symbol) ? { match => [] } : match
           match.each do |attr,value|
             patterns_for_match(klass, attr, value, graphs, patterns,
                                unions,internal_variables,
-                               subject=:id,in_union=in_union,in_aggregate=in_aggregate)
+                               subject=:id,in_union=in_union,
+                               in_aggregate=in_aggregate,query_options=query_options)
           end
         end
       end
 
       def self.patterns_for_match(klass,attr,value,graphs,patterns,unions,
                                   internal_variables,subject=:id,in_union=false,
-                                  in_aggregate=false)
+                                  in_aggregate=false,query_options={})
         if value.respond_to?(:each) || value.instance_of?(Symbol)
           next_pattern = value.instance_of?(Array) ? value.first : value
 
@@ -132,6 +133,9 @@ module Goo
             value = "#{attr}_agg_#{in_aggregate}".to_sym
           end
           internal_variables << value
+        end
+        if klass.transitive?(attr)
+          (query_options[:rules] ||=[]) << :SUBC
         end
         graph, pattern = query_pattern(klass,attr,value,subject)
         if pattern
@@ -218,7 +222,9 @@ module Goo
         end
 
         variables = [:id]
-
+        
+        query_options = {}
+        #TODO: breaks the reasoner
         patterns = [[ :id ,RDF.type, klass.uri_type]]
         unions = []
         optional_patterns = []
@@ -272,7 +278,7 @@ module Goo
           #make it deterministic - for caching
           graph_match_iteration = Goo::Base::PatternIteration.new(graph_match) 
           walk_pattern(klass,graph_match_iteration,graphs,patterns,unions,
-                             internal_variables)
+                             internal_variables,in_aggregate=false,query_options)
           graphs.uniq!
         end
 
@@ -324,7 +330,7 @@ module Goo
                                 projection,
                                agg.aggregate ]
               variables << projection
-              patterns.concat(agg_patterns)
+              optional_patterns.concat(agg_patterns)
             end
           end
         end
@@ -337,10 +343,15 @@ module Goo
             patterns << quad[1]
           end
         end
+        query_options = nil if query_options.length == 0
 
         client = Goo.sparql_query_client(store)
         variables = [:count_var] if count
         select = client.select(*variables).distinct()
+
+        #rdf:type <x> breaks the reasoner
+        patterns.shift if query_options
+
         select.where(*patterns)
         optional_patterns.each do |optional|
           select.optional(*[optional])
@@ -371,7 +382,10 @@ module Goo
         end
         select.from(graphs)
         select.distinct(true)
-
+        if query_options
+          query_options[:rules] = query_options[:rules].map { |x| x.to_s }.join("+")
+          select.options[:query_options] = query_options
+        end
         found = Set.new
         list_attributes = Set.new(klass.attributes(:list))
         all_attributes = Set.new(klass.attributes(:all))

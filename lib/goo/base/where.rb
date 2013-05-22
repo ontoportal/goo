@@ -152,6 +152,11 @@ module Goo
         return @result.length
       end
 
+      def count
+        process_query unless @result
+        return @result.count
+      end
+
       def empty?
         process_query unless @result
         return @result.empty?

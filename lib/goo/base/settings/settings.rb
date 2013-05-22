@@ -99,6 +99,10 @@ module Goo
           @model_settings[:range][attr]
         end
 
+        def transitive?(attr)
+          return (@model_settings[:attributes][attr][:transitive] == true)
+        end
+
         def inverse?(attr)
           return (!@model_settings[:attributes][attr][:inverse].nil?)
         end

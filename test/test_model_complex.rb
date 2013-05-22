@@ -22,7 +22,10 @@ class Term < Goo::Base::Resource
   attribute :deprecated, namespace: :owl
 
   attribute :parents, namespace: :rdfs, property: :subClassOf, enforce: [:list, :class]
+  attribute :ancestors, namespace: :rdfs, property: :subClassOf, enforce: [:list, :class], transitive: true
+
   attribute :children, namespace: :rdfs, property: :subClassOf, inverse: { on: :class , attribute: :parents }
+  attribute :descendants, namespace: :rdfs, property: :subClassOf, inverse: { on: :class , attribute: :parents }, transitive: true
 end
 
 class TestModelComplex < MiniTest::Unit::TestCase
@@ -335,28 +338,27 @@ class TestModelComplex < MiniTest::Unit::TestCase
     unless submission.exist?
       submission.save
     else
-      submission = Submission.find("submission1")
+      submission = Submission.find("submission1").first
     end
-    terms = Term.where submission: submission
+    terms = Term.in(submission)
     terms.each do |t|
-      assert t.internals.collection.kind_of? Submission
       t.delete
-      assert_equal 0, count_pattern("GRAPH <#{t.resource_id.value}> { #{t.resource_id.to_turtle} ?p ?o . }")
+      assert_equal 0, GooTest.count_pattern("GRAPH #{submission.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }")
     end
     terms = []
     10.times do |i|
       term = Term.new
-      term.resource_id = RDF::URI.new "http://someiri.org/term/#{i}"
+      term.id = RDF::URI.new("http://someiri.org/term/#{i}")
       term.submission = submission
       term.prefLabel = "term #{i}"
       term.synonym = ["syn A #{i}", "syn B #{i}"]
-      if i > 1 && i < 5
+      if i >= 1 && i < 5
         term.parents = [terms[0]]
       elsif i == 5
         term.parents = [terms[1]]
       elsif i > 5 && i < 9
         term.parents = [terms[2], terms[3]]
-      else
+      elsif i > 0
         term.parents = [terms[5]]
       end
       assert term.valid?
@@ -364,66 +366,81 @@ class TestModelComplex < MiniTest::Unit::TestCase
       terms << term
     end
 
-    assert terms[0].children_count == 3
-    assert terms[1].children_count == 1
-    assert terms[2].children_count == 3
-    assert terms[3].children_count == 3
-    assert terms[-1].children_count == 0
+    terms = Term.in(submission).aggregate(:count, :children).all
+    terms = terms.sort_by { |x| x.id }
+    assert terms[0].aggregates.first.value == 4
+    assert terms[1].aggregates.first.value == 1
+    assert terms[2].aggregates.first.value == 3
+    assert terms[3].aggregates.first.value == 3
+    assert terms[-1].aggregates.first.value == 0
 
-    page = Term.page submission: submission, load_attrs: { children_count: true, synonym: true, prefLabel: true }
+    page = Term.in(submission).include(:synonym, :prefLabel)
+                                .aggregate(:count, :children)
+                                .page(1)
     page.each do |t|
-      if t.resource_id.value.include? "term/0"
-        assert t.children_count == 3
-      elsif t.resource_id.value.include? "term/1"
-        assert t.children_count == 1
-      elsif t.resource_id.value.include? "term/2"
-        assert t.children_count == 3
-      elsif t.resource_id.value.include? "term/3"
-        assert t.children_count == 3
-      elsif t.resource_id.value.include? "term/9"
-        assert t.children_count == 0
+      if t.id.to_s.include? "term/0"
+        assert t.aggregates.first.value == 4
+      elsif t.id.to_s.include? "term/1"
+        assert t.aggregates.first.value == 1
+      elsif t.id.to_s.include? "term/2"
+        assert t.aggregates.first.value == 3
+      elsif t.id.to_s.include? "term/3"
+        assert t.aggregates.first.value == 3
+      elsif t.id.to_s.include? "term/9"
+        assert t.aggregates.first.value == 0
       end
     end
 
     #with a parent
-    page = Term.page submission: submission, parents: terms[0], load_attrs: { children_count: true, synonym: true, prefLabel: true }
-    assert page.count == 3
+    page = Term.where(parents: terms[0]).in(submission).include(:synonym, :prefLabel)
+                                .aggregate(:count, :children)
+                                .page(1)
+    assert page.length == 4
     page.each do |t|
-      if t.resource_id.value.include? "term/2"
-        assert t.children_count == 3
-      elsif t.resource_id.value.include? "term/3"
-        assert t.children_count == 3
-      elsif t.resource_id.value.include? "term/4"
-        assert t.children_count == 0
+      if t.id.to_s.include? "term/1"
+        assert t.aggregates.first.value == 1
+      elsif t.id.to_s.include? "term/2"
+        assert t.aggregates.first.value == 3
+      elsif t.id.to_s.include? "term/3"
+        assert t.aggregates.first.value == 3
+      elsif t.id.to_s.include? "term/4"
+        assert t.aggregates.first.value == 0
       else
         assert 1==0
       end
     end
 
     #with parent and query options
-    page = Term.page submission: submission, parents: terms[0],
-                     load_attrs: { children_count: true, synonym: true, prefLabel: true },
-                     query_options: { rules: :SUBC }
+    $DEBUG_GOO = true
+    page = Term.where(ancestors: terms[0])
+                  .in(submission)
+                  .include(:synonym, :prefLabel)
+                  .aggregate(:count, :children)
+                  .page(1)
 
-    assert page.count == 6
+    assert page.count == 7
     page.each do |t|
-      if t.resource_id.value.include? "term/2"
-        assert t.children_count == 3
-      elsif t.resource_id.value.include? "term/3"
-        assert t.children_count == 3
-      elsif t.resource_id.value.include? "term/4"
-        assert t.children_count == 0
-      elsif t.resource_id.value.include? "term/6"
-        assert t.children_count == 0
-      elsif t.resource_id.value.include? "term/7"
-        assert t.children_count == 0
-      elsif t.resource_id.value.include? "term/8"
-        assert t.children_count == 0
+      if t.id.to_s.include? "term/1"
+        assert t.aggregates.first.value == 1
+      elsif t.id.to_s.include? "term/2"
+        assert t.aggregates.first.value == 3
+      elsif t.id.to_s.include? "term/3"
+        assert t.aggregates.first.value == 3
+      elsif t.id.to_s.include? "term/4"
+        assert t.aggregates.first.value == 0
+      elsif t.id.to_s.include? "term/6"
+        assert t.aggregates.first.value == 0
+      elsif t.id.to_s.include? "term/7"
+        assert t.aggregates.first.value == 0
+      elsif t.id.to_s.include? "term/8"
+        assert t.aggregates.first.value == 0
       else
+        binding.pry
         assert 1==0
       end
     end
 
+    binding.pry
     #the other direction UP and query options
     page = Term.page submission: submission, children: terms[9],
                      load_attrs: { children_count: true, synonym: true, prefLabel: true },
@@ -439,6 +456,10 @@ class TestModelComplex < MiniTest::Unit::TestCase
         assert 1==0
       end
     end
+
+    #with read only !!!!
+    #
+    #
   end
 
   def test_read_only_class
