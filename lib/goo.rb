@@ -30,6 +30,7 @@ module Goo
   @@default_namespace = nil
   @@redis_client = nil
   @@namespaces = {}
+  @@pluralize_models = false
 
   def self.add_namespace(shortcut, namespace,default=false)
     if !(namespace.instance_of? RDF::Vocabulary)
@@ -37,6 +38,10 @@ module Goo
     end
     @@namespaces[shortcut.to_sym] = namespace
     @@default_namespace = shortcut if default
+  end
+
+  def self.pluralize_models(setting_value)
+    @@pluralize_models = setting_value
   end
 
   def self.add_sparql_backend(name, *opts)
@@ -143,6 +148,10 @@ module Goo
   def self.vocabulary(namespace)
     return @@namespaces[@@default_namespace] if namespace.nil?
     return @@namespaces[namespace] 
+  end
+
+  def self.pluralize_models?
+    return @@pluralize_models
   end
 
 end

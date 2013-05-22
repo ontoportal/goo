@@ -1,3 +1,5 @@
+require 'active_support/core_ext/string'
+
 module Goo
   module Base
     module Settings
@@ -211,7 +213,9 @@ module Goo
             raise ArgumentError, "`#{attr}` value is nil. Id for resource cannot be generated."
           end
           uri_last_fragment = CGI.escape(value_attr)
-          return namespace[model_name.to_s + '/' + uri_last_fragment]
+          model_name_uri = model_name.to_s
+          model_name_uri = model_name_uri.pluralize if Goo.pluralize_models?
+          return namespace[ model_name_uri + '/' + uri_last_fragment]
         end
 
         def enum(*values)
