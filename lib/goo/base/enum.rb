@@ -7,8 +7,10 @@ module Goo
 
       module ClassMethods
         def init_enum
+          raise ArgumentError, "Enum objects cannot have more than one Goo attribute" if attributes.length > 1
+          attr = attributes.first
           @model_settings[:enum][:values].each do |value|
-            instance = self.new(@model_settings[:enum][:attribute] => value)
+            instance = self.new(attr => value)
             instance.save unless instance.exist?
           end
           @model_settings[:enum][:initialize]=true

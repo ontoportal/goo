@@ -9,7 +9,7 @@ module TestEnum
     model :status, name_with: :description
     attribute :description, enforce: [:existence, :unique]
 
-    enum :description, VALUES 
+    enum VALUES 
   end 
 
   class TestEnum < MiniTest::Unit::TestCase
