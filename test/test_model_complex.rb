@@ -411,7 +411,6 @@ class TestModelComplex < MiniTest::Unit::TestCase
     end
 
     #with parent and query options
-    $DEBUG_GOO = true
     page = Term.where(ancestors: terms[0])
                   .in(submission)
                   .include(:synonym, :prefLabel)
@@ -428,38 +427,87 @@ class TestModelComplex < MiniTest::Unit::TestCase
         assert t.aggregates.first.value == 3
       elsif t.id.to_s.include? "term/4"
         assert t.aggregates.first.value == 0
+      elsif t.id.to_s.include? "term/5"
+        assert t.aggregates.first.value == 1
       elsif t.id.to_s.include? "term/6"
         assert t.aggregates.first.value == 0
       elsif t.id.to_s.include? "term/7"
         assert t.aggregates.first.value == 0
       elsif t.id.to_s.include? "term/8"
         assert t.aggregates.first.value == 0
+      elsif t.id.to_s.include? "term/9"
+        assert t.aggregates.first.value == 0
       else
-        binding.pry
         assert 1==0
       end
     end
 
-    binding.pry
-    #the other direction UP and query options
-    page = Term.page submission: submission, children: terms[9],
-                     load_attrs: { children_count: true, synonym: true, prefLabel: true },
-                     query_options: { rules: :SUBC }
+    #the other direction UP and query options and read only
+    page = Term.where(descendants: terms[9])
+                  .in(submission)
+                  .include(:synonym, :prefLabel)
+                  .aggregate(:count, :children)
+                  .page(1)
 
-    assert page.count == 2
+    assert page.count == 3
     page.each do |t|
-      if t.resource_id.value.include? "term/5"
-        assert t.children_count == 1
-      elsif t.resource_id.value.include? "term/1"
-        assert t.children_count == 1
+      if t.id.to_s.include? "term/0"
+        assert t.aggregates.first.value  == 4
+      elsif t.id.to_s.include? "term/5"
+        assert t.aggregates.first.value  == 1
+      elsif t.id.to_s.include? "term/1"
+        assert t.aggregates.first.value  == 1
       else
         assert 1==0
       end
     end
 
-    #with read only !!!!
-    #
-    #
+    #with read only
+    ts = Term.where(descendants: terms[9])
+                  .in(submission)
+                  .include(:synonym, :prefLabel)
+                  .read_only
+    assert ts.length == 3
+    ts.each do |t|
+      assert_instance_of String, t.prefLabel
+      assert t.klass == Term
+      assert t.id.class == RDF::URI
+      assert_instance_of Array, t.synonym
+    end
+
+    #read_only + page
+    ts = Term.where(descendants: terms[9])
+                  .in(submission)
+                  .include(:synonym, :prefLabel)
+                  .read_only
+                  .page(1)
+    assert ts.length == 3
+    ts.each do |t|
+      assert_instance_of String, t.prefLabel
+      assert t.klass == Term
+      assert t.id.class == RDF::URI
+      assert_instance_of Array, t.synonym
+    end
+
+    page = Term.where(descendants: terms[9])
+                  .in(submission)
+                  .include(:synonym, :prefLabel)
+                  .aggregate(:count, :children)
+                  .read_only
+                  .page(1)
+
+    assert page.count == 3
+    page.each do |t|
+      if t.id.to_s.include? "term/0"
+        assert t.aggregates.first.value  == 4
+      elsif t.id.to_s.include? "term/5"
+        assert t.aggregates.first.value  == 1
+      elsif t.id.to_s.include? "term/1"
+        assert t.aggregates.first.value  == 1
+      else
+        assert 1==0
+      end
+    end
   end
 
   def test_read_only_class

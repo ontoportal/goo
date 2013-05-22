@@ -37,8 +37,8 @@ module Goo
 
         options_load = { models: @models, include: @include, ids: @ids,
                          graph_match: @pattern, klass: @klass,
-                         filters: @filters, aggregate: @aggregate,
-                         order_by: @order_by , read_only: @read_only }
+                         filters: @filters, order_by: @order_by ,
+                         read_only: @read_only }
 
         options_load.merge!(@where_options_load) if @where_options_load
         if !@klass.collection_opts.nil? and !options_load.include?(:collection)
@@ -67,6 +67,7 @@ module Goo
         if @page_i && !@index_key
           page_options = options_load.dup
           page_options.delete(:include)
+          page_options[:include_pagination] = @include
           if !@count
             page_options[:count] = :count 
             @count = Goo::SPARQL::Queries.model_load(page_options).to_i
@@ -85,6 +86,14 @@ module Goo
 
         options_load[:ids] = ids if ids
         models_by_id = Goo::SPARQL::Queries.model_load(options_load)
+        if @aggregate
+          options_load_agg = { models: models_by_id.values, klass: @klass,
+                         filters: @filters, read_only: @read_only,
+                         aggregate: @aggregate }
+
+          options_load_agg.merge!(@where_options_load) if @where_options_load
+          Goo::SPARQL::Queries.model_load(options_load_agg)
+        end
         unless @page_i
           @result = models_by_id.values
         else

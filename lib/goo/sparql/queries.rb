@@ -173,12 +173,18 @@ module Goo
         collection = options[:collection]
         page = options[:page]
         count = options[:count]
+        include_pagination = options[:include_pagination]
         store = options[:store] || :main
         klass_struct = nil
         embed_struct = nil
-        if read_only
-          direct_incl = !incl ? [] : incl.select { |a| a.instance_of?(Symbol) }
-          incl_embed = incl.select { |a| a.instance_of?(Hash) }.first
+        if read_only && !count && !aggregate
+          include_for_struct = incl
+          if !incl and include_pagination
+            #read only and pagination we do not know the attributes yet
+            include_for_struct = include_pagination
+          end
+          direct_incl = !include_for_struct ? [] : include_for_struct.select { |a| a.instance_of?(Symbol) }
+          incl_embed = include_for_struct.select { |a| a.instance_of?(Hash) }.first
           klass_struct = klass.struct_object(direct_incl + (incl_embed ? incl_embed.keys : []))
           embed_struct = {}
           if incl_embed
@@ -198,8 +204,10 @@ module Goo
         end
         if models
           models.each do |m|
-            raise ArgumentError, 
+            if !m.respond_to?:klass #read only
+              raise ArgumentError, 
               "To load attributes the resource must be persistent" unless m.persistent?
+            end
           end
         end
 
@@ -382,6 +390,7 @@ module Goo
         end
         select.from(graphs)
         select.distinct(true)
+        binding.pry if $DEBUG_GOO
         if query_options
           query_options[:rules] = query_options[:rules].map { |x| x.to_s }.join("+")
           select.options[:query_options] = query_options
@@ -427,7 +436,12 @@ module Goo
             if (v != :id) && !all_attributes.include?(v)
               if aggregate_projections.include?(v)
                 conf = aggregate_projections[v]
-                models_by_id[id].add_aggregate(conf[1], conf[0], sol[v].object)
+                if models_by_id[id].respond_to?:add_aggregate
+                  models_by_id[id].add_aggregate(conf[1], conf[0], sol[v].object)
+                else
+                  (models_by_id[id].aggregates ||= []) <<
+                   Goo::Base::AGGREGATE_VALUE.new(conf[1], conf[0], sol[v].object)
+                end
               end
               #TODO otther schemaless things
               next
