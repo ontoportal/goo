@@ -286,10 +286,6 @@ module Goo
         return Goo::Base::Where.new(self,*match)
       end
 
-      def self.include(*options)
-        return Goo::Base::Where.new(self).include(*options)
-      end
-
       protected
       def id_from_attribute()
         binding.pry if $DEBUG_GOO      
