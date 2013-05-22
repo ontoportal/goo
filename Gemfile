@@ -5,7 +5,7 @@ gemspec
 gem 'rake'
 gem 'pry'
 gem 'simplecov'
-gem 'minitest'
+gem 'minitest', '< 5.0'
 gem 'nokogiri'
 
 # Profiling

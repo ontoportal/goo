@@ -44,7 +44,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
       submission = Submission.find("submission1").first
     end
 
-    terms = Term.where.in(submission).all
+    terms = Term.where.in(submission).to_a
     terms.each do |t|
       t.delete
     end

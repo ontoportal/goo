@@ -148,6 +148,7 @@ module Goo
         process_query unless @result
         @result
       end
+      alias_method :to_a, :all
 
       def each(&block)
         process_query unless @result

@@ -100,6 +100,7 @@ module Goo
         end
 
         def transitive?(attr)
+          return false if !@model_settings[:attributes].include?(attr)
           return (@model_settings[:attributes][attr][:transitive] == true)
         end
 
