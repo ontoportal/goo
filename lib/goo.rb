@@ -9,6 +9,7 @@ require "uuid"
 require 'rsolr'
 require 'rest_client'
 require 'redis'
+require 'uuid'
 
 require_relative "goo/sparql/sparql"
 require_relative "goo/base/base"
@@ -31,6 +32,7 @@ module Goo
   @@redis_client = nil
   @@namespaces = {}
   @@pluralize_models = false
+  @@uuid = UUID.new
 
   def self.add_namespace(shortcut, namespace,default=false)
     if !(namespace.instance_of? RDF::Vocabulary)
@@ -152,6 +154,10 @@ module Goo
 
   def self.pluralize_models?
     return @@pluralize_models
+  end
+
+  def self.uuid
+    @@uuid.generate
   end
 
 end

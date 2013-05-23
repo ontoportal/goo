@@ -76,6 +76,8 @@ module Goo
              if !value.nil? && !(value.kind_of? Array)
                add_error(opt, errors_by_opt, "`#{attr}` value must be an Array") 
              end
+           when :uri, RDF::URI
+             add_error(opt, errors_by_opt, enforce_type(attr,RDF::URI,value)) unless value.nil?
            when :string, String
              add_error(opt, errors_by_opt, enforce_type(attr,String,value)) unless value.nil?
            when :integer, Fixnum

@@ -20,6 +20,19 @@ class TestNameWith < MiniTest::Unit::TestCase
   def initialize(*args)
     super(*args)
   end
+  
+  def setup
+    teardown
+  end
+
+  def teardown
+    NameWith.where.all.each do |x|
+      x.delete
+    end
+    NameWithAttribute.where.all.each do |x|
+      x.delete
+    end
+  end
 
   def test_name_with
     nw = NameWith.new(name: "John")
@@ -28,7 +41,7 @@ class TestNameWith < MiniTest::Unit::TestCase
     assert !nw.exist?
     nw.save
 
-    from_backend = NameWith.find(RDF::URI.new("http://example.org/John/bla"), include: [:name])
+    from_backend = NameWith.find(RDF::URI.new("http://example.org/John/bla"), include: [:name]).to_a[0]
     assert_equal("John", from_backend.name)
 
     another = NameWith.new(name: "John")
@@ -52,7 +65,7 @@ class TestNameWith < MiniTest::Unit::TestCase
 
     from_backend = NameWithAttribute.find(
       RDF::URI.new("http://goo.org/default/name_with_attribute/John"),
-                                 include: [:name])
+                                 include: [:name]).to_a[0]
     assert_equal("John", from_backend.name)
 
     another = NameWithAttribute.new(name: "John")

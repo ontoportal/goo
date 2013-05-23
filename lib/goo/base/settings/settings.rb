@@ -202,12 +202,21 @@ module Goo
             end
           end
         end
+
+        def uuid_uri_generator(inst)
+          model_name_uri = model_name.to_s
+          model_name_uri = model_name_uri.pluralize if Goo.pluralize_models?
+          return namespace[ model_name_uri + '/' + Goo.uuid]
+        end
+
         def uri_type
           return @uri_type
         end
+
         def namespace
           return @namespace
         end
+
         def id_from_unique_attribute(attr,value_attr)
           if value_attr.nil?
             raise ArgumentError, "`#{attr}` value is nil. Id for resource cannot be generated."
