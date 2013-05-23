@@ -40,6 +40,7 @@ class TestInverse < MiniTest::Unit::TestCase
     Project.find("Goo").first.delete if project.exist?
     assert project.valid?
     project.save
+    assert Project.where.include(:tasks).all.first.tasks == []
     assert project.persistent?
     assert_equal(0,
       GooTest.count_pattern(
