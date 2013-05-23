@@ -210,7 +210,14 @@ module Goo
         (@aggregates ||= []) << AGGREGATE_VALUE.new(attribute,aggregate,value)
       end
 
-      def save
+      def save(*opts)
+
+        if self.kind_of?(Goo::Base::Enum)
+          unless opts[0] && opts[0][:init_enum] 
+            raise ArgumentError, "Enums can only be created on initialization"
+          end
+        end
+
         raise ArgumentError, "Object is not modified" unless modified?
         raise Goo::Base::NotValidException, "Object is not valid. Check errors." unless valid?
 
@@ -288,7 +295,6 @@ module Goo
 
       protected
       def id_from_attribute()
-        binding.pry if $DEBUG_GOO      
         uattr = self.class.name_with
         uvalue = self.send("#{uattr}")
         return self.class.id_from_unique_attribute(uattr,uvalue)
