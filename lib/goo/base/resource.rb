@@ -172,6 +172,7 @@ module Goo
           end
         end
         self.class.where.models([self]).include(*opts).all
+        self
       end
 
       def graph
