@@ -105,6 +105,10 @@ module Goo
       end
 
       def exist?(from_valid=false)
+        
+        #generate id with proc
+        id() unless self.class.name_with.kind_of?(Symbol)
+
         _id = @id
         if _id.nil? and !from_valid
           _id = id_from_attribute()

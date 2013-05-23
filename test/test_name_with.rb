@@ -36,6 +36,7 @@ class TestNameWith < MiniTest::Unit::TestCase
 
   def test_name_with
     nw = NameWith.new(name: "John")
+    assert !nw.exist?
     assert_instance_of(RDF::URI, nw.id)
     assert_equal("http://example.org/John/bla",nw.id.to_s)
     assert !nw.exist?
