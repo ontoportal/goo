@@ -161,6 +161,19 @@ module Goo
         return nil
       end
 
+      def bring(*opts)
+        opts.each do |k|
+          if k.kind_of?(Hash)
+            k.each do |k2,v|
+              self.instance_variable_set("@#{k2}",nil)
+            end
+          else
+            self.instance_variable_set("@#{k}",nil)
+          end
+        end
+        self.class.where.models([self]).include(*opts).all
+      end
+
       def graph
         opts = self.class.collection_opts
         if opts.nil?

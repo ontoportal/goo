@@ -131,6 +131,12 @@ class TestWhere < MiniTest::Unit::TestCase
     st = st.first
     assert st.instance_of?(University)
 
+    st.bring(programs: [:credits])
+    assert st.programs.length == 3
+    st.programs.each do |p|
+      assert_instance_of Fixnum, p.credits
+    end
+
     #nothing is loaded
     st.class.attributes.each do |attr|
       assert_raises Goo::Base::AttributeNotLoaded do
