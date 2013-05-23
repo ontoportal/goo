@@ -212,7 +212,7 @@ module Goo
         def uri_type
           return @uri_type
         end
-
+        alias :type_uri :uri_type
         def namespace
           return @namespace
         end
