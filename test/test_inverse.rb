@@ -29,6 +29,24 @@ class TestInverse < MiniTest::Unit::TestCase
     super(*args)
   end
 
+  def self.before_suite
+    Task.all.each do |x|
+      x.delete
+    end
+    Project.all.each do |x|
+      x.delete
+    end
+  end
+
+  def self.after_suite
+    Task.all.each do |x|
+      x.delete
+    end
+    Project.all.each do |x|
+      x.delete
+    end
+  end
+
   def test_inverse_retrieval
     assert Project.range(:tasks) == Task
     assert Task.range(:project) == Project

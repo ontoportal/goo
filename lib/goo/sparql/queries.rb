@@ -486,10 +486,14 @@ module Goo
               end
             end
 
-            if object and list_attributes.include?(v)
+            if list_attributes.include?(v)
               pre = models_by_id[id].instance_variable_get("@#{v}")
-              object = !pre ? [object] : (pre.dup << object)
-              object.uniq!
+              if object.nil? and pre.nil?
+                object = []
+              else
+                object = !pre ? [object] : (pre.dup << object)
+                object.uniq!
+              end
             end
             if klass_struct
               models_by_id[id][v] = object
