@@ -145,7 +145,7 @@ module Goo
     return @@resource_options
   end
 
-  def self.vocabulary(namespace)
+  def self.vocabulary(namespace=nil)
     return @@namespaces[@@default_namespace] if namespace.nil?
     return @@namespaces[namespace] 
   end
