@@ -62,6 +62,7 @@ module Goo
           end
         end
 
+        @errors = validation_errors
         return @errors.length == 0
       end
 
