@@ -317,6 +317,10 @@ module Goo
         return Goo::Base::Where.new(self,*match)
       end
 
+      def self.all
+        return self.where.all
+      end
+
       protected
       def id_from_attribute()
         uattr = self.class.name_with
