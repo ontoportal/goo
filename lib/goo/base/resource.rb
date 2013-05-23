@@ -62,7 +62,6 @@ module Goo
           end
         end
 
-        @errors = validation_errors.freeze
         return @errors.length == 0
       end
 
