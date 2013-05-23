@@ -11,7 +11,6 @@ module Goo
           attr = attributes.first
           @model_settings[:enum][:values].each do |value|
             instance = self.new(attr => value)
-            binding.pry if !instance.valid?
             instance.save(init_enum: true) unless instance.exist?
           end
           @model_settings[:enum][:initialize]=true
