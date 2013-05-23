@@ -488,9 +488,11 @@ module Goo
 
             if list_attributes.include?(v)
               pre = models_by_id[id].instance_variable_get("@#{v}")
-              if object.nil? and pre.nil?
+              if object.nil? && pre.nil?
                 object = []
-              else
+              elsif object.nil? && !pre.nil?
+                object = pre
+              elsif object
                 object = !pre ? [object] : (pre.dup << object)
                 object.uniq!
               end

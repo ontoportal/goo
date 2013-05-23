@@ -300,7 +300,7 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
 
     person_from_backend = PersonPersistent.find("John").include(PersonPersistent.attributes).first
     assert_equal(person.status.id, person_from_backend.status.id)
-    assert_equal(nil, person_from_backend.friends)
+    assert_equal([], person_from_backend.friends)
     assert_equal(person.name, person_from_backend.name)
     assert_equal(person.multiple_values.sort, person_from_backend.multiple_values.sort)
     assert_equal(person.birth_date.xmlschema, person_from_backend.birth_date.xmlschema)
@@ -339,6 +339,14 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     assert 0 == GooTest.triples_for_subject(person1.id)
     person2.delete
     assert 0 == GooTest.triples_for_subject(person2.id)
+  end
+
+  def test_empty_list
+    person1 = PersonPersistent.new(name: "John", multiple_values: [1,2,3,4], one_number: 99,
+                                   birth_date: DateTime.parse('2001-02-03T04:05:06.12'))
+    person1.save
+    assert PersonPersistent.find(person1.id).include(:friends).first.friends.length == 0
+    person1.delete
   end
 
   def test_range
