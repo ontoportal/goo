@@ -131,7 +131,13 @@ module Goo
         (@unmapped[attribute] ||= []) << value
       end
 
-      def delete
+      def delete(*args)
+        if self.kind_of?(Goo::Base::Enum)
+          unless args[0] && args[0][:init_enum]
+            raise ArgumentError, "Enums cannot be deleted"
+          end
+        end
+
         raise ArgumentError, "This object is not persistent and cannot be deleted" if !@persistent
 
         if !fully_loaded?
