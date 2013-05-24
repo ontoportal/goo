@@ -291,6 +291,16 @@ module Goo
         return @previous_values
       end
 
+      def to_hash
+        attr_hash = {}
+        self.class.attributes.each do |attr|
+          v = self.instance_variable_get("@#{attr}")
+          attr_hash[attr]=v unless v.nil?
+        end
+        attr_hash[:id] = @id
+        return attr_hash
+      end
+
       ###
       # Class level methods
       # ##
