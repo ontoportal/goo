@@ -137,6 +137,10 @@ module Goo
         if klass.transitive?(attr)
           (query_options[:rules] ||=[]) << :SUBC
         end
+        if klass.alias?(attr)
+          binding.pry
+          (query_options[:rules] ||=[]) << :SUBP
+        end
         graph, pattern = query_pattern(klass,attr,value,subject)
         if pattern
           if !in_union

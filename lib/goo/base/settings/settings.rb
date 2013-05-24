@@ -106,6 +106,11 @@ module Goo
           return (@model_settings[:attributes][attr][:transitive] == true)
         end
 
+        def alias?(attr)
+          return false if !@model_settings[:attributes].include?(attr)
+          return (@model_settings[:attributes][attr][:alias] == true)
+        end
+
         def inverse?(attr)
           return (!@model_settings[:attributes][attr][:inverse].nil?)
         end
