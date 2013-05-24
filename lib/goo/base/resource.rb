@@ -273,6 +273,20 @@ module Goo
         return self
       end
 
+      def bring?(attr)
+        return @persistent &&
+                 !@loaded_attributes.include?(:attr) &&
+                 !@modified_attributes.include?(:attr)
+      end
+
+      def bring_others
+        to_bring = []
+        self.class.attributes.each do |attr|
+          to_bring << attr if self.bring?(attr)
+        end
+        self.bring(*to_bring)
+      end
+
       def previous_values
         return @previous_values
       end
