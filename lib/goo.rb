@@ -12,10 +12,9 @@ require 'redis'
 require 'uuid'
 
 require_relative "goo/sparql/sparql"
+require_relative "goo/search/search"
 require_relative "goo/base/base"
 require_relative "goo/validators/enforce"
-#require_relative "goo/search/search"
-#require_relative "goo/naming/naming"
 require_relative "goo/utils/utils"
 
 module Goo

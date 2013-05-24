@@ -5,11 +5,9 @@ module Goo
   module Base
     AGGREGATE_VALUE = Struct.new(:attribute,:aggregate,:value)
 
-    # Resource is the main aaa
-    # @author Manuel Salvadores
     class Resource
       include Goo::Base::Settings
-      #include Goo::Search
+      include Goo::Search
 
       attr_reader :loaded_attributes
       attr_reader :modified_attributes
