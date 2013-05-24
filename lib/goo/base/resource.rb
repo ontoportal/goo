@@ -47,7 +47,7 @@ module Goo
           end
         end
 
-        unless @persistent
+        if !@persistent && validation_errors.length == 0
           uattr = self.class.name_with.instance_of?(Symbol) ? self.class.name_with : :proc_naming
           if validation_errors[uattr].nil?
             begin
