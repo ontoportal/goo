@@ -34,7 +34,7 @@ module Goo
           self.send("#{attr}=",value)
         end
 
-        @id = nil
+        @id = attributes.delete :id
       end
 
       def valid?
