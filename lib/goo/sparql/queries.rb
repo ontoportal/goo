@@ -173,6 +173,7 @@ module Goo
         aggregate = options[:aggregate]
         read_only = options[:read_only]
         graph_match = options[:graph_match]
+        enable_rules = options[:rules]
         order_by = options[:order_by]
         collection = options[:collection]
         page = options[:page]
@@ -355,6 +356,8 @@ module Goo
             patterns << quad[1]
           end
         end
+
+        query_options[:rules]=[:NONE] unless enable_rules
         query_options = nil if query_options.length == 0
 
         client = Goo.sparql_query_client(store)
@@ -362,7 +365,7 @@ module Goo
         select = client.select(*variables).distinct()
 
         #rdf:type <x> breaks the reasoner
-        patterns.shift if query_options
+        patterns.shift if query_options && query_options[:rules] != [:NONE]
 
         select.where(*patterns)
         optional_patterns.each do |optional|

@@ -25,6 +25,7 @@ module Goo
         @order_by = nil
         @indexing = false
         @read_only = false
+        @rules = true
       end
 
       def process_query()
@@ -38,7 +39,7 @@ module Goo
         options_load = { models: @models, include: @include, ids: @ids,
                          graph_match: @pattern, klass: @klass,
                          filters: @filters, order_by: @order_by ,
-                         read_only: @read_only }
+                         read_only: @read_only, rules: @rules }
 
         options_load.merge!(@where_options_load) if @where_options_load
         if !@klass.collection_opts.nil? and !options_load.include?(:collection)
@@ -89,7 +90,7 @@ module Goo
         if @aggregate
           options_load_agg = { models: models_by_id.values, klass: @klass,
                          filters: @filters, read_only: @read_only,
-                         aggregate: @aggregate }
+                         aggregate: @aggregate, rules: @rules }
 
           options_load_agg.merge!(@where_options_load) if @where_options_load
           Goo::SPARQL::Queries.model_load(options_load_agg)
@@ -100,6 +101,11 @@ module Goo
           @result = Goo::Base::Page.new(@page_i,@page_size,@count,models_by_id.values)
         end
         @result
+      end
+
+      def disable_rules
+        @rules = false
+        self
       end
 
       def cache_key_for_index(index_key)
