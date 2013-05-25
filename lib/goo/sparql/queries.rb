@@ -376,6 +376,7 @@ module Goo
 
         select.filter(filter_id_str)
         select.filter("!isBLANK(?id)")
+        select.filter("!isBLANK(?object)") if unmapped
         if query_filter_str.length > 0
           query_filter_str.each do |f|
             select.filter(f)
@@ -394,7 +395,6 @@ module Goo
         end
         select.from(graphs)
         select.distinct(true)
-        binding.pry if $DEBUG_GOO
         if query_options
           query_options[:rules] = query_options[:rules].map { |x| x.to_s }.join("+")
           select.options[:query_options] = query_options
@@ -432,7 +432,12 @@ module Goo
             models_by_id[id] = klass_model
           end
           if unmapped
-            models_by_id[id].unmapped_set(sol[:predicate],sol[:object])
+            if models_by_id[id].respond_to?:klass #struct
+              models_by_id[id][:unmapped] ||= {}
+              (models_by_id[id][:unmapped][sol[:predicate]] ||= []) << sol[:object]
+            else
+              models_by_id[id].unmapped_set(sol[:predicate],sol[:object])
+            end
             next
           end
           variables.each do |v|

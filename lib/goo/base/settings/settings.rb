@@ -262,6 +262,7 @@ module Goo
           attrs << :id
           attrs << :klass
           attrs << :aggregates
+          attrs << :unmapped
           attrs << collection_opts if collection_opts
           return Struct.new(*attrs)
         end

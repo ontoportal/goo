@@ -27,8 +27,8 @@ module Goo
       def get_indexable_object()
         doc = self.class.model_settings[:search_options][:document].call(self)
         #in solr
-        doc[:resource_id] = doc[:id]
-        doc[:id] = get_index_id()
+        doc[:resource_id] = doc[:id].to_s
+        doc[:id] = get_index_id().to_s
         return doc
       end
 

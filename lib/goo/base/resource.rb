@@ -188,25 +188,31 @@ module Goo
         return col ? col.id : nil
       end
 
-      def map_attributes
-        if @unmapped.nil?
+      def self.map_attributes(inst)
+        if (inst.kind_of?(Goo::Base::Resource) && inst.unmapped.nil?) || 
+            (!inst.respond_to?(:unmapped) && inst[:unmapped].nil?)
           raise ArgumentError, "Resource.map_attributes only works for :unmapped instances"
         end
-        list_attrs = self.class.attributes(:list)
-        self.class.attributes.each do |attr|
-          attr_uri = self.class.attribute_uri(attr)
-          if @unmapped.include?(attr_uri)
-            object = @unmapped[attr_uri]
+        klass = inst.respond_to?(:klass) ? inst[:klass] : inst.class
+        unmapped = inst.respond_to?(:klass) ? inst[:unmapped] : inst.unmapped
+        list_attrs = klass.attributes(:list)
+        klass.attributes.each do |attr|
+          next unless inst.respond_to?(attr)
+          attr_uri = klass.attribute_uri(attr)
+          if unmapped.include?(attr_uri)
+            object = unmapped[attr_uri]
             object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
-            if self.class.range(attr)
-              object = object.map { |o| o.is_a?(RDF::URI) ? self.class.range_object(attr,o) : o }
+            if klass.range(attr)
+              object = object.map { |o| o.is_a?(RDF::URI) ? klass.range_object(attr,o) : o }
             end
             unless list_attrs.include?(attr)
               object = object.first
             end 
-            self.send("#{attr}=",object, on_load: true) 
-          else
-            self.send("#{attr}=",nil, on_load: true)
+            if inst.respond_to?(:klass)
+              inst[attr] = object
+            else
+              inst.send("#{attr}=",object, on_load: true) 
+            end
           end
         end
       end
@@ -277,7 +283,7 @@ module Goo
                  !@modified_attributes.include?(:attr)
       end
 
-      def bring_others
+      def bring_remaining
         to_bring = []
         self.class.attributes.each do |attr|
           to_bring << attr if self.bring?(attr)
@@ -294,6 +300,17 @@ module Goo
         self.class.attributes.each do |attr|
           v = self.instance_variable_get("@#{attr}")
           attr_hash[attr]=v unless v.nil?
+        end
+        if @unmapped
+          all_attr_uris = Set.new
+          self.class.attributes.each do |attr|
+            all_attr_uris << self.class.attribute_uri(attr)
+          end
+          @unmapped.each do |attr,values|
+            unless all_attr_uris.include?(attr)
+              attr_hash[attr] = values.map { |v| v.to_s }
+            end
+          end
         end
         attr_hash[:id] = @id
         return attr_hash
