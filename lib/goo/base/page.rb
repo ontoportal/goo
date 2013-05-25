@@ -27,6 +27,10 @@ module Goo
         @page_number > 1
       end
 
+      def next_page
+        return next? ? page_number + 1 : nil
+      end
+
     end
 
   end
