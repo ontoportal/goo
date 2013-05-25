@@ -499,7 +499,7 @@ module Goo
             end
 
             if list_attributes.include?(v)
-              pre = models_by_id[id].instance_variable_get("@#{v}")
+              pre = klass_struct ? models_by_id[id][v] : models_by_id[id].instance_variable_get("@#{v}")
               if object.nil? && pre.nil?
                 object = []
               elsif object.nil? && !pre.nil?
