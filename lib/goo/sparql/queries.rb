@@ -119,6 +119,15 @@ module Goo
         end
       end
 
+      def self.add_rules(attr,klass,query_options)
+        if klass.transitive?(attr)
+          (query_options[:rules] ||=[]) << :SUBC
+        end
+        if klass.alias?(attr)
+          (query_options[:rules] ||=[]) << :SUBP
+        end
+      end
+
       def self.patterns_for_match(klass,attr,value,graphs,patterns,unions,
                                   internal_variables,subject=:id,in_union=false,
                                   in_aggregate=false,query_options={})
@@ -134,13 +143,7 @@ module Goo
           end
           internal_variables << value
         end
-        if klass.transitive?(attr)
-          (query_options[:rules] ||=[]) << :SUBC
-        end
-        if klass.alias?(attr)
-          binding.pry
-          (query_options[:rules] ||=[]) << :SUBP
-        end
+        add_rules(attr,klass,query_options) 
         graph, pattern = query_pattern(klass,attr,value,subject)
         if pattern
           if !in_union
@@ -191,6 +194,7 @@ module Goo
           direct_incl = !include_for_struct ? [] : include_for_struct.select { |a| a.instance_of?(Symbol) }
           incl_embed = include_for_struct.select { |a| a.instance_of?(Hash) }.first
           klass_struct = klass.struct_object(direct_incl + (incl_embed ? incl_embed.keys : []))
+
           embed_struct = {}
           if incl_embed
             incl_embed.each do |k,vals|
@@ -202,6 +206,11 @@ module Goo
               embed_struct[k] = klass.range(k).struct_object(attrs_struct)
             end
           end
+          direct_incl.each do |attr|
+            next if embed_struct.include?(attr)
+            embed_struct[attr] = klass.range(attr).struct_object([]) if klass.range(attr)
+          end
+
         end
 
         if ids and models
@@ -278,8 +287,8 @@ module Goo
               incl.concat(embed_variables)
             end
             incl.each do |attr|
-              binding.pry if attr.instance_of? Hash
               graph, pattern = query_pattern(klass,attr)
+              add_rules(attr,klass,query_options) 
               optional_patterns << pattern if pattern
               graphs << graph if graph
             end
@@ -489,7 +498,9 @@ module Goo
                       #depedent read only
                       struct = embed_struct[v].new
                       struct.id = object
+                      struct.klass = klass.range(v)
                       objects_new[id] = struct
+                      object = struct
                     end
                   else
                     object = range_for_v.find(object).first
@@ -522,6 +533,15 @@ module Goo
           collection_attribute = klass.collection_opts
           models_by_id.each do |id,m|
             m.send("#{collection_attribute}=", collection)
+          end
+          objects_new.each do |id,obj_new|
+            if obj_new.respond_to?(:klass)
+              collection_attribute = obj_new[:klass].collection_opts
+              obj_new[collection_attribute] = collection
+            elsif obj_new.class.collection_opts.instance_of?(Symbol)
+              collection_attribute = obj_new.class.collection_opts
+              obj_new.send("#{collection_attribute}=", collection)
+            end
           end
         end
 
