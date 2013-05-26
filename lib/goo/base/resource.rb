@@ -175,7 +175,12 @@ module Goo
             self.instance_variable_set("@#{k}",nil)
           end
         end
-        self.class.where.models([self]).include(*opts).all
+        query = self.class.where.models([self]).include(*opts)
+        if self.class.collection_opts.instance_of?(Symbol)
+          collection_attribute = self.class.collection_opts
+          query.in(self.send("#{collection_attribute}"))
+        end
+        query.all
         self
       end
 
