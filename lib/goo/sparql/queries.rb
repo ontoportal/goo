@@ -510,7 +510,8 @@ module Goo
             end
 
             if list_attributes.include?(v)
-              pre = klass_struct ? models_by_id[id][v] : models_by_id[id].instance_variable_get("@#{v}")
+              pre = klass_struct ? models_by_id[id][v] : 
+                                   models_by_id[id].instance_variable_get("@#{v}")
               if object.nil? && pre.nil?
                 object = []
               elsif object.nil? && !pre.nil?
@@ -538,7 +539,8 @@ module Goo
             if obj_new.respond_to?(:klass)
               collection_attribute = obj_new[:klass].collection_opts
               obj_new[collection_attribute] = collection
-            elsif obj_new.class.collection_opts.instance_of?(Symbol)
+            elsif obj_new.class.respond_to?(:collection_opts) &&
+                obj_new.class.collection_opts.instance_of?(Symbol)
               collection_attribute = obj_new.class.collection_opts
               obj_new.send("#{collection_attribute}=", collection)
             end
@@ -583,6 +585,12 @@ module Goo
           attrs = bnodes.map { |x,y| y.attribute }.uniq
           attrs.each do |attr|
             struct = klass.range(attr)
+
+            #bnodes that are in a range of goo ground models
+            #for example parents and children in LD class models
+            #we skip this cases for the moment
+            next if struct.respond_to?(:model_name)
+            
             bnode_attrs = struct.new.to_h.keys 
             ids = bnodes.select { |x,y| y.attribute == attr }.map{ |x,y| y.id }
             klass.where.models(models_by_id.select { |x,y| ids.include?(x) }.values)
