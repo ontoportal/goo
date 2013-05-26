@@ -371,10 +371,15 @@ module Goo
 
         client = Goo.sparql_query_client(store)
         variables = [:count_var] if count
-        select = client.select(*variables).distinct()
 
         #rdf:type <x> breaks the reasoner
-        patterns.shift if query_options && query_options[:rules] != [:NONE]
+        if query_options && query_options[:rules] != [:NONE]
+          patterns[0] = [:id,RDF[:type],:some_type] 
+          variables << :some_type
+        end
+        select = client.select(*variables).distinct()
+        variables.delete :some_type
+
 
         select.where(*patterns)
         optional_patterns.each do |optional|
@@ -416,6 +421,7 @@ module Goo
         all_attributes = Set.new(klass.attributes(:all))
         objects_new = {}
         select.each_solution do |sol|
+          next if sol[:some_type] && klass.type_uri != sol[:some_type]
           if count
             return sol[:count_var].object
           end
