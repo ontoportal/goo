@@ -284,8 +284,8 @@ module Goo
 
       def bring?(attr)
         return @persistent &&
-                 !@loaded_attributes.include?(:attr) &&
-                 !@modified_attributes.include?(:attr)
+                 !@loaded_attributes.include?(attr) &&
+                 !@modified_attributes.include?(attr)
       end
 
       def bring_remaining
