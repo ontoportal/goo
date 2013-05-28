@@ -30,6 +30,9 @@ module Goo
       def next_page
         return next? ? page_number + 1 : nil
       end
+      def prev_page
+        return prev? ? page_number - 1 : nil
+      end
 
     end
 
