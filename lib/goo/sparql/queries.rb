@@ -213,9 +213,6 @@ module Goo
 
         end
 
-        if ids and models
-          raise ArgumentError, "Inconsistent call , either models or IDs"
-        end
         if models
           models.each do |m|
             if !m.respond_to?:klass #read only
