@@ -270,6 +270,7 @@ module Goo
           attrs << :aggregates
           attrs << :unmapped
           attrs << collection_opts if collection_opts
+          attrs.uniq!
           return Struct.new(*attrs)
         end
 
