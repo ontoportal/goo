@@ -47,6 +47,13 @@ Rake::TestTask.new do |t|
   t.test_files = FileList['test/benchmark.rb']
 end
 
+desc "Console for working with data"
+task :console do
+  require_relative "test/test_case"
+  GooTest.configure_goo
+  binding.pry
+end
+
 desc "Run test coverage analysis"
 task :coverage do
   puts "Code coverage reports will be visible in the /coverage folder"

@@ -461,10 +461,10 @@ module Goo
               if aggregate_projections.include?(v)
                 conf = aggregate_projections[v]
                 if models_by_id[id].respond_to?:add_aggregate
-                  models_by_id[id].add_aggregate(conf[1], conf[0], sol[v].object.to_i)
+                  models_by_id[id].add_aggregate(conf[1], conf[0], sol[v].object)
                 else
                   (models_by_id[id].aggregates ||= []) <<
-                   Goo::Base::AGGREGATE_VALUE.new(conf[1], conf[0], sol[v].object.to_i)
+                   Goo::Base::AGGREGATE_VALUE.new(conf[1], conf[0], sol[v].object)
                 end
               end
               #TODO otther schemaless things
