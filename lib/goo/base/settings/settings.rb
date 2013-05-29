@@ -24,7 +24,7 @@ module Goo
 
           model_name = args[0]
           @model_name = model_name.to_sym
-          
+
           #a hash with options is expected
           options = args.last
           @inmutable = (args.include? :inmutable)
@@ -43,7 +43,7 @@ module Goo
           @uri_type = @namespace[@model_name.to_s.camelize]
           @model_settings[:range] = {}
           @model_settings[:attributes] = {}
-          
+
           #registering a new models forces to redo ranges
           Goo.models.each do |k,m|
             m.attributes(:all).each do |attr|
@@ -55,7 +55,7 @@ module Goo
 
         def attributes(*options)
           if options and options.length > 0
-            filt = options.first 
+            filt = options.first
             if filt == :all
               return @model_settings[:attributes].keys
             end
@@ -151,11 +151,11 @@ module Goo
           vocab = Goo.vocabulary(namespace) #returns default for nil input
           @attribute_uris[attr_name] = vocab[options[:property] || attr_name]
           if options[:enforce].include?(:unique) and options[:enforce].include?(:list)
-            raise ArgumentError, ":list options cannot be combined with :list"            
+            raise ArgumentError, ":list options cannot be combined with :list"
           end
           set_range(attr_name)
         end
-   
+
         def attribute_uri(attr)
           raise ArgumentError, ":id cannot be treated as predicate for .where, use find " if attr == :id
           uri = @attribute_uris[attr]
@@ -176,7 +176,7 @@ module Goo
           attr = attr.to_sym
           define_method("#{attr}=") do |*args|
             if self.class.inverse?(attr) && !(args && args.last.instance_of?(Hash) && args.last[:on_load])
-              raise ArgumentError, 
+              raise ArgumentError,
                 "`#{attr}` is an inverse attribute. Values cannot be assigned."
             end
             @loaded_attributes.add(attr)
@@ -187,9 +187,9 @@ module Goo
               end
               prev = self.instance_variable_get("@#{attr}")
               if !prev.nil? and !@modified_attributes.include?(attr)
-                if prev != value 
+                if prev != value
                   @previous_values = @previous_values || {}
-                  @previous_values[attr] = prev 
+                  @previous_values[attr] = prev
                 end
               end
               @modified_attributes.add(attr)
@@ -259,12 +259,27 @@ module Goo
 
         def struct_object(attrs)
           attrs = attrs.dup
-          attrs << :id
+          attrs << :id unless attrs.include?(:id)
           attrs << :klass
           attrs << :aggregates
           attrs << :unmapped
           attrs << collection_opts if collection_opts
           return Struct.new(*attrs)
+        end
+
+        STRUCT_CACHE = {}
+        ##
+        # Return a struct-based, read-only instance for a class that is populated with the contents of `attributes`
+        def read_only(attributes)
+          raise ArgumentError, "`attributes` must be a hash of attribute/value pairs" if !attributes.is_a?(Hash) || attributes.empty?
+          raise ArgumentError, "`attributes` must contain a key for `id`" unless attributes.key?(:id)
+          attributes = attributes.symbolize_keys
+          STRUCT_CACHE[attributes.keys.hash] ||= struct_object(attributes.keys)
+          cls = STRUCT_CACHE[attributes.keys.hash]
+          instance = cls.new
+          instance.klass = self
+          attributes.each {|k,v| instance[k] = v}
+          instance
         end
 
       end
