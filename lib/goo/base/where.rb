@@ -77,6 +77,9 @@ module Goo
           page_options[:page] = { page_i: @page_i, page_size: @page_size }
           models_by_id = Goo::SPARQL::Queries.model_load(page_options)
           options_load[:models] = models_by_id.values
+          
+          #models give the constraint
+          options_load.delete :graph_match
         end
 
         if @indexing
