@@ -101,6 +101,36 @@ module Goo
           @model_settings[:range][attr]
         end
 
+        def attribute_settings(attr)
+          @model_settings[:attributes][attr]
+        end
+
+        def cardinality(attr)
+          return nil if @model_settings[:attributes][attr].nil?
+          cardinality = {}
+          enforce = @model_settings[:attributes][attr][:enforce]
+          min = enforce.map {|e| e.to_s.split("_").last.to_i if e.to_s.start_with?("min_") }.compact
+          max = enforce.map {|e| e.to_s.split("_").last.to_i if e.to_s.start_with?("max_") }.compact
+          cardinality[:min] = min.first unless min.empty?
+          cardinality[:max] = max.first unless max.empty?
+          cardinality.empty? ? nil : cardinality
+        end
+
+        def required?(attr)
+          return false if @model_settings[:attributes][attr].nil?
+          @model_settings[:attributes][attr][:enforce].include?(:existence)
+        end
+
+        def unique?(attr)
+          return false if @model_settings[:attributes][attr].nil?
+          @model_settings[:attributes][attr][:enforce].include?(:unique)
+        end
+
+        def list?(attr)
+          return false if @model_settings[:attributes][attr].nil?
+          @model_settings[:attributes][attr][:enforce].include?(:list)
+        end
+
         def transitive?(attr)
           return false if !@model_settings[:attributes].include?(attr)
           return (@model_settings[:attributes][attr][:transitive] == true)
