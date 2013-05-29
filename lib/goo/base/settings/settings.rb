@@ -211,6 +211,9 @@ module Goo
         def uuid_uri_generator(inst)
           model_name_uri = model_name.to_s
           model_name_uri = model_name_uri.pluralize if Goo.pluralize_models?
+          if Goo.id_prefix
+            return RDF::URI.new(Goo.id_prefix + model_name_uri + '/' + Goo.uuid)
+          end
           return namespace[ model_name_uri + '/' + Goo.uuid]
         end
 
@@ -229,6 +232,9 @@ module Goo
           uri_last_fragment = CGI.escape(value_attr)
           model_name_uri = model_name.to_s
           model_name_uri = model_name_uri.pluralize if Goo.pluralize_models?
+          if Goo.id_prefix
+            return RDF::URI.new(Goo.id_prefix + model_name_uri + '/' + uri_last_fragment)
+          end
           return namespace[ model_name_uri + '/' + uri_last_fragment]
         end
 

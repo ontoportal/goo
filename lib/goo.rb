@@ -28,6 +28,7 @@ module Goo
   @@search_connection = nil
 
   @@default_namespace = nil
+  @@id_prefix = nil
   @@redis_client = nil
   @@namespaces = {}
   @@pluralize_models = false
@@ -128,6 +129,14 @@ module Goo
 
   def self.sparql_data_client(name=:main)
     return @@sparql_backends[name][:data]
+  end
+
+  def self.id_prefix
+    return @@id_prefix
+  end
+
+  def self.id_prefix=(prefix)
+    @@id_prefix = prefix
   end
 
   def self.add_model(name, model)
