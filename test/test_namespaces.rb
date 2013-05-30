@@ -1,10 +1,10 @@
 require_relative 'test_case'
 
-TestInit.configure_goo
+GooTest.configure_goo
 
 
 class NamespacesModel < Goo::Base::Resource
-  model :namespaces, namespace: :rdfs
+  model :namespaces, namespace: :rdfs, name_with: :name
   attribute :name, enforce: [ :existence, :string, :unique ], namespace: :skos
   attribute :description, enforce: [ :existence, :string ], namespace: :foaf
   attribute :location, enforce: [ :existence, :string ]
@@ -14,7 +14,7 @@ class NamespacesModel < Goo::Base::Resource
   end
 end
 
-class TestNamespaces < TestCase
+class TestNamespaces < GooTest
   def initialize(*args)
     super(*args)
   end
