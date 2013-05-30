@@ -22,4 +22,6 @@ end
 gemfile_local = File.expand_path("../Gemfile.local", __FILE__)
 if File.exists?(gemfile_local)
   self.instance_eval(Bundler.read_file(gemfile_local))
+else
+  gem 'sparql-client', :git => 'https://github.com/ncbo/sparql-client.git'
 end
