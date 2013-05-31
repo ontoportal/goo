@@ -7,7 +7,7 @@
 - *Goo* is designed to serve [BioPortal](http://bioportal.bioontology.org/) growing REST traffic. BioPortal's REST API provides access to hundreds of millions of Biomedical artifacts. Scalability and efficiency is at the core of *Goo's* design.
 
 
-To see Goo in action you browse to the following links:
+To see Goo in action browse to the following links:
 
 - [BioPortal Models](https://github.com/ncbo/ontologies_linked_data/tree/master/lib/ontologies_linked_data/models)
 - [BioPortal New API Documentation](http://stagedata.bioontology.org/documentation)
