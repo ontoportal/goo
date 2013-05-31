@@ -6,24 +6,51 @@ module Goo
   module SPARQL
     class Client < RSPARQL::Client
       def put_triples(graph,file_path,mime_type=nil)
-        return RestClient.put "#{url.to_s}#{graph.to_s}",
-                               File.read(file_path) ,
-                               :content_type => mime_type
+        params = {
+          method: :put,
+          url: "#{url.to_s}#{graph.to_s}",
+          payload: File.read(file_path),
+          headers: {content_type: mime_type},
+          timeout: -1
+        }
+        return RestClient::Request.execute(params)
       end
+
       def append_triples(graph,data,mime_type=nil)
-        return RestClient.post "#{url.to_s}",
-                               :graph => graph.to_s,
-                               :data => data ,
-                               "mime-type" => mime_type
+        params = {
+          method: :post,
+          url: "#{url.to_s}",
+          payload: {
+            graph: graph.to_s,
+            data: data
+          },
+          headers: {"mime-type" => mime_type},
+          timeout: -1
+        }
+        return RestClient::Request.execute(params)
       end
+
       def append_triples_from_file(graph,file_path,mime_type=nil)
-        return RestClient.post "#{url.to_s}",
-                               :graph => graph.to_s,
-                               :data => File.read(file_path) ,
-                               "mime-type" => mime_type
+        params = {
+          method: :post,
+          url: "#{url.to_s}",
+          payload: {
+           graph: graph.to_s,
+           data: File.read(file_path)
+          },
+          headers: {"mime-type" => mime_type},
+          timeout: -1
+        }
+        return RestClient::Request.execute(params)
       end
+
       def delete_graph(graph)
-        return RestClient.delete "#{url.to_s}#{graph.to_s}"
+        params = {
+          method: :delete,
+          url: "#{url.to_s}#{graph.to_s}",
+          timeout: -1
+        }
+        return RestClient::Request.execute(params)
       end
     end
   end
