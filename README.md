@@ -4,8 +4,13 @@
 
 - *Goo* abstracts SPARQL in a way that developers do not need to be SPARQL experts to efficiently handle large RDF graphs.
 
-- *Goo* was initially design to serve [BioPortal](http://bioportal.bioontology.org/) growing REST traffic. BioPortal's REST API provides access to hundreds of millions of Biomedical artifacts. Scalability and efficiency is at the core of *Goo's* design.
+- *Goo* is designed to serve [BioPortal](http://bioportal.bioontology.org/) growing REST traffic. BioPortal's REST API provides access to hundreds of millions of Biomedical artifacts. Scalability and efficiency is at the core of *Goo's* design.
 
+
+<div style="background: #E2EBF0;border: 1px solid #C1DAD7;padding: 10px;text-align: justify">
+To see Goo in action you can go to the Ontologies linked data project and explore the models of the BioPortal project also there
+documentation on the new BioPortal API that uses Goo.
+</div>
 
 ## Schema Definitions (DSL)
 
