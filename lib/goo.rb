@@ -16,6 +16,7 @@ require_relative "goo/search/search"
 require_relative "goo/base/base"
 require_relative "goo/validators/enforce"
 require_relative "goo/utils/utils"
+require_relative "goo/mixins/sparql_client"
 
 module Goo
 
