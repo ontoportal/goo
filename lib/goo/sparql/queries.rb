@@ -458,7 +458,7 @@ module Goo
           variables.each do |v|
             next if v == :id and models_by_id.include?(id)
             if (v != :id) && !all_attributes.include?(v)
-              if aggregate_projections.include?(v)
+              if aggregate_projections && aggregate_projections.include?(v)
                 conf = aggregate_projections[v]
                 if models_by_id[id].respond_to?:add_aggregate
                   models_by_id[id].add_aggregate(conf[1], conf[0], sol[v].object)
