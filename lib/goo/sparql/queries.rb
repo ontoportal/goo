@@ -59,7 +59,7 @@ module Goo
           filter_var = inspected_patterns[filter_pattern_match]
           if !filter_operation.value.instance_of?(Goo::Filter)
             unless filter_operation.operator == :unbound
-              filter_operations << ( 
+              filter_operations << (
                 "?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
                 " #{RDF::Literal.new(filter_operation.value).to_ntriples}")
             else
@@ -67,7 +67,7 @@ module Goo
               return :optional
             end
           else
-            filter_operations << "#{sparql_op_string(filter_operation.operator)}" 
+            filter_operations << "#{sparql_op_string(filter_operation.operator)}"
             query_filter_sparql(klass,filter_operation.value,filter_patterns,
                                 filter_graphs,filter_operations,
                                 internal_variables,inspected_patterns)
@@ -92,7 +92,7 @@ module Goo
           return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, subject ]]
         else
           predicate = nil
-          if attr.is_a?(Symbol) 
+          if attr.is_a?(Symbol)
             predicate = klass.attribute_uri(attr)
           elsif attr.is_a?(RDF::URI)
             predicate = attr
@@ -105,7 +105,7 @@ module Goo
 
       end
 
-      def self.walk_pattern(klass, match_patterns, graphs, patterns, unions, 
+      def self.walk_pattern(klass, match_patterns, graphs, patterns, unions,
                                 internal_variables,in_aggregate=false,query_options={})
         match_patterns.each do |match,in_union|
           unions << [] if in_union
@@ -143,7 +143,7 @@ module Goo
           end
           internal_variables << value
         end
-        add_rules(attr,klass,query_options) 
+        add_rules(attr,klass,query_options)
         graph, pattern = query_pattern(klass,attr,value,subject)
         if pattern
           if !in_union
@@ -154,10 +154,10 @@ module Goo
         end
         graphs << graph if graph
         if next_pattern
-          range = klass.range(attr) 
+          range = klass.range(attr)
           next_pattern.each do |next_attr,next_value|
             patterns_for_match(range, next_attr, next_value, graphs,
-                  patterns, unions, internal_variables, subject=value, 
+                  patterns, unions, internal_variables, subject=value,
                   in_union, in_aggregate)
           end
         end
@@ -216,7 +216,7 @@ module Goo
         if models
           models.each do |m|
             if !m.respond_to?:klass #read only
-              raise ArgumentError, 
+              raise ArgumentError,
               "To load attributes the resource must be persistent" unless m.persistent?
             end
           end
@@ -241,7 +241,7 @@ module Goo
         end
 
         variables = [:id]
-        
+
         query_options = {}
         #TODO: breaks the reasoner
         patterns = [[ :id ,RDF.type, klass.uri_type]]
@@ -276,7 +276,7 @@ module Goo
             incl_embed = incl.select { |a| a.instance_of?(Hash) }
             raise ArgumentError, "Not supported case for embed" if incl_embed.length > 1
             incl.delete_if { |a| !a.instance_of?(Symbol) }
-            
+
             if incl_embed.length > 0
               incl_embed = incl_embed.first
               embed_variables = incl_embed.keys.sort
@@ -285,7 +285,7 @@ module Goo
             end
             incl.each do |attr|
               graph, pattern = query_pattern(klass,attr)
-              add_rules(attr,klass,query_options) 
+              add_rules(attr,klass,query_options)
               optional_patterns << pattern if pattern
               graphs << graph if graph
             end
@@ -295,7 +295,7 @@ module Goo
         internal_variables = []
         if graph_match
           #make it deterministic - for caching
-          graph_match_iteration = Goo::Base::PatternIteration.new(graph_match) 
+          graph_match_iteration = Goo::Base::PatternIteration.new(graph_match)
           walk_pattern(klass,graph_match_iteration,graphs,patterns,unions,
                              internal_variables,in_aggregate=false,query_options)
           graphs.uniq!
@@ -336,14 +336,14 @@ module Goo
         if aggregate
           aggregate.each do |agg|
             agg_patterns = []
-            graph_match_iteration = 
+            graph_match_iteration =
               Goo::Base::PatternIteration.new(Goo::Base::Pattern.new(agg.pattern))
             walk_pattern(klass,graph_match_iteration,graphs,agg_patterns,unions,
                              internal_variables,in_aggregate=agg.aggregate)
             if agg_patterns.length > 0
               projection = "#{internal_variables.last.to_s}_projection".to_sym
               aggregate_on_attr = internal_variables.last.to_s
-              aggregate_on_attr = aggregate_on_attr[0..aggregate_on_attr.index("_agg_")-1].to_sym 
+              aggregate_on_attr = aggregate_on_attr[0..aggregate_on_attr.index("_agg_")-1].to_sym
               (aggregate_projections ||={})[projection] = [agg.aggregate, aggregate_on_attr]
               (aggregate_vars ||= []) << [ internal_variables.last,
                                 projection,
@@ -371,7 +371,7 @@ module Goo
 
         #rdf:type <x> breaks the reasoner
         if query_options && query_options[:rules] != [:NONE]
-          patterns[0] = [:id,RDF[:type],:some_type] 
+          patterns[0] = [:id,RDF[:type],:some_type]
           variables << :some_type
         end
         select = client.select(*variables).distinct()
@@ -433,14 +433,14 @@ module Goo
             end
             if list_attributes.include?(bnode_extraction)
               pre = models_by_id[sol[:id]].instance_variable_get("@#{bnode_extraction}")
-              pre = pre ? (pre.dup << struct) : [struct] 
+              pre = pre ? (pre.dup << struct) : [struct]
               struct = pre
             end
             models_by_id[sol[:id]].send("#{bnode_extraction}=",struct)
             next
           end
           if !models_by_id.include?(id)
-            klass_model = klass_struct ? klass_struct.new : klass.new 
+            klass_model = klass_struct ? klass_struct.new : klass.new
             klass_model.id = id
             klass_model.persistent = true unless klass_struct
             klass_model.klass = klass if klass_struct
@@ -492,7 +492,7 @@ module Goo
                 object = objects_new[object]
               else
                 range_for_v = klass.range(v)
-                if range_for_v 
+                if range_for_v
                   unless range_for_v.inmutable?
                     if !read_only
                       object = klass.range_object(v,object)
@@ -513,7 +513,7 @@ module Goo
             end
 
             if list_attributes.include?(v)
-              pre = klass_struct ? models_by_id[id][v] : 
+              pre = klass_struct ? models_by_id[id][v] :
                                    models_by_id[id].instance_variable_get("@#{v}")
               if object.nil? && pre.nil?
                 object = []
@@ -593,15 +593,15 @@ module Goo
             #for example parents and children in LD class models
             #we skip this cases for the moment
             next if struct.respond_to?(:model_name)
-            
-            bnode_attrs = struct.new.to_h.keys 
+
+            bnode_attrs = struct.new.to_h.keys
             ids = bnodes.select { |x,y| y.attribute == attr }.map{ |x,y| y.id }
             klass.where.models(models_by_id.select { |x,y| ids.include?(x) }.values)
                           .in(collection)
                           .include(bnode: { attr => bnode_attrs}).all
           end
         end
-         
+
         return models_by_id
       end
 

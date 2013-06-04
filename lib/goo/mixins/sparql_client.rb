@@ -1,6 +1,5 @@
 class String
   def to_uri
-    binding.pry
     return self
   end
 end
