@@ -59,7 +59,8 @@ module TestSChemaless
 
     def test_find_include_schemaless
       ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
-      cognition_term = RDF::URI.new "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_5400000"
+      cognition_term = RDF::URI.new( 
+          "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_5400000")
       k = Klass.find(cognition_term).in(ontology).first
       assert k.id.to_s == cognition_term 
       assert_raises Goo::Base::AttributeNotLoaded do
@@ -78,15 +79,18 @@ module TestSChemaless
       assert k.definition.first["a cognitive_process is a mental process"]
       assert k.synonym.sort == ["cognition",
  "http://ontology.neuinfo.org/NIF/Function/NIF-Function.owl#birnlex_1800"]
-      assert k.comment == nil
+      assert k.comment == []
       assert k.parents.length == 1
-      assert k.parents.first.id.to_s == "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_4320000"
+      assert k.parents.first.id.to_s == 
+        "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_4320000"
 
       k = Klass.find(cognition_term).in(ontology).include(:unmapped).first
-      assert k.unmapped[Goo.vocabulary(:nemo)[:synonym]].map { |sy| sy.object }.sort == ["cognition",
- "http://ontology.neuinfo.org/NIF/Function/NIF-Function.owl#birnlex_1800"]
+      assert k.unmapped[Goo.vocabulary(:nemo)[:synonym]].map { |sy| sy.object }.sort == 
+        ["cognition",
+         "http://ontology.neuinfo.org/NIF/Function/NIF-Function.owl#birnlex_1800"]
       assert(k.unmapped[Goo.vocabulary(:nemo)[:onto_definition]]
-                  .first.object == "mental_process is a brain_physiological_process that...[incomplete]")
+                  .first.object == 
+                    "mental_process is a brain_physiological_process that...[incomplete]")
       assert(k.unmapped[Goo.vocabulary(:rdfs)[:label]].first.object == "working_memory")
       assert_raises Goo::Base::AttributeNotLoaded do
         k.label
@@ -100,14 +104,16 @@ module TestSChemaless
       assert k.comment == nil
       assert k.parents.length == 1
       assert_instance_of Klass, k.parents.first
-      assert k.parents.first.id.to_s == "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_4320000"
+      assert k.parents.first.id.to_s == 
+        "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_4320000"
 
     end
 
 
     def test_find_parent_labels
       ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
-      cognition_term = RDF::URI.new "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_5400000"
+      cognition_term = 
+        RDF::URI.new "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_5400000"
       k = Klass.find(cognition_term).in(ontology).include(parents: [:label]).first
       assert k.parents.first.label == "cognitive_process"
     end
