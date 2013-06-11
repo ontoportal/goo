@@ -14,7 +14,7 @@ module TestIndex
     def setup
     end
 
-    def self.before_suite_xxx
+    def self.before_suite
       graph = RDF::URI.new(Test::Models::DATA_ID)
 
       database = Test::Models::Database.new
@@ -30,7 +30,7 @@ module TestIndex
                             mime_type="application/x-turtle")
     end
 
-    def self.after_suite_xxxx
+    def self.after_suite
       graph = RDF::URI.new(Test::Models::DATA_ID)
       result = Goo.sparql_data_client.delete_graph(graph)
       database = Test::Models::Database.find(RDF::URI.new(Test::Models::DATA_ID)).first
