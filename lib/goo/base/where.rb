@@ -26,6 +26,30 @@ module Goo
         @indexing = false
         @read_only = false
         @rules = true
+
+        #cache of retrieved predicates for unmapped queries
+        #reused across pages
+        @predicates = nil
+      end
+
+      def unmmaped_predicates()
+        return @predicates unless @predicates.nil?
+
+        predicates = nil
+        if @include.first == :unmapped
+          if @where_options_load[:collection]
+            graph = @where_options_load[:collection].id
+          else
+            #TODO review this case
+            raise ArgumentError, "Unmapped wihout collection not tested"
+            graph = @where_options_load[:klass].type_uri
+          end
+          predicates = Goo::SPARQL::Queries.graph_predicates(graph)
+          if predicates.length == 0
+            raise ArgumentError, "Empty graph. Unable to load predicates"
+          end
+        end
+        return predicates
       end
 
       def process_query()
@@ -36,10 +60,14 @@ module Goo
 
         @include << @include_embed if @include_embed.length > 0
 
+        @predicates = unmmaped_predicates()
+
         options_load = { models: @models, include: @include, ids: @ids,
                          graph_match: @pattern, klass: @klass,
                          filters: @filters, order_by: @order_by ,
-                         read_only: @read_only, rules: @rules }
+                         read_only: @read_only, rules: @rules,
+                         predicates: @predicates }
+
 
         options_load.merge!(@where_options_load) if @where_options_load
         if !@klass.collection_opts.nil? and !options_load.include?(:collection)

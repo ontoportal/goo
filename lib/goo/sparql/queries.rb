@@ -31,6 +31,18 @@ module Goo
         end
       end
 
+      def self.graph_predicates(*graphs)
+        client = Goo.sparql_query_client(:main)
+        select = client.select(:predicate).distinct()
+        select.where([:subject, :predicate, :object])
+        select.from(graphs)
+        predicates = []
+        select.each_solution do |sol|
+          predicates << sol[:predicate]
+        end
+        return predicates
+      end
+
       def self.model_exist(model,id=nil,store=:main)
         id = id || model.id
         so = Goo.sparql_query_client(store).ask.from(model.graph).
@@ -182,16 +194,19 @@ module Goo
         page = options[:page]
         count = options[:count]
         include_pagination = options[:include_pagination]
+        predicates = options[:predicates]
         store = options[:store] || :main
         klass_struct = nil
         embed_struct = nil
+
         if read_only && !count && !aggregate
           include_for_struct = incl
           if !incl and include_pagination
             #read only and pagination we do not know the attributes yet
             include_for_struct = include_pagination
           end
-          direct_incl = !include_for_struct ? [] : include_for_struct.select { |a| a.instance_of?(Symbol) }
+          direct_incl = !include_for_struct ? [] :
+            include_for_struct.select { |a| a.instance_of?(Symbol) }
           incl_embed = include_for_struct.select { |a| a.instance_of?(Hash) }.first
           klass_struct = klass.struct_object(direct_incl + (incl_embed ? incl_embed.keys : []))
 
@@ -265,6 +280,7 @@ module Goo
               patterns << [bnode, klass.attribute_uri(in_bnode_attr), in_bnode_attr]
             end
           elsif incl.first == :unmapped
+            #a filter with for ?predicate will be included
             patterns << [:id, :predicate, :object]
             variables = [:id, :predicate, :object]
             unmapped = true
@@ -343,7 +359,8 @@ module Goo
             if agg_patterns.length > 0
               projection = "#{internal_variables.last.to_s}_projection".to_sym
               aggregate_on_attr = internal_variables.last.to_s
-              aggregate_on_attr = aggregate_on_attr[0..aggregate_on_attr.index("_agg_")-1].to_sym
+              aggregate_on_attr = 
+                aggregate_on_attr[0..aggregate_on_attr.index("_agg_")-1].to_sym
               (aggregate_projections ||={})[projection] = [agg.aggregate, aggregate_on_attr]
               (aggregate_vars ||= []) << [ internal_variables.last,
                                 projection,
@@ -391,6 +408,13 @@ module Goo
         select.filter(filter_id_str)
         select.filter("!isBLANK(?id)")
         select.filter("!isBLANK(?object)") if unmapped
+
+        if unmapped && predicates && predicates.length > 0
+          filter_predicates = predicates.map { |p| "?predicate = #{p.to_ntriples}" }
+          filter_predicates = filter_predicates.join " || "
+          select.filter(filter_predicates)
+        end
+
         if query_filter_str.length > 0
           query_filter_str.each do |f|
             select.filter(f)
