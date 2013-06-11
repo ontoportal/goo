@@ -138,6 +138,33 @@ module TestSChemaless
 
     end
 
+    def test_page_reuse_predicates
+      ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
+      paging = Klass.in(ontology).include(:unmapped).page(1,100)
+      predicates_array = nil
+      total = 0
+      all_ids = []
+      begin
+        if paging.instance_variable_get("@page_i") > 1
+          #we test that the predicates array is always the same object.
+          assert predicates_array.object_id == 
+            paging.instance_variable_get("@predicates").object_id
+        end
+        page = paging.to_a
+        if paging.instance_variable_get("@page_i") == 1
+          predicates_array = paging.instance_variable_get("@predicates")
+        end
+        page.each do |k|
+          all_ids << k.id
+        end
+        total += page.length
+        paging.page(page.next_page) if page.next?
+        assert page.aggregate == 1713
+      end while(page.next?)
+      assert all_ids.length == all_ids.uniq.length
+      assert total == 1713
+    end
+
     def test_index_roots
       ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
       f = Goo::Filter.new(:parents).unbound
@@ -151,7 +178,7 @@ module TestSChemaless
                 .all
       roots.each do |r|
         #roots have no parents
-        assert Klass.find(r.id).in(ontology).include(:parents).first.parents.nil?
+        assert Klass.find(r.id).in(ontology).include(:parents).first.parents == []
       end
     end
   end
