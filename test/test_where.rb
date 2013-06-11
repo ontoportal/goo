@@ -514,8 +514,8 @@ class TestWhere < MiniTest::Unit::TestCase
 
   def test_aggregated
     #students and awards default
-    sts = Student.include(:name).aggregate(:count,:awards).all
-    assert sts.length == 2
+    sts = Student.where.include(:name).aggregate(:count,:awards).all
+    assert sts.length == 7
     sts.each do |st|
       agg = st.aggregates.first
       assert agg.attribute == :awards
@@ -524,6 +524,8 @@ class TestWhere < MiniTest::Unit::TestCase
         assert agg.value == 1
       elsif st.name == "Daniel"
         assert agg.value == 2
+      else
+        assert agg.value == 0
       end
     end
 
