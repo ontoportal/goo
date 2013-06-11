@@ -95,13 +95,13 @@ module TestSChemaless
       assert_raises Goo::Base::AttributeNotLoaded do
         k.label
       end
-      k.map_attributes
+      Klass.map_attributes(k)
       assert k.label == "working_memory"
       assert k.definition.length == 1
       assert k.definition.first["a cognitive_process is a mental process"]
       assert k.synonym.sort == ["cognition",
  "http://ontology.neuinfo.org/NIF/Function/NIF-Function.owl#birnlex_1800"]
-      assert k.comment == nil
+      assert k.comment == []
       assert k.parents.length == 1
       assert_instance_of Klass, k.parents.first
       assert k.parents.first.id.to_s == 

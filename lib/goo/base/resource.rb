@@ -218,7 +218,11 @@ module Goo
             else
               inst.send("#{attr}=",object, on_load: true) 
             end
+          else
+            next if inst.class.collection?(attr) #collection is already there
+            inst.send("#{attr}=",list_attrs.include?(attr) ? [] : nil, on_load: true)
           end
+
         end
       end
 
