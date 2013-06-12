@@ -180,7 +180,7 @@ class TestWhere < MiniTest::Unit::TestCase
       assert_instance_of String, cats.code
     end
     #equivalent
-    cats = Category.include(Category.attributes).all
+    cats = Category.where.include(Category.attributes).all
     cats.each do |cats|
       assert_instance_of String, cats.code
     end
@@ -225,7 +225,7 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_embed_include
-    programs = Program.include(:name)
+    programs = Program.where.include(:name)
                   .include(university: [:name])
                   .include(category: [:code]).all
 
@@ -251,7 +251,7 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_embed_include_with_inverse
-    unis = University.include(:name, programs: [:name]).all
+    unis = University.where.include(:name, programs: [:name]).all
     unis.each do |u|
       assert_instance_of String, u.name
       assert_instance_of Array, u.programs
@@ -262,7 +262,7 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_embed_two_levels
-    unis = University.include(:name, programs: [:name, category: [:code]]).all
+    unis = University.where.include(:name, programs: [:name, category: [:code]]).all
     unis.each do |u|
       assert_instance_of String, u.name
       assert_instance_of Array, u.programs
@@ -529,14 +529,14 @@ class TestWhere < MiniTest::Unit::TestCase
       end
     end
 
-    sts = Student.include(:name).aggregate(:count, :enrolled).all
+    sts = Student.where.include(:name).aggregate(:count, :enrolled).all
     sts.each do |st|
       assert (st.name == "Daniel" && st.aggregates.first.value == 2) ||
                 st.aggregates.first.value == 1
     end
 
     #students enrolled in more than 1 program and get the programs name
-    sts = Student.include(:name).aggregate(:count, :enrolled)
+    sts = Student.where.include(:name).aggregate(:count, :enrolled)
                     .all
                     .select { |x| x.aggregates.first.value > 1 }
 
@@ -544,7 +544,7 @@ class TestWhere < MiniTest::Unit::TestCase
     assert sts.first.name == "Daniel"
 
     #Categories per student program categories
-    sts = Student.include(:name).aggregate(:count, enrolled: [:category]).all
+    sts = Student.where.include(:name).aggregate(:count, enrolled: [:category]).all
     assert sts.length == 7
     data = { "Tim" => 4, "John" => 4, "Susan" => 3, 
       "Daniel" => 6, "Louis" => 3, "Lee" => 3, "Robert" => 4 }
@@ -555,14 +555,14 @@ class TestWhere < MiniTest::Unit::TestCase
     
     #Inverse
     #universities with more than 3 programs
-    us = University.include(:name).aggregate(:count, :programs).all
+    us = University.where.include(:name).aggregate(:count, :programs).all
     assert us.length == 3
     us.each do |u|
       assert u.aggregates.first.value == 3
     end
 
     #double inverse
-    us = University.include(:name).aggregate(:count, programs: [:students]).all
+    us = University.where.include(:name).aggregate(:count, programs: [:students]).all
     us.each do |u|
       assert (u.name == "UPM" &&  u.aggregates.first.value == 2) ||
           (u.aggregates.first.value == 3)
