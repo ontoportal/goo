@@ -242,7 +242,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
     assert ch.length == 2
     (ch.select { |c| c.id.to_s == "http://someiri.org/van" }).length == 1
     (ch.select { |c| c.id.to_s == "http://someiri.org/cargo" }).length == 1
-    assert vehicle.parents == nil
+    assert vehicle.parents == []
 
 
 
@@ -250,7 +250,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
     #this is confussing
 
     Term.where.models([ cargovan ]).in(submission).include(:children).all
-    assert cargovan.children == nil
+    assert cargovan.children == []
 
     #preload attrs
     terms = Term.in(Submission.find("submission1").first).include(:parents,:synonym,:definition)
@@ -278,7 +278,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
         assert t.parents[0].id.to_s == "http://someiri.org/van"
       end
       if t.id.to_s == "http://someiri.org/vehicle"
-        assert t.parents == nil
+        assert t.parents == []
       end
     end
     assert terms.length == 5
@@ -317,18 +317,18 @@ class TestModelComplex < MiniTest::Unit::TestCase
     terms = Term.in(submission).include(:synonym,:definition).all
     assert terms.length == 1
     assert terms.first.synonym.sort ==  ["transport", "vehicles"]
-    assert terms.first.definition ==  nil
+    assert terms.first.definition ==  []
 
     #preload
     terms = Term.in(submission).include(:synonym, :definition).all
     assert terms.length == 1
     assert terms.first.synonym.sort ==  ["transport", "vehicles"]
-    assert terms.first.definition ==  nil
+    assert terms.first.definition ==  []
 
     #with find
     term = Term.find(RDF::URI.new("http://someiri.org/vehicle")).in(submission).include(:prefLabel, :synonym, :definition).first
     assert term.synonym.sort ==  ["transport", "vehicles"]
-    assert term.definition ==  nil
+    assert term.definition ==  []
     assert term.prefLabel == "vehicle"
 
   end
@@ -417,7 +417,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
                   .aggregate(:count, :children)
                   .page(1)
 
-    assert page.count == 7
+    assert page.count == 9
     page.each do |t|
       if t.id.to_s.include? "term/1"
         assert t.aggregates.first.value == 1
