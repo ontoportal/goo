@@ -22,7 +22,8 @@ module Goo
           url: "#{url.to_s}",
           payload: {
             graph: graph.to_s,
-            data: data
+            data: data,
+            "mime-type" => mime_type
           },
           headers: {"mime-type" => mime_type},
           timeout: -1
@@ -36,7 +37,8 @@ module Goo
           url: "#{url.to_s}",
           payload: {
            graph: graph.to_s,
-           data: File.read(file_path)
+           data: File.read(file_path),
+           "mime-type" => mime_type
           },
           headers: {"mime-type" => mime_type},
           timeout: -1
