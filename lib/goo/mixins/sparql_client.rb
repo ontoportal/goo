@@ -40,6 +40,12 @@ module RDF
         super
       end
     end
+
+    def last_part
+      f = fragment
+      return f if f
+      return to_s.split("/")[-1]
+    end
   end #end URI
 
   class Literal

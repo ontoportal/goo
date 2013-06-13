@@ -127,6 +127,9 @@ module Goo
       def unmapped_set(attribute,value)
         @unmapped ||= {}
         (@unmapped[attribute] ||= []) << value
+        if @unmapped[attribute].length > 1
+          @unmapped[attribute].uniq!
+        end
       end
 
       def delete(*args)
@@ -201,11 +204,15 @@ module Goo
         klass = inst.respond_to?(:klass) ? inst[:klass] : inst.class
         unmapped = inst.respond_to?(:klass) ? inst[:unmapped] : inst.unmapped
         list_attrs = klass.attributes(:list)
+        unmapped_string_keys = Hash.new
+        unmapped.each do |k,v|
+          unmapped_string_keys[k.to_s] = v
+        end
         klass.attributes.each do |attr|
           next unless inst.respond_to?(attr)
           attr_uri = klass.attribute_uri(attr)
-          if unmapped.include?(attr_uri)
-            object = unmapped[attr_uri]
+          if unmapped_string_keys.include?(attr_uri.to_s)
+            object = unmapped_string_keys[attr_uri.to_s]
             object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
             if klass.range(attr)
               object = object.map { |o| o.is_a?(RDF::URI) ? klass.range_object(attr,o) : o }

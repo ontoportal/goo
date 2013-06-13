@@ -195,6 +195,21 @@ module Goo
         count = options[:count]
         include_pagination = options[:include_pagination]
         predicates = options[:predicates]
+        predicates_map = nil
+        if predicates
+          uniq_p = predicates.uniq
+          predicates_map = {}
+          uniq_p.each do |p|
+            i = 0
+            key = ("var_"+p.last_part+i.to_s).to_sym rescue binding.pry
+            while predicates_map.include?(key)
+              i += 1
+              key = ("var_"+p.last_part+i.to_s).to_sym
+              break if i > 10
+            end
+            predicates_map[key] = p
+          end
+        end
         store = options[:store] || :main
         klass_struct = nil
         embed_struct = nil
@@ -281,8 +296,16 @@ module Goo
             end
           elsif incl.first == :unmapped
             #a filter with for ?predicate will be included
-            patterns << [:id, :predicate, :object]
-            variables = [:id, :predicate, :object]
+            if predicates_map
+              variables = [:id]
+              predicates_map.each do |var,pre|
+                optional_patterns << [:id, pre, var]
+                variables << var
+              end
+            else
+              patterns << [:id, :predicate, :object]
+              variables = [:id, :predicate, :object]
+            end
             unmapped = true
           else
             #make it deterministic
@@ -409,11 +432,11 @@ module Goo
         select.filter("!isBLANK(?id)")
         select.filter("!isBLANK(?object)") if unmapped
 
-        if unmapped && predicates && predicates.length > 0
-          filter_predicates = predicates.map { |p| "?predicate = #{p.to_ntriples}" }
-          filter_predicates = filter_predicates.join " || "
-          select.filter(filter_predicates)
-        end
+        #if unmapped && predicates && predicates.length > 0
+        #  filter_predicates = predicates.map { |p| "?predicate = #{p.to_ntriples}" }
+        #  filter_predicates = filter_predicates.join " || "
+        #  select.filter(filter_predicates)
+        #end
 
         if query_filter_str.length > 0
           query_filter_str.each do |f|
@@ -471,11 +494,26 @@ module Goo
             models_by_id[id] = klass_model
           end
           if unmapped
-            if models_by_id[id].respond_to?:klass #struct
-              models_by_id[id][:unmapped] ||= {}
-              (models_by_id[id][:unmapped][sol[:predicate]] ||= []) << sol[:object]
+            if predicates_map.nil? 
+              if models_by_id[id].respond_to?:klass #struct
+                models_by_id[id][:unmapped] ||= {}
+                (models_by_id[id][:unmapped][sol[:predicate]] ||= []) << sol[:object]
+              else
+                models_by_id[id].unmapped_set(sol[:predicate],sol[:object])
+              end
             else
-              models_by_id[id].unmapped_set(sol[:predicate],sol[:object])
+              predicates_map.each do |var,pred|
+                next if sol[var].nil?
+                if models_by_id[id].respond_to?:klass #struct
+                  models_by_id[id][:unmapped] ||= {}
+                  (models_by_id[id][:unmapped][pred] ||= []) << sol[var]
+                  if models_by_id[id][:unmapped][pred].instance_of? Array
+                    models_by_id[id][:unmapped][pred].uniq!
+                  end
+                else
+                  models_by_id[id].unmapped_set(pred,sol[var])
+                end
+              end
             end
             next
           end
