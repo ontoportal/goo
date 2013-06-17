@@ -196,6 +196,7 @@ module Goo
         include_pagination = options[:include_pagination]
         predicates = options[:predicates]
         predicates_map = nil
+        binding_as = nil
         if predicates
           uniq_p = predicates.uniq
           predicates_map = {}
@@ -297,10 +298,10 @@ module Goo
           elsif incl.first == :unmapped
             #a filter with for ?predicate will be included
             if predicates_map
-              variables = [:id]
+              variables = [:id, :object, :bind_as]
+              binding_as = []
               predicates_map.each do |var,pre|
-                optional_patterns << [:id, pre, var]
-                variables << var
+                binding_as << [[[:id, pre, :object]], var, :bind_as]
               end
             else
               patterns << [:id, :predicate, :object]
@@ -464,6 +465,9 @@ module Goo
         list_attributes = Set.new(klass.attributes(:list))
         all_attributes = Set.new(klass.attributes(:all))
         objects_new = {}
+        if binding_as
+          select.union_with_bind_as(*binding_as)
+        end
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri != sol[:some_type]
           if count
@@ -502,16 +506,17 @@ module Goo
                 models_by_id[id].unmapped_set(sol[:predicate],sol[:object])
               end
             else
-              predicates_map.each do |var,pred|
-                next if sol[var].nil?
+              var = sol[:bind_as].to_s.to_sym
+              if predicates_map.include?(var)
+                pred = predicates_map[var] 
                 if models_by_id[id].respond_to?:klass #struct
                   models_by_id[id][:unmapped] ||= {}
-                  (models_by_id[id][:unmapped][pred] ||= []) << sol[var]
-                  if models_by_id[id][:unmapped][pred].instance_of? Array
+                  (models_by_id[id][:unmapped][pred] ||= []) << sol[:object]
+                  if models_by_id[id][:unmapped][pred].instance_of? array
                     models_by_id[id][:unmapped][pred].uniq!
                   end
                 else
-                  models_by_id[id].unmapped_set(pred,sol[var])
+                  models_by_id[id].unmapped_set(pred,sol[:object])
                 end
               end
             end
