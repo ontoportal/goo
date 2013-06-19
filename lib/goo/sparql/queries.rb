@@ -98,7 +98,7 @@ module Goo
             #graph_items_collection = attr
             #inverse_klass_collection = inverse_klass
             #return [nil, nil]
-            binding.pry
+            #binding.pry
           end
           predicate = inverse_klass.attribute_uri(inverse_opts[:attribute])
           return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, subject ]]
@@ -202,7 +202,7 @@ module Goo
           predicates_map = {}
           uniq_p.each do |p|
             i = 0
-            key = ("var_"+p.last_part+i.to_s).to_sym rescue binding.pry
+            key = ("var_"+p.last_part+i.to_s).to_sym
             while predicates_map.include?(key)
               i += 1
               key = ("var_"+p.last_part+i.to_s).to_sym
@@ -621,7 +621,7 @@ module Goo
           #here we need a where call using collection
           #inverse_klass_collection.where
           #
-          binding.pry
+          #binding.pry
         end
 
         #remove from models_by_id elements that were not touched
