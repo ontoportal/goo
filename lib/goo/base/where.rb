@@ -32,6 +32,32 @@ module Goo
         @predicates = nil
       end
 
+      def equivalent_predicates
+        @equivalent_predicates
+      end
+
+      def retrieve_equivalent_predicates()
+        return @equivalent_predicates unless @equivalent_predicates.nil?
+
+        equivalent_predicates = nil
+        if @include.first == :unmapped
+          if @where_options_load[:collection]
+            graph = @where_options_load[:collection].id
+          else
+            #TODO review this case
+            raise ArgumentError, "Unmapped wihout collection not tested"
+            graph = @where_options_load[:klass].type_uri
+          end
+          equivalent_predicates = Goo::SPARQL::Queries.sub_property_predicates(graph)
+          #TODO compute closure
+          equivalent_predicates_hash = {}
+          equivalent_predicates.each do |k,v|
+            equivalent_predicates_hash[k] = v
+          end
+        end
+        return equivalent_predicates_hash
+      end
+
       def unmmaped_predicates()
         return @predicates unless @predicates.nil?
 
@@ -61,6 +87,7 @@ module Goo
         @include << @include_embed if @include_embed.length > 0
 
         @predicates = unmmaped_predicates()
+        @equivalent_predicates = retrieve_equivalent_predicates()
 
         options_load = { models: @models, include: @include, ids: @ids,
                          graph_match: @pattern, klass: @klass,

@@ -31,6 +31,18 @@ module Goo
         end
       end
 
+      def self.sub_property_predicates(*graphs)
+        client = Goo.sparql_query_client(:main)
+        select = client.select(:subP, :superP).distinct()
+        select.where([:subP, Goo.vocabulary(:rdfs)[:subPropertyOf], :superP])
+        select.from(graphs)
+        tuples = []
+        select.each_solution do |sol|
+          tuples << [sol[:subP],sol[:superP]]
+        end
+        return tuples
+      end
+
       def self.graph_predicates(*graphs)
         client = Goo.sparql_query_client(:main)
         select = client.select(:predicate).distinct()
