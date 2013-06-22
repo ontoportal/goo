@@ -51,8 +51,8 @@ module Goo
           equivalent_predicates = Goo::SPARQL::Queries.sub_property_predicates(graph)
           #TODO compute closure
           equivalent_predicates_hash = {}
-          equivalent_predicates.each do |k,v|
-            equivalent_predicates_hash[k] = v
+          equivalent_predicates.each do |down,up|
+            (equivalent_predicates_hash[up.to_s] ||= Set.new) << down.to_s
           end
         end
         return equivalent_predicates_hash
