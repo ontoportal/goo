@@ -415,6 +415,7 @@ module Goo
           patterns[0] = [:id,RDF[:type],:some_type]
           variables << :some_type
         end
+
         select = client.select(*variables).distinct()
         variables.delete :some_type
 
@@ -460,6 +461,8 @@ module Goo
         if query_options
           query_options[:rules] = query_options[:rules].map { |x| x.to_s }.join("+")
           select.options[:query_options] = query_options
+        else 
+          query_options = { rules: ["NONE"] }
         end
         found = Set.new
         list_attributes = Set.new(klass.attributes(:list))

@@ -162,13 +162,9 @@ module TestSChemaless
           assert predicates_array.object_id == 
             paging.instance_variable_get("@predicates").object_id
         end
-#       require "ruby-prof"
-#       RubyProf.start
+
         page = paging.to_a
-#      result = RubyProf.stop
-#      printer = RubyProf::GraphPrinter.new(result)
-#printer.print(STDOUT)
-#binding.pry
+
         if paging.instance_variable_get("@page_i") == 1
           predicates_array = paging.instance_variable_get("@predicates")
         end
