@@ -209,6 +209,7 @@ module Goo
           unmapped_string_keys[k.to_s] = v
         end
         klass.attributes.each do |attr|
+          next if inst.class.collection?(attr) #collection is already there
           next unless inst.respond_to?(attr)
           attr_uri = klass.attribute_uri(attr)
           if unmapped_string_keys.include?(attr_uri.to_s)
@@ -226,7 +227,6 @@ module Goo
               inst.send("#{attr}=",object, on_load: true) 
             end
           else
-            next if inst.class.collection?(attr) #collection is already there
             inst.send("#{attr}=",list_attrs.include?(attr) ? [] : nil, on_load: true)
           end
 
