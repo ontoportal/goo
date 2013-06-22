@@ -196,7 +196,7 @@ module Goo
         return col ? col.id : nil
       end
 
-      def self.map_attributes(inst)
+      def self.map_attributes(inst,equivalent_predicates=nil)
         if (inst.kind_of?(Goo::Base::Resource) && inst.unmapped.nil?) || 
             (!inst.respond_to?(:unmapped) && inst[:unmapped].nil?)
           raise ArgumentError, "Resource.map_attributes only works for :unmapped instances"
@@ -211,9 +211,22 @@ module Goo
         klass.attributes.each do |attr|
           next if inst.class.collection?(attr) #collection is already there
           next unless inst.respond_to?(attr)
-          attr_uri = klass.attribute_uri(attr)
-          if unmapped_string_keys.include?(attr_uri.to_s)
-            object = unmapped_string_keys[attr_uri.to_s]
+          attr_uri = klass.attribute_uri(attr).to_s
+          if unmapped_string_keys.include?(attr_uri.to_s) ||
+              (equivalent_predicates && equivalent_predicates.include?(attr_uri))
+            object = nil
+            if !unmapped_string_keys.include?(attr_uri)
+              equivalent_predicates[attr_uri].each do |eq_attr|
+                object = unmapped_string_keys[eq_attr]
+                break if object
+              end
+              if object.nil?
+                inst.send("#{attr}=",list_attrs.include?(attr) ? [] : nil, on_load: true)
+                next
+              end
+            else
+              object = unmapped_string_keys[attr_uri]
+            end
             object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
             if klass.range(attr)
               object = object.map { |o| o.is_a?(RDF::URI) ? klass.range_object(attr,o) : o }
