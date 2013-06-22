@@ -470,11 +470,12 @@ module Goo
         end
         select.from(graphs)
         select.distinct(true)
-        if query_options
+        if query_options && !binding_as
           query_options[:rules] = query_options[:rules].map { |x| x.to_s }.join("+")
           select.options[:query_options] = query_options
         else 
           query_options = { rules: ["NONE"] }
+          select.options[:query_options] = query_options
         end
         found = Set.new
         list_attributes = Set.new(klass.attributes(:list))
