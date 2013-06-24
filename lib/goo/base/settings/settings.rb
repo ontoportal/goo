@@ -255,17 +255,22 @@ module Goo
           return @namespace
         end
 
+        def id_prefix
+          model_name_uri = model_name.to_s
+          model_name_uri = model_name_uri.pluralize if Goo.pluralize_models?
+          if Goo.id_prefix
+            return RDF::URI.new(Goo.id_prefix + model_name_uri + '/')
+          end
+          return namespace[model_name_uri + '/']
+        end
+
         def id_from_unique_attribute(attr,value_attr)
           if value_attr.nil?
             raise ArgumentError, "`#{attr}` value is nil. Id for resource cannot be generated."
           end
           uri_last_fragment = CGI.escape(value_attr)
-          model_name_uri = model_name.to_s
-          model_name_uri = model_name_uri.pluralize if Goo.pluralize_models?
-          if Goo.id_prefix
-            return RDF::URI.new(Goo.id_prefix + model_name_uri + '/' + uri_last_fragment)
-          end
-          return namespace[ model_name_uri + '/' + uri_last_fragment]
+          model_prefix_uri = id_prefix()
+          return model_prefix_uri + uri_last_fragment
         end
 
         def enum(*values)
