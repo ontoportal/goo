@@ -82,7 +82,7 @@ module Goo
           end
           filter_var = inspected_patterns[filter_pattern_match]
           if !filter_operation.value.instance_of?(Goo::Filter)
-            unless filter_operation.operator == :unbound
+            unless filter_operation.operator == :unbound || filter_operation.operator == :bound
               filter_operations << (
                 "?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
                 " #{RDF::Literal.new(filter_operation.value).to_ntriples}")

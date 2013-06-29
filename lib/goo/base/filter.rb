@@ -50,6 +50,11 @@ module Goo
         self
       end
 
+      def bound
+        @filter_tree << FILTER_TUPLE.new(:bound,nil)
+        self
+      end
+
     end
   end
 end
