@@ -87,7 +87,11 @@ module Goo
                 "?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
                 " #{RDF::Literal.new(filter_operation.value).to_ntriples}")
             else
-              filter_operations << "!BOUND(?#{filter_var.to_s})"
+              if filter_operation.operator == :unbound
+                filter_operations << "!BOUND(?#{filter_var.to_s})"
+              else
+                filter_operations << "BOUND(?#{filter_var.to_s})"
+              end
               return :optional
             end
           else
