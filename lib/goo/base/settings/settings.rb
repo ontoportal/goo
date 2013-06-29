@@ -294,6 +294,10 @@ module Goo
           end
         end
 
+        def attribute_loaded?(attr)
+          return @loaded_attributes.include?(attr)
+        end
+
         def inm_instances
           @inm_instances
         end
