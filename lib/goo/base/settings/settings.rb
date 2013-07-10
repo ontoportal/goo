@@ -178,6 +178,7 @@ module Goo
           @model_settings[:attributes][attr_name] = options
           shape_attribute(attr_name)
           namespace = attribute_namespace(attr_name)
+          namespace = namespace || @model_settings[:namespace]
           vocab = Goo.vocabulary(namespace) #returns default for nil input
           @attribute_uris[attr_name] = vocab[options[:property] || attr_name]
           if options[:enforce].include?(:unique) and options[:enforce].include?(:list)
