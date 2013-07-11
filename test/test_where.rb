@@ -48,6 +48,9 @@ class Program < Goo::Base::Resource
   def self.id_generator(p)
     return RDF::URI.new("http://example.org/program/#{p.university.name}/#{p.name}")
   end
+  def initialize(*args)
+    super(*args)
+  end
 end
 
 class Category < Goo::Base::Resource
