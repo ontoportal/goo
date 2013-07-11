@@ -261,6 +261,22 @@ class TestWhere < MiniTest::Unit::TestCase
     end
   end
 
+  def test_iterative_include_in_place
+    unis = University.where.all
+    unis_return = University.where.models(unis).include(programs: [:name]).to_a
+    assert unis_return.object_id == unis.object_id
+    assert unis.length == unis_return.length
+    return_object_id = unis.map { |x| x.object_id }.uniq.sort
+    unis_object_id = unis.map { |x| x.object_id }.uniq.sort
+    assert return_object_id == unis_object_id
+    unis.each do |u|
+      u.programs.each do |p|
+        assert_instance_of String, p.name
+      end
+    end
+
+  end
+
   def test_embed_two_levels
     unis = University.where.include(:name, programs: [:name, category: [:code]]).all
     unis.each do |u|
