@@ -154,7 +154,7 @@ module Goo
           Goo::SPARQL::Queries.model_load(options_load_agg)
         end
         unless @page_i
-          @result = models_by_id.values
+          @result = @models ? @models : models_by_id.values
         else
           @result = Goo::Base::Page.new(@page_i,@page_size,@count,models_by_id.values)
         end
