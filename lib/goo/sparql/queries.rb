@@ -581,20 +581,24 @@ module Goo
                 range_for_v = klass.range(v)
                 if range_for_v
                   unless range_for_v.inmutable?
-                    if !read_only
-                      pre_val = nil
-                      if models_by_id[id] &&
-                         models_by_id[id].loaded_attributes.include?(v)
+                    pre_val = nil
+                    if models_by_id[id] &&
+                       models_by_id[id].loaded_attributes.include?(v)
+                       if !read_only
                          pre_val = models_by_id[id].instance_variable_get("@#{v}")
-                         if pre_val.is_a?(Array)
-                           pre_val = pre_val.select { |x| x.id == object }.first
-                         end
-                      end
+                       else
+                         pre_val = models_by_id[id][v]
+                       end
+                       if pre_val.is_a?(Array)
+                         pre_val = pre_val.select { |x| x.id == object }.first
+                       end
+                    end
+                    if !read_only
                       object = pre_val ? pre_val : klass.range_object(v,object)
                       objects_new[object.id] = object
                     else
                       #depedent read only
-                      struct = embed_struct[v].new
+                      struct = pre_val ? pre_val : embed_struct[v].new
                       struct.id = object
                       struct.klass = klass.range(v)
                       objects_new[id] = struct
