@@ -278,6 +278,27 @@ class TestWhere < MiniTest::Unit::TestCase
       end
     end
 
+    #two levels
+    unis = University.where.all
+    unis_return = University.where.models(unis)
+                    .include(programs: [:name, students: [:name]]).to_a
+    assert unis_return.object_id == unis.object_id
+    return_object_id = unis.map { |x| x.object_id }.uniq.sort
+    unis_object_id = unis.map { |x| x.object_id }.uniq.sort
+    assert return_object_id == unis_object_id
+    st_count = 0
+    unis.each do |u|
+      u.programs.each do |p|
+        assert_instance_of String, p.name
+        assert p.students.length
+        p.students.each do |s|
+          st_count += 1
+          assert_instance_of String, s.name
+        end
+      end
+    end
+    assert st_count == Student.all.length + 1 #one student is enrolled in two programs
+    
   end
 
   def test_embed_two_levels
