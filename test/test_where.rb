@@ -299,6 +299,53 @@ class TestWhere < MiniTest::Unit::TestCase
     end
     assert st_count == Student.all.length + 1 #one student is enrolled in two programs
     
+    #two levels in steps
+    unis = University.where.all
+
+    #first step
+    unis_return = University.where.models(unis).include(programs: [:name]).to_a
+    assert unis_return.object_id == unis.object_id
+    assert unis.length == unis_return.length
+    return_object_id = unis.map { |x| x.object_id }.uniq.sort
+    unis_object_id = unis.map { |x| x.object_id }.uniq.sort
+    assert return_object_id == unis_object_id
+    p_step_one_ids = Set.new
+    unis.each do |u|
+      u.programs.each do |p|
+        p_step_one_ids << p.object_id
+      end
+    end
+
+
+    #second step 
+    unis_return = University.where.models(unis).include(programs: [students: [:name]]).to_a
+    assert unis_return.object_id == unis.object_id
+    assert unis.length == unis_return.length
+    return_object_id = unis.map { |x| x.object_id }.uniq.sort
+    unis_object_id = unis.map { |x| x.object_id }.uniq.sort
+    assert return_object_id == unis_object_id
+    p_step_two_ids = Set.new
+    unis.each do |u|
+      u.programs.each do |p|
+        p_step_two_ids << p.object_id
+      end
+    end
+
+    #nested object ids have to be the same in the second loading
+    assert p_step_one_ids == p_step_two_ids
+    st_count = 0
+    unis.each do |u|
+      u.programs.each do |p|
+        assert_instance_of String, p.name
+        assert p.students.length
+        p.students.each do |s|
+          assert_instance_of String, s.name
+          st_count += 1
+        end
+      end
+    end
+    assert st_count == Student.all.length + 1 #one student is enrolled in two programs
+
   end
 
   def test_embed_two_levels
