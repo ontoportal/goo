@@ -310,7 +310,7 @@ module Goo
               Goo.sparql_update_client.insert_data(graph_insert, graph: graph)
             end
           rescue Exception => e
-            binding.pry
+            raise e
           end
         end
 
