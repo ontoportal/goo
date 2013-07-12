@@ -34,6 +34,7 @@ module Goo
               next
             end
             object = v.class.respond_to?(:shape_attribute) ? v.id : v
+            object = v.respond_to?(:klass) ? v[:id] : v
             next if object.nil?
             graph_delete << [subject, predicate, object]
           end
@@ -81,7 +82,7 @@ module Goo
           values = value.kind_of?(Array) ? value : [value]
           object = nil
           values.each do |v|
-            if v.is_a?(Struct)
+            if v.is_a?(Struct) && !v.respond_to?(:klass)
               hh = v.to_h
               bnode = RDF::Node.new
               hh.each do |k,bvalue|
@@ -92,6 +93,7 @@ module Goo
             else
               object = v.class.respond_to?(:shape_attribute) ? v.id : v
             end
+            object = v.respond_to?(:klass) ? v[:id] : object
             graph_insert << [subject, predicate, object]
           end
         end
