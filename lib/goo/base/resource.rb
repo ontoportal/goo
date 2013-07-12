@@ -274,6 +274,12 @@ module Goo
             raise ArgumentError, "Enums can only be created on initialization"
           end
         end
+        batch_file = nil
+        if opts && opts.length > 0
+          if opts.first.is_a?(Hash) && opts.first[:batch] && opts.first[:batch].is_a?(File)
+            batch_file = opts.first[:batch]
+          end
+        end
 
         raise ArgumentError, "Object is not modified" unless modified?
         raise Goo::Base::NotValidException, "Object is not valid. Check errors." unless valid?
@@ -289,7 +295,20 @@ module Goo
         end
         if graph_insert and graph_insert.size > 0
           begin
-            Goo.sparql_update_client.insert_data(graph_insert, graph: graph)
+            if batch_file
+              lines = []
+              graph_insert.each do |t|
+                lines << [t.subject.to_ntriples, 
+                          t.predicate.to_ntriples, 
+                          t.object.to_ntriples, 
+                          graph.to_ntriples,
+                          ".\n" ].join(' ')
+              end
+              batch_file.write(lines.join(""))
+              batch_file.flush()
+            else
+              Goo.sparql_update_client.insert_data(graph_insert, graph: graph)
+            end
           rescue Exception => e
             binding.pry
           end
