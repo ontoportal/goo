@@ -447,8 +447,13 @@ module Goo
         end
 
         select.filter(filter_id_str)
-        select.filter("!isBLANK(?id)")
-        select.filter("!isBLANK(?object)") if unmapped
+
+        #these filters are only needed in class LD model
+        #TODO: move this if to confiration DSL option
+        if klass.model_name == :class
+          select.filter("!isBLANK(?id)")
+          select.filter("!isBLANK(?object)") if unmapped
+        end
 
         #if unmapped && predicates && predicates.length > 0
         #  filter_predicates = predicates.map { |p| "?predicate = #{p.to_ntriples}" }
