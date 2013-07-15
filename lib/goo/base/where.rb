@@ -78,7 +78,7 @@ module Goo
         return predicates
       end
 
-      def process_query()
+      def process_query(count=false)
 
         if @order_by && !@indexing
           raise ArgumentError, "Order by support is restricted to only offline indexing"
@@ -135,6 +135,11 @@ module Goo
           
           #models give the constraint
           options_load.delete :graph_match
+        elsif count
+          count_options = options_load.dup
+          count_options.delete(:include)
+          count_options[:count] = :count 
+          return Goo::SPARQL::Queries.model_load(count_options).to_i
         end
 
         if @indexing
@@ -222,12 +227,16 @@ module Goo
       end
 
       def length
-        process_query unless @result
+        unless @result
+          return process_query(count=true)
+        end
         return @result.length
       end
 
       def count
-        process_query unless @result
+        unless @result
+          return process_query(count=true)
+        end
         return @result.count
       end
 

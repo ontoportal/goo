@@ -657,4 +657,13 @@ class TestWhere < MiniTest::Unit::TestCase
 
   end
 
+  ##
+  # more optimized way of counting that does not create objects
+  def test_count
+    programs = Program.where(name: "BioInformatics", university: [ address: [ country: "US" ]]).all
+    assert programs.length == Program.where(name: "BioInformatics", university: [ address: [ country: "US" ]]).count
+
+    assert 9 == Program.where.count
+  end
+
 end
