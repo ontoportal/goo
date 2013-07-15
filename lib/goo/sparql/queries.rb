@@ -424,7 +424,7 @@ module Goo
         query_options = nil if query_options.length == 0
 
         client = Goo.sparql_query_client(store)
-        variables = [:count_var] if count
+        variables = [] if count
 
         #rdf:type <x> breaks the reasoner
         if query_options && query_options[:rules] != [:NONE]
