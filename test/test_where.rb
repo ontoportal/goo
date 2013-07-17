@@ -673,6 +673,23 @@ class TestWhere < MiniTest::Unit::TestCase
     u.programs.each do |p|
       assert_instance_of String, p.name
     end
+
+    u = University.find(id).include(programs: [:students]).first
+    u.programs.each do |p|
+      assert_instance_of Array, p.students
+      p.students.each do |s|
+        assert_instance_of Student, s
+      end
+
+    end
+
+    u = University.find(id).include(programs: [:category]).first
+    u.programs.each do |p|
+      assert_instance_of Array, p.category
+      p.category.each do |c|
+        assert_instance_of Category, c
+      end
+    end
   end
 
 end
