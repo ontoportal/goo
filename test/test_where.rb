@@ -666,4 +666,13 @@ class TestWhere < MiniTest::Unit::TestCase
     assert 9 == Program.where.count
   end
 
+  def test_include_inverse_with_find
+    id = University.all.first.id
+
+    u = University.find(id).include(programs: [:name]).first
+    u.programs.each do |p|
+      assert_instance_of String, p.name
+    end
+  end
+
 end
