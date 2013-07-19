@@ -588,7 +588,8 @@ module Goo
                   unless range_for_v.inmutable?
                     pre_val = nil
                     if models_by_id[id] &&
-                       models_by_id[id].loaded_attributes.include?(v)
+                       ((models_by_id[id].respond_to?(:klass) && models_by_id[id]) ||
+                       models_by_id[id].loaded_attributes.include?(v))
                        if !read_only
                          pre_val = models_by_id[id].instance_variable_get("@#{v}")
                        else
