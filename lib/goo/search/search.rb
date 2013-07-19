@@ -40,7 +40,7 @@ module Goo
         
         def search(q, params={})
           params["q"] = q
-          response = Goo.search_connection.get('select', :params => params)
+          response = Goo.search_connection.post('select', :data => params)
           return response
         end
 
