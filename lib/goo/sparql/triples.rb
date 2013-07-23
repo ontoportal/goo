@@ -34,7 +34,7 @@ module Goo
               next
             end
             object = v.class.respond_to?(:shape_attribute) ? v.id : v
-            object = v.respond_to?(:klass) ? v[:id] : v
+            object = v.respond_to?(:klass) ? v[:id] : object
             next if object.nil?
             graph_delete << [subject, predicate, object]
           end
