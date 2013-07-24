@@ -343,7 +343,8 @@ class TestModelComplex < MiniTest::Unit::TestCase
     terms = Term.in(submission)
     terms.each do |t|
       t.delete
-      assert_equal 0, GooTest.count_pattern("GRAPH #{submission.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }")
+      assert_equal(0, 
+       GooTest.count_pattern("GRAPH #{submission.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }"))
     end
     terms = []
     10.times do |i|
@@ -510,6 +511,44 @@ class TestModelComplex < MiniTest::Unit::TestCase
     end
   end
 
+
+  def test_empty_pages
+    submission = Submission.new(name: "submission1")
+    unless submission.exist?
+      submission.save
+    else
+      submission = Submission.find("submission1").first
+    end
+    terms = Term.in(submission)
+    terms.each do |t|
+      t.delete
+      assert_equal(0, 
+       GooTest.count_pattern("GRAPH #{submission.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }"))
+    end
+    terms = []
+    10.times do |i|
+      term = Term.new
+      term.id = RDF::URI.new("http://someiri.org/term/#{i}")
+      term.submission = submission
+      term.prefLabel = "term #{i}"
+      if i >= 1 && i < 5
+        term.parents = [terms[0]]
+      end
+      assert term.valid?
+      term.save
+      terms << term
+    end
+
+    term = Term.find(RDF::URI.new("http://someiri.org/term/8"))
+                .in(submission)
+                .first
+    page_terms = Term.where(parents: term)
+                 .in(submission)
+                 .include(Term.attributes)
+                 .page(1)
+                 .all
+    assert page_terms.length == 0
+  end
 
   def test_nil_attributes
     t = Term.new
