@@ -231,14 +231,18 @@ module Goo
 
       def length
         unless @result
-          return process_query(count=true)
+          res = process_query(count=true)
+          return res.length if res.is_a?Array
+          return res
         end
         return @result.length
       end
 
       def count
         unless @result
-          return process_query(count=true)
+          res = process_query(count=true)
+          return res.length if res.is_a?Array
+          return res
         end
         return @result.count
       end
