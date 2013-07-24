@@ -552,8 +552,9 @@ class TestModelComplex < MiniTest::Unit::TestCase
 
   def test_nil_attributes
     t = Term.new
-    t.my_new_attr = "bla"
-    assert t.my_new_attr == ["bla"]
+    assert_raises NoMethodError do
+      t.my_new_attr = "bla"
+    end
   end
 
 end
