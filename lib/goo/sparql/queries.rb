@@ -245,6 +245,7 @@ module Goo
           embed_struct = {}
           if incl_embed
             incl_embed.each do |k,vals|
+              next if klass.collection?(k)
               attrs_struct = []
               vals.each do |v|
                 attrs_struct << v unless v.kind_of?(Hash)
@@ -607,7 +608,7 @@ module Goo
                       struct = pre_val ? pre_val : embed_struct[v].new
                       struct.id = object
                       struct.klass = klass.range(v)
-                      objects_new[id] = struct
+                      objects_new[struct.id] = struct
                       object = struct
                     end
                   else
@@ -629,7 +630,7 @@ module Goo
                 object.uniq!
               end
             end
-            if klass_struct
+            if models_by_id[id].respond_to?(:klass)
               models_by_id[id][v] = object
             else
               models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
@@ -679,9 +680,12 @@ module Goo
             #anything to join ?
             attr_range = klass.range(attr)
             next if attr_range.nil?
-            range_objs = objects_new.select { |id,obj| obj.instance_of?(attr_range) }.values
+            range_objs = objects_new.select { |id,obj| obj.instance_of?(attr_range) ||
+                                      (obj.respond_to?(:klass) && obj[:klass] == attr_range)
+                                            }.values
             if range_objs.length > 0
-              attr_range.where().models(range_objs).in(collection).include(next_attrs).all
+              range_objs.uniq!
+              attr_range.where().models(range_objs).in(collection).include(*next_attrs).all
             end
           end
         end
