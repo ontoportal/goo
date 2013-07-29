@@ -579,6 +579,30 @@ class TestModelComplex < MiniTest::Unit::TestCase
       terms << term
     end
 
+    #just one attr + embed
+    page_terms = Term.in(submission)
+                 .include(ancestors: [:prefLabel])
+                 .page(1,5)
+                 .read_only
+                 .all
+    page_terms.each do |c|
+      if c.ancestors.first
+        assert_instance_of String, c.ancestors.first.prefLabel
+      end
+    end
+
+    #two attributes
+    page_terms = Term.in(submission)
+                 .include(:prefLabel, ancestors: [:prefLabel])
+                 .page(1,5)
+                 .read_only
+                 .all
+    page_terms.each do |c|
+      assert_instance_of String, c.prefLabel
+      if c.ancestors.first
+        assert_instance_of String, c.ancestors.first.prefLabel
+      end
+    end
   end
 
   def test_nil_attributes
