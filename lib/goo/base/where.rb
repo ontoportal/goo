@@ -8,6 +8,9 @@ module Goo
       attr_accessor :where_options_load
 
       def initialize(klass,*match_patterns)
+        if Goo.queries_debug? && Thread.current[:ncbo_debug].nil?
+          Thread.current[:ncbo_debug] = {}
+        end
         @klass = klass
         @pattern = match_patterns.first.nil? ? nil : Pattern.new(match_patterns.first) 
         @models = nil
@@ -79,6 +82,16 @@ module Goo
       end
 
       def process_query(count=false)
+        if Goo.queries_debug? &&  Thread.current[:ncbo_debug]
+          tstart = Time.now
+          query_resp = process_query_intl(count=count)
+          (Thread.current[:ncbo_debug][:goo_process_query] ||= []) << (Time.now - tstart)
+          return query_resp
+        end
+        return process_query_intl(count=count)
+      end
+
+      def process_query_intl(count=false)
 
         if @order_by && !@indexing
           raise ArgumentError, "Order by support is restricted to only offline indexing"
