@@ -192,8 +192,8 @@ module Goo
           queries = Thread.current[:ncbo_debug][:sparql_queries]
           processing = queries.map { |x| x[0] }.inject { |sum,x| sum + x }
           parsing = queries.map { |x| x[1] }.inject { |sum,x| sum + x }
-          headers["ncbo-time-queries"] = "%.3f"%processing
-          headers["ncbo-time-parsing"] = "%.3f"%parsing
+          headers["ncbo-time-goo-sparql-queries"] = "%.3f"%processing
+          headers["ncbo-time-goo-response-parsing"] = "%.3f"%parsing
         end
         if Thread.current[:ncbo_debug][:goo_process_query]
           goo_totals = Thread.current[:ncbo_debug][:goo_process_query]
