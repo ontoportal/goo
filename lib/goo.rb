@@ -178,6 +178,33 @@ module Goo
     @@uuid.generate
   end
 
+  #A debug middleware for rack applications
+  class Debug
+    def initialize(app = nil)
+      @app = app
+    end
+
+    def call(env)
+      Thread.current[:ncbo_debug] = nil
+      status, headers, response = @app.call(env)
+      if Thread.current[:ncbo_debug]
+        if Thread.current[:ncbo_debug][:sparql_queries]
+          queries = Thread.current[:ncbo_debug][:sparql_queries]
+          processing = queries.map { |x| x[0] }.inject { |sum,x| sum + x }
+          parsing = queries.map { |x| x[1] }.inject { |sum,x| sum + x }
+          headers["ncbo-time-queries"] = "%.3f"%processing
+          headers["ncbo-time-parsing"] = "%.3f"%parsing
+        end
+        if Thread.current[:ncbo_debug][:goo_process_query]
+          goo_totals = Thread.current[:ncbo_debug][:goo_process_query]
+            .inject { |sum,x| sum + x }
+          headers["ncbo-time-goo-process-query"] = "%.3f"%goo_totals
+        end
+      end
+      return [status, headers, response]
+    end
+  end
+
 end
 
 Goo::Filter = Goo::Base::Filter
