@@ -34,6 +34,7 @@ module Goo
   @@namespaces = {}
   @@pluralize_models = false
   @@uuid = UUID.new
+  @@debug_enabled = false
 
   def self.add_namespace(shortcut, namespace,default=false)
     if !(namespace.instance_of? RDF::Vocabulary)
@@ -58,6 +59,14 @@ module Goo
     @@sparql_backends[name][:data]=Goo::SPARQL::Client.new(opts[:data],
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", read_timeout: 10000 })
     @@sparql_backends.freeze
+  end
+
+  def self.queries_debug(flag)
+    @@debug_enabled = flag
+  end
+
+  def self.queries_debug?
+    return @@debug_enabled
   end
 
   def self.add_search_backend(name, *opts)
