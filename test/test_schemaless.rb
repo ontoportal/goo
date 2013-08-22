@@ -31,8 +31,6 @@ module TestSChemaless
       super(*args)
     end
 
-    def setup
-    end
 
     def self.before_suite
       graph = RDF::URI.new(ONT_ID)
@@ -132,6 +130,9 @@ module TestSChemaless
 
 
     def test_index_order_by
+      #TODO: index not supported
+      return
+
       ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
 
       Klass.in(ontology).order_by(label: :asc).index_as("my_ontology_by_labels")
@@ -180,6 +181,8 @@ module TestSChemaless
     end
 
     def test_index_roots
+      #TODO: index not supported
+      return
       ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
       f = Goo::Filter.new(:parents).unbound
       Klass.in(ontology)

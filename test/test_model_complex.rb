@@ -35,6 +35,17 @@ class TestModelComplex < MiniTest::Unit::TestCase
     super(*args)
   end
 
+  def self.before_suite
+    if GooTest.count_pattern("?s ?p ?o") > 100000
+      raise Exception, "Too many triples in KB, does not seem right to run tests"
+    end
+    Goo.sparql_update_client.update("DELETE {?s ?p ?o } WHERE { ?s ?p ?o }")
+  end
+
+  def self.after_suite
+    Goo.sparql_update_client.update("DELETE {?s ?p ?o } WHERE { ?s ?p ?o }")
+  end
+
   def test_collection()
 
     submission = Submission.new(name: "submission1")

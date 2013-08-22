@@ -54,7 +54,8 @@ module TestInmutable
       end
     end
 
-    def test_inmutable
+    ## TODO inmutable are deprecated - they might come back in a different way"
+    def skip_test_inmutable
       #they come fully loaded
       Status.load_inmutable_instances
       status1 = Status.where.all.sort_by { |s| s.code }
@@ -99,4 +100,3 @@ module TestInmutable
 
   end
 end
-
