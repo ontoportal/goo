@@ -39,11 +39,18 @@ module Goo
         @equivalent_predicates
       end
 
+      def includes_aliasing
+        @include.each do |attr|
+          return true if @klass.alias?(attr)
+        end
+        return false
+      end
+
       def retrieve_equivalent_predicates()
         return @equivalent_predicates unless @equivalent_predicates.nil?
 
         equivalent_predicates = nil
-        if @include.first == :unmapped
+        if @include.first == :unmapped || includes_aliasing
           if @where_options_load[:collection]
             graph = @where_options_load[:collection].id
           else
