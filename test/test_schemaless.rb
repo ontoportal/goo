@@ -16,9 +16,9 @@ module TestSChemaless
            collection: :ontology
     attribute :ontology, enforce: [:ontology]
 
-    attribute :label, namespace: :rdfs
-    attribute :synonym, namespace: :nemo, enforce: [:list]
-    attribute :definition, namespace: :nemo, enforce: [:list]
+    attribute :label, namespace: :skos, property: :prefLabel, alias: true
+    attribute :synonym, namespace: :skos, property: :altLabel, enforce: [:list], alias: true
+    attribute :definition, namespace: :skos, enforce: [:list], alias: true
     attribute :comment, namespace: :nemo, enforce: [:list]
     attribute :onto_definition, namespace: :nemo, enforce: [:list]
     attribute :parents, namespace: :rdfs, property: :subClassOf,
@@ -47,6 +47,19 @@ module TestSChemaless
                             graph,
                             ntriples_file_path,
                             mime_type="application/x-turtle")
+      result = Goo.sparql_data_client.put_triples(
+                            graph,
+                            ntriples_file_path,
+                            mime_type="application/x-turtle")
+
+      col = Goo::Collection.new(graph)
+      col.alias_attributes(Goo.vocabulary(:nemo)[:pref_label], Goo.vocabulary(:metadata)[:prefLabel])
+      col.alias_attributes(Goo.vocabulary(:metadata)[:prefLabel], Goo.vocabulary(:skos)[:prefLabel])
+
+      col.alias_attributes(Goo.vocabulary(:nemo)[:synonym], Goo.vocabulary(:metadata)[:synonym])
+      col.alias_attributes(Goo.vocabulary(:metadata)[:synonym], Goo.vocabulary(:skos)[:altLabel])
+
+      col.alias_attributes(Goo.vocabulary(:nemo)[:definition], Goo.vocabulary(:skos)[:definition])
     end
 
     def self._delete
@@ -59,6 +72,26 @@ module TestSChemaless
     def self.after_suite
       _delete
     end
+
+    def test_alias_props
+      ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
+      cognition_term = RDF::URI.new( 
+          "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_5400000")
+      k = Klass.find(cognition_term).in(ontology).include(:label,:synonym,:definition).first
+      assert k.label == nil #it has rdfs:label but no nemo:pref_label
+      assert k.definition == ["a cognitive_process is a mental process engaging one or more systems in the intermediary or integrative processing of signals from the internal (visceral) and external (somatic) environments. It is often the result of a sensory_process (bottom-up cognition). It may be mediated by an emotion_process (motivated cognition) or by another cognitive_process, such as memory or expectancy based on prior experience (top-down cognition)."]
+
+      assert k.synonym.sort == 
+            ["http://ontology.neuinfo.org/NIF/Function/NIF-Function.owl#birnlex_1800",
+             "cognition"].sort
+
+      pato = RDF::URI.new("http://purl.org/obo/owl/PATO#PATO_0000051")
+      k = Klass.find(pato).in(ontology).include(:label,:synonym,:definition).first
+      assert k.label == "morphology"
+      assert k.definition == ["A quality of a single physical entity inhering in the bearer by virtue of the bearer's size, shape and structure."]
+      assert k.synonym == []
+    end
+
     def test_find_include_schemaless
       ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
       cognition_term = RDF::URI.new( 
