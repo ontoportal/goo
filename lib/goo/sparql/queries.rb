@@ -179,7 +179,7 @@ module Goo
           (query_options[:rules] ||=[]) << :SUBC
         end
         if klass.alias?(attr)
-          (query_options[:rules] ||=[]) << :SUBP
+          #(query_options[:rules] ||=[]) << :SUBP
         end
       end
 
