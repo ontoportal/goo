@@ -46,6 +46,27 @@ module Goo
         return false
       end
 
+      def closure(eq_has)
+        begin
+          changed = false
+          copy = {}
+          eq_has.each do |x,y|
+            copy[x] = y.dup
+          end
+          copy.each do |p,values|
+            values.each  do |y|
+              next if copy[y].nil?
+              copy[y].each do |z|
+                unless values.include?(z)
+                  eq_has[p] << z
+                  changed = true
+                end
+              end
+            end
+          end
+        end while(changed)
+      end
+
       def retrieve_equivalent_predicates()
         return @equivalent_predicates unless @equivalent_predicates.nil?
 
@@ -64,6 +85,7 @@ module Goo
           equivalent_predicates.each do |down,up|
             (equivalent_predicates_hash[up.to_s] ||= Set.new) << down.to_s
           end
+          closure(equivalent_predicates_hash)
         end
         return equivalent_predicates_hash
       end
