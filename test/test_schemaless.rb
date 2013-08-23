@@ -33,6 +33,7 @@ module TestSChemaless
 
 
     def self.before_suite
+      _delete
       graph = RDF::URI.new(ONT_ID)
 
       ont = Ontology.new
@@ -48,13 +49,16 @@ module TestSChemaless
                             mime_type="application/x-turtle")
     end
 
-    def self.after_suite
+    def self._delete
       graph = RDF::URI.new(ONT_ID)
       result = Goo.sparql_data_client.delete_graph(graph)
       ont = Ontology.find(ONT_ID).first
       ont.delete if ont
     end
 
+    def self.after_suite
+      _delete
+    end
     def test_find_include_schemaless
       ontology = Ontology.find(RDF::URI.new(ONT_ID)).first
       cognition_term = RDF::URI.new( 
