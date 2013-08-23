@@ -209,4 +209,5 @@ end
 
 Goo::Filter = Goo::Base::Filter
 Goo::Pattern = Goo::Base::Pattern
+Goo::Collection = Goo::Base::Collection
 
