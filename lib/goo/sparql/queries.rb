@@ -19,6 +19,33 @@ module Goo
         return op.to_s
       end
 
+      def self.expand_equivalent_predicates(query,eq_p)
+        attribute_mappings = {}
+        if eq_p && eq_p.length > 0
+          count_rewrites = 0
+          if query.options[:optionals]
+            query.options[:optionals].each do |opt|
+              opt.each do |pattern|
+                if pattern.predicate && pattern.predicate.is_a?(RDF::URI)
+                  if eq_p.include?(pattern.predicate.to_s)
+                    query_predicate = pattern.predicate
+                    var_name = "rewrite#{count_rewrites}"
+                    pattern.predicate = RDF::Query::Variable.new(var_name)
+                    expansion = eq_p[query_predicate.to_s]
+                    expansion = expansion.map { |x| "?#{var_name} = <#{x}>" }
+                    expansion = expansion.join " || "
+                    query.filter(expansion)
+                    count_rewrites += 1
+                    attribute_mappings[var_name] = query_predicate
+                  end
+                end
+              end
+            end
+          end
+        end
+        return attribute_mappings
+      end
+
       def self.duplicate_attribute_value?(model,attr,store=:main)
         value = model.instance_variable_get("@#{attr}")
         if !value.instance_of? Array
