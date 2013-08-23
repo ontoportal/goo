@@ -71,7 +71,7 @@ module Goo
         return @equivalent_predicates unless @equivalent_predicates.nil?
 
         equivalent_predicates = nil
-        if @include.first == :unmapped || includes_aliasing
+        if @include.first == :unmapped || includes_aliasing()
           if @where_options_load[:collection]
             graph = @where_options_load[:collection].id
           else
@@ -135,7 +135,8 @@ module Goo
                          graph_match: @pattern, klass: @klass,
                          filters: @filters, order_by: @order_by ,
                          read_only: @read_only, rules: @rules,
-                         predicates: @predicates }
+                         predicates: @predicates,
+                         equivalent_predicates: @equivalent_predicates }
 
 
         options_load.merge!(@where_options_load) if @where_options_load

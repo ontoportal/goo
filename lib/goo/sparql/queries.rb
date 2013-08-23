@@ -237,6 +237,7 @@ module Goo
         page = options[:page]
         count = options[:count]
         include_pagination = options[:include_pagination]
+        equivalent_predicates = options[:equivalent_predicates]
         predicates = options[:predicates]
         predicates_map = nil
         binding_as = nil
@@ -521,6 +522,9 @@ module Goo
         if binding_as
           select.union_with_bind_as(*binding_as)
         end
+
+        predicate_mappings = expand_equivalent_predicates(select,equivalent_predicates)
+
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri != sol[:some_type]
           if count
