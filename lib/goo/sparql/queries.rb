@@ -664,7 +664,9 @@ module Goo
             if models_by_id[id].respond_to?(:klass)
               models_by_id[id][v] = object
             else
-              models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
+              unless object.nil? && !models_by_id[id].instance_variable_get("@#{v.to_s}").nil?
+                models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
+              end
             end
           end
         end
