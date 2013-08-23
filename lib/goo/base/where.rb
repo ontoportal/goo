@@ -85,6 +85,7 @@ module Goo
           equivalent_predicates.each do |down,up|
             (equivalent_predicates_hash[up.to_s] ||= Set.new) << down.to_s
           end
+          equivalent_predicates_hash.delete(Goo.vocabulary(:rdfs)[:label].to_s)
           closure(equivalent_predicates_hash)
         end
         return equivalent_predicates_hash
