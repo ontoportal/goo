@@ -104,12 +104,12 @@ module TestSChemaless
       k = Klass.find(cognition_term).in(ontology).include(:label).first
       assert k.ontology.id == ONT_ID
       assert k.id.to_s == cognition_term 
-      assert k.label == "working_memory"
+      assert k.label == nil
       assert_raises Goo::Base::AttributeNotLoaded do
         k.definition
       end
       k = Klass.find(cognition_term).in(ontology).include(Klass.attributes).first
-      assert k.label == "working_memory"
+      assert k.label == nil
       assert k.definition.length == 1
       assert k.definition.first["a cognitive_process is a mental process"]
       assert k.synonym.sort == ["cognition",
@@ -119,7 +119,8 @@ module TestSChemaless
       assert k.parents.first.id.to_s == 
         "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_4320000"
 
-      k = Klass.find(cognition_term).in(ontology).include(:unmapped).first
+      where = Klass.find(cognition_term).in(ontology).include(:unmapped)
+      k =  where.first
       enter = 0
       k.unmapped.each do |p,vals|
         if p.to_s == Goo.vocabulary(:nemo)[:synonym].to_s
@@ -142,10 +143,11 @@ module TestSChemaless
       assert_raises Goo::Base::AttributeNotLoaded do
         k.label
       end
-      Klass.map_attributes(k)
-      assert k.label == "working_memory"
+      Klass.map_attributes(k,where.equivalent_predicates)
+      assert k.label == nil
       assert k.definition.length == 1
       assert k.definition.first["a cognitive_process is a mental process"]
+      assert k.onto_definition.first["mental_process is a brain_ph"]
       assert k.synonym.sort == ["cognition",
  "http://ontology.neuinfo.org/NIF/Function/NIF-Function.owl#birnlex_1800"]
       assert k.comment == []
@@ -162,7 +164,7 @@ module TestSChemaless
       cognition_term = 
         RDF::URI.new "http://purl.bioontology.org/NEMO/ontology/NEMO.owl#NEMO_5400000"
       k = Klass.find(cognition_term).in(ontology).include(parents: [:label]).first
-      assert k.parents.first.label == "cognitive_process"
+      assert k.parents.first.label == nil
     end
 
 
