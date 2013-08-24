@@ -28,22 +28,26 @@ module Goo
               opt.each do |pattern|
                 if pattern.predicate && pattern.predicate.is_a?(RDF::URI)
                   if eq_p.include?(pattern.predicate.to_s)
-                    query_predicate = pattern.predicate
-                    var_name = "rewrite#{count_rewrites}"
-                    pattern.predicate = RDF::Query::Variable.new(var_name)
-                    expansion = eq_p[query_predicate.to_s]
-                    expansion = expansion.map { |x| "?#{var_name} = <#{x}>" }
-                    expansion = expansion.join " || "
-                    query.filter(expansion)
-                    count_rewrites += 1
-                    attribute_mappings[var_name] = query_predicate
+                    if attribute_mappings.include?(pattern.predicate.to_s)
+                      #reuse filter
+                      pattern.predicate = RDF::Query::Variable.new(attribute_mappings[pattern.predicate.to_s])
+                    else
+                      query_predicate = pattern.predicate
+                      var_name = "rewrite#{count_rewrites}"
+                      pattern.predicate = RDF::Query::Variable.new(var_name)
+                      expansion = eq_p[query_predicate.to_s]
+                      expansion = expansion.map { |x| "?#{var_name} = <#{x}>" }
+                      expansion = expansion.join " || "
+                      query.filter(expansion)
+                      count_rewrites += 1
+                      attribute_mappings[query_predicate.to_s] = var_name
+                    end
                   end
                 end
               end
             end
           end
         end
-        return attribute_mappings
       end
 
       def self.duplicate_attribute_value?(model,attr,store=:main)
@@ -523,7 +527,7 @@ module Goo
           select.union_with_bind_as(*binding_as)
         end
 
-        predicate_mappings = expand_equivalent_predicates(select,equivalent_predicates)
+        expand_equivalent_predicates(select,equivalent_predicates)
 
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri != sol[:some_type]
