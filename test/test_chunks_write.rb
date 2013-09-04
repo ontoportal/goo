@@ -53,7 +53,6 @@ module TestChunkWrite
       count = "SELECT (count(?s) as ?c) WHERE { GRAPH <#{ONT_ID}> { ?s ?p ?o ."
       count += " FILTER(bnode(?s)) }}"
       Goo.sparql_query_client.query(count).each do |sol|
-        binding.pry
         assert sol[:c].object == 0
       end
     end
@@ -146,6 +145,51 @@ module TestChunkWrite
       Goo.sparql_query_client.query(count).each do |sol|
         assert sol[:c].object == 0
       end
+    end
+
+    def test_query_flood
+      ntriples_file_path = "./test/data/nemo_ontology.ntriples"
+      #by pass in chunks
+      url = Goo.sparql_data_client.url
+      params = {
+        method: :put,
+        url: "#{url.to_s}#{ONT_ID}",
+        payload: File.read(ntriples_file_path),
+        headers: {content_type: "application/x-turtle"},
+        timeout: -1
+      }
+      RestClient::Request.execute(params)
+
+      tput = Thread.new {
+        result = Goo.sparql_data_client.put_triples(
+                            ONT_ID_EXTRA,
+                            ntriples_file_path,
+                            mime_type="application/x-turtle")
+      }
+      threads = []
+      25.times do |i|
+        threads << Thread.new {
+          50.times do |j|
+            oq = "SELECT (count(?s) as ?c) WHERE { ?s a ?o }"
+            Goo.sparql_query_client.query(oq).each do |sol|
+              assert sol[:c].object > 0
+            end
+          end
+        }
+      end
+      log_status = []
+      Thread.new {
+        10.times do |i|
+          log_status << Goo.sparql_query_client.status
+          sleep(1.2)
+        end
+      }
+      threads.each do |t|
+        t.join
+      end
+      tput.join
+      assert log_status.map { |x| x[:outstanding] }.max > 0
+      assert log_status.map { |x| x[:running] }.max == 16
     end
 
   end
