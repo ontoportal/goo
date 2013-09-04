@@ -47,10 +47,6 @@ module TestSChemaless
                             graph,
                             ntriples_file_path,
                             mime_type="application/x-turtle")
-      result = Goo.sparql_data_client.put_triples(
-                            graph,
-                            ntriples_file_path,
-                            mime_type="application/x-turtle")
 
       col = Goo::Collection.new(graph)
       col.alias_attributes(Goo.vocabulary(:nemo)[:pref_label], Goo.vocabulary(:metadata)[:prefLabel])
