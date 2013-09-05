@@ -200,12 +200,14 @@ module Goo
         if @count.nil? || @count > 0
           models_by_id = Goo::SPARQL::Queries.model_load(options_load)
           if @aggregate
-            options_load_agg = { models: models_by_id.values, klass: @klass,
-                           filters: @filters, read_only: @read_only,
-                           aggregate: @aggregate, rules: @rules }
+            if models_by_id.length > 0
+              options_load_agg = { models: models_by_id.values, klass: @klass,
+                             filters: @filters, read_only: @read_only,
+                             aggregate: @aggregate, rules: @rules }
 
-            options_load_agg.merge!(@where_options_load) if @where_options_load
-            Goo::SPARQL::Queries.model_load(options_load_agg)
+              options_load_agg.merge!(@where_options_load) if @where_options_load
+              Goo::SPARQL::Queries.model_load(options_load_agg)
+            end
           end
         end
         unless @page_i
