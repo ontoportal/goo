@@ -376,7 +376,7 @@ module Goo
               graph, pattern = query_pattern(klass,attr)
               add_rules(attr,klass,query_options)
               optional_patterns << pattern if pattern
-              graphs << graph if graph
+              graphs << graph if graph && !collection
             end
           end
         end
