@@ -333,6 +333,9 @@ module Goo
       end
       
       def models(models)
+        if models.length == 0
+          raise Exception, "Goo call to .models with empty array"
+        end
         @models = models
         self
       end
