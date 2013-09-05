@@ -130,6 +130,11 @@ module Goo
           raise ArgumentError, "Order by support is restricted to only offline indexing"
         end
 
+        if @models == []
+          @result = []
+          return @result
+        end
+
         @include << @include_embed if @include_embed.length > 0
 
         @predicates = unmmaped_predicates()
@@ -335,9 +340,6 @@ module Goo
       end
       
       def models(models)
-        if models.length == 0
-          raise Exception, "Goo call to .models with empty array"
-        end
         @models = models
         self
       end
