@@ -49,7 +49,7 @@ class GooTest
   def self.configure_goo
     if not Goo.configure?
       Goo.configure do |conf|
-
+        conf.add_redis_backend(:host => "localhost")
         conf.add_namespace(:omv, RDF::Vocabulary.new("http://omv.org/ontology/"))
         conf.add_namespace(:skos, RDF::Vocabulary.new("http://www.w3.org/2004/02/skos/core#"))
         conf.add_namespace(:owl, RDF::Vocabulary.new("http://www.w3.org/2002/07/owl#"))
@@ -68,7 +68,7 @@ class GooTest
                                 update: "http://localhost:9000/update/",
                                 options: { rules: :NONE })
         conf.add_search_backend(:main, service: "http://ncbo-dev-app-02.stanford.edu:8080/solr/" )
-        conf.add_redis_backend(:host => "localhost")
+        conf.use_cache=false
       end
     end
   end
@@ -91,4 +91,6 @@ class GooTest
     end
     return count
   end
+
 end
+
