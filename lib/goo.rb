@@ -35,6 +35,7 @@ module Goo
   @@pluralize_models = false
   @@uuid = UUID.new
   @@debug_enabled = false
+  @@use_cache = false
 
   def self.add_namespace(shortcut, namespace,default=false)
     if !(namespace.instance_of? RDF::Vocabulary)
@@ -53,12 +54,27 @@ module Goo
     @@sparql_backends = @@sparql_backends.dup
     @@sparql_backends[name] = opts
     @@sparql_backends[name][:query]=Goo::SPARQL::Client.new(opts[:query],
-                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", read_timeout: 300})
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
+                   read_timeout: 300,
+                  redis_cache: @@redis_client })
     @@sparql_backends[name][:update]=Goo::SPARQL::Client.new(opts[:update],
-                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", read_timeout: 10000 })
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
+                   read_timeout: 10000,
+                   redis_cache: @@redis_client })
     @@sparql_backends[name][:data]=Goo::SPARQL::Client.new(opts[:data],
-                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", read_timeout: 10000 })
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
+                   read_timeout: 10000,
+                   redis_cache: @@redis_client })
     @@sparql_backends.freeze
+  end
+
+  def self.use_cache=(value)
+    @@use_cache = value
+    set_sparql_cache
+  end
+
+  def self.use_cache?
+    @@use_cache
   end
 
   def self.queries_debug(flag)
@@ -83,6 +99,23 @@ module Goo
     host = opts.delete :host
     port = opts.delete(:port) || 6379
     @@redis_client = Redis.new host: host, port: port
+    set_sparql_cache
+  end
+
+  def self.set_sparql_cache
+    if @@sparql_backends.length > 0 && @@use_cache
+      @@sparql_backends.each do |k,epr|
+        epr[:query].redis_cache= @@redis_client
+        epr[:data].redis_cache= @@redis_client
+        epr[:update].redis_cache= @@redis_client
+      end
+    elsif @@sparql_backends.length > 0 
+      @@sparql_backends.each do |k,epr|
+        epr[:query].redis_cache= nil
+        epr[:data].redis_cache= nil
+        epr[:update].redis_cache= nil 
+      end
+    end
   end
 
   def self.configure_sanity_check()
