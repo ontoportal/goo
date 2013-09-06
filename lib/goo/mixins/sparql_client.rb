@@ -46,6 +46,12 @@ module RDF
       return f if f
       return to_s.split("/")[-1]
     end
+
+
+    def respond_to?(symbol,include_private = false)
+      @uri.respond_to?(symbol,include_private=false) || super
+    end
+
   end #end URI
 
   class Literal
