@@ -71,4 +71,50 @@ class TestCache < MiniTest::Unit::TestCase
     #change comes back ?
     assert prg.credits == 999
   end
+
+  def test_cache_models_back_door
+    redis = Goo.redis_client
+    assert !Goo.use_cache?
+    Goo.use_cache=true
+    assert Goo.use_cache?
+    programs = Program.where(name: "BioInformatics", university: [ name: "Stanford"  ])
+                          .include(:students).all
+    assert programs.length == 1
+    key = nil
+    queries = redis.smembers(SPARQL::Client::SPARQL_CACHE_QUERIES)
+    count = 0
+    queries.each do |q|
+      if q["Program"]
+        count += 1
+        key = q
+      end
+    end
+    assert count == 1
+    assert !key.nil?
+    assert redis.exists(key)
+    assert redis.sismember(SPARQL::Client::SPARQL_CACHE_QUERIES,key)
+
+    prg = programs.first
+    assert prg.students.length == 2
+    prg.students.each do |st|
+      st.bring(:name)
+    end
+    assert prg.students.map { |x| x.name }.sort == ["Daniel","Susan"]
+
+    data = "<http://goo.org/default/student/Tim> " +
+           "<http://goo.org/default/enrolled> " +
+           "<http://example.org/program/Stanford/BioInformatics> ."
+    
+    Goo.sparql_data_client.append_triples(Student.type_uri,data,"application/x-turtle")
+    programs = Program.where(name: "BioInformatics", university: [ name: "Stanford"  ])
+                          .include(:students).all
+    prg = programs.first
+    assert prg.students.length == 3
+    prg.students.each do |st|
+      st.bring(:name)
+    end
+    assert prg.students.map { |x| x.name }.sort == ["Daniel","Susan","Tim"]
+  end
+
+
 end
