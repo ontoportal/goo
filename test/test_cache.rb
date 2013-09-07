@@ -116,5 +116,30 @@ class TestCache < MiniTest::Unit::TestCase
     assert prg.students.map { |x| x.name }.sort == ["Daniel","Susan","Tim"]
   end
 
+  def test_cache_successful_hit
+    redis = Goo.redis_client
+    assert !Goo.use_cache?
+    Goo.use_cache=true
+    assert Goo.use_cache?
+    programs = Program.where(name: "BioInformatics", university: [ name: "Stanford"  ])
+                          .include(:students).all
+    x = Goo.sparql_query_client
+    def x.response_backup *args
+      self.response(*args)
+    end
+    def x.response *args
+      raise Exception, "Should be a successful hit"
+    end
+    programs = Program.where(name: "BioInformatics", university: [ name: "Stanford"  ])
+                        .include(:students).all
+    #from cache
+    assert programs.length == 1
+    assert_raises Exception do 
+      #different query
+      programs = Program.where(name: "BioInformatics X", university: [ name: "Stanford"  ]).all
+    end
+    Goo.test_reset
+  end
+
 
 end
