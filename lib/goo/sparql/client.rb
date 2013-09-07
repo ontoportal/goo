@@ -124,7 +124,9 @@ module Goo
       def put_triples(graph,file_path,mime_type=nil)
         if Goo.write_in_chunks?
           delete_graph(graph)
-          return append_triples_slice(graph,file_path,mime_type)
+          result =  append_triples_slice(graph,file_path,mime_type)
+          Goo.sparql_query_client.cache_invalidate_graph(graph)
+          return result
         end
 
         params = {
@@ -134,12 +136,16 @@ module Goo
           headers: {content_type: mime_type},
           timeout: -1
         }
-        return RestClient::Request.execute(params)
+        result = RestClient::Request.execute(params)
+        Goo.sparql_query_client.cache_invalidate_graph(graph)
+        return result
       end
 
       def append_triples(graph,data,mime_type=nil)
         if Goo.write_in_chunks?
-          return append_data_triples_slice(graph,data,mime_type)
+          result = append_data_triples_slice(graph,data,mime_type)
+          Goo.sparql_query_client.cache_invalidate_graph(graph)
+          return result
         end
         params = {
           method: :post,
@@ -152,12 +158,16 @@ module Goo
           headers: {"mime-type" => mime_type},
           timeout: -1
         }
-        return RestClient::Request.execute(params)
+        result = RestClient::Request.execute(params)
+        Goo.sparql_query_client.cache_invalidate_graph(graph)
+        return result
       end
 
       def append_triples_from_file(graph,file_path,mime_type=nil)
         if Goo.write_in_chunks?
-          return append_triples_slice(graph,file_path,mime_type)
+          result = append_triples_slice(graph,file_path,mime_type)
+          Goo.sparql_query_client.cache_invalidate_graph(graph)
+          return result
         end
         params = {
           method: :post,
@@ -170,19 +180,25 @@ module Goo
           headers: {"mime-type" => mime_type},
           timeout: -1
         }
-        return RestClient::Request.execute(params)
+        result = RestClient::Request.execute(params)
+        Goo.sparql_query_client.cache_invalidate_graph(graph)
+        return result
       end
 
       def delete_graph(graph)
         if Goo.write_in_chunks?
-          return delete_data_slices(graph)
+          result = delete_data_slices(graph)
+          Goo.sparql_query_client.cache_invalidate_graph(graph)
+          return result
         end
         params = {
           method: :delete,
           url: "#{url.to_s}#{graph.to_s}",
           timeout: -1
         }
-        return RestClient::Request.execute(params)
+        result = RestClient::Request.execute(params)
+        Goo.sparql_query_client.cache_invalidate_graph(graph)
+        return result
       end
 
 
