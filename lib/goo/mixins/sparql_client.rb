@@ -9,6 +9,12 @@ module RDF
     return args.first
   end
 
+  class Writer
+    def validate?
+      false
+    end
+  end
+
   class Literal
     def to_base
       text = []
