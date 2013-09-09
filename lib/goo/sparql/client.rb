@@ -78,6 +78,8 @@ module Goo
             more_triples = false
             select_p = qepr.select(:s,:o).distinct(true).from([graph])
             select_p.where( [:s, p, :o] )
+            select_p.filter("!bnode(?s)")
+            select_p.filter("!bnode(?o)")
             select_p.limit(1000)
             select_p.options[:query_options] = query_options
             graph_delete = RDF::Graph.new
@@ -90,6 +92,13 @@ module Goo
               sleep(status_based_sleep_time(:delete))
             end
           end while(more_triples)
+          #remaining stuff ... i.e: bnodes
+          params = {
+            method: :delete,
+            url: "#{url.to_s}#{graph.to_s}",
+            timeout: -1
+          }
+          RestClient::Request.execute(params)
         end
       end
 
