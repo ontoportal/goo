@@ -92,14 +92,14 @@ module Goo
               sleep(status_based_sleep_time(:delete))
             end
           end while(more_triples)
-          #remaining stuff ... i.e: bnodes
-          params = {
-            method: :delete,
-            url: "#{url.to_s}#{graph.to_s}",
-            timeout: -1
-          }
-          RestClient::Request.execute(params)
         end
+        #remaining stuff ... i.e: bnodes
+        params = {
+          method: :delete,
+          url: "#{url.to_s}#{graph.to_s}",
+          timeout: -1
+        }
+        RestClient::Request.execute(params)
       end
 
       def append_triples_slice(graph,file_path,mime_type_in)
