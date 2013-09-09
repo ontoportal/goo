@@ -68,7 +68,7 @@ module Goo
           graph = RDF::URI.new(graph)
         end
         qepr = Goo.sparql_query_client
-        query_options = { :rules => :NONE }
+        query_options = { :rules => :NONE, bypass_cache: true }
         select = qepr.select(:p).distinct(true).from([graph])
         select.where( [:s, :p, :o] )
         select.options[:query_options] = query_options
@@ -88,7 +88,7 @@ module Goo
               graph_delete << [t[:s],p,t[:o]]
             end
             if more_triples
-              Goo.sparql_update_client.delete_data(graph_delete, graph: graph)
+              Goo.sparql_update_client.delete_data(graph_delete, graph: graph, bypass_cache: true)
               sleep(status_based_sleep_time(:delete))
             end
           end while(more_triples)
