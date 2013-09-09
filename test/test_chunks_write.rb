@@ -51,7 +51,7 @@ module TestChunkWrite
         assert sol[:c].object == triples_no_bnodes
       end
       count = "SELECT (count(?s) as ?c) WHERE { GRAPH <#{ONT_ID}> { ?s ?p ?o ."
-      count += " FILTER(bnode(?s)) }}"
+      count += " FILTER(isBlank(?s)) }}"
       Goo.sparql_query_client.query(count).each do |sol|
         assert sol[:c].object == 0
       end
