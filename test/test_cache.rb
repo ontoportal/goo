@@ -70,6 +70,7 @@ class TestCache < MiniTest::Unit::TestCase
 
     #change comes back ?
     assert prg.credits == 999
+    Goo.use_cache=false
   end
 
   def test_cache_models_back_door
@@ -114,6 +115,7 @@ class TestCache < MiniTest::Unit::TestCase
       st.bring(:name)
     end
     assert prg.students.map { |x| x.name }.sort == ["Daniel","Susan","Tim"]
+    Goo.use_cache=false
   end
 
   def test_cache_successful_hit
@@ -139,6 +141,7 @@ class TestCache < MiniTest::Unit::TestCase
       programs = Program.where(name: "BioInformatics X", university: [ name: "Stanford"  ]).all
     end
     Goo.test_reset
+    Goo.use_cache=false
   end
 
 

@@ -77,7 +77,6 @@ module Goo
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
                    read_timeout: 300,
                   redis_cache: @@redis_client })
-    binding.pry
   end
 
   def self.use_cache=(value)
