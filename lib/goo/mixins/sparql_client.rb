@@ -9,6 +9,22 @@ module RDF
     return args.first
   end
 
+  class Literal
+    def to_base
+      text = []
+      text << %("#{escape(value)}")
+      text << "@#{language}" if has_language?
+      if has_datatype?
+        if datatype.respond_to?:to_base
+          text << "^^#{datatype.to_base}"
+        else
+          text << "^^<#{datatype.to_s}>"
+        end
+      end
+      text.join ""
+    end
+  end
+
   class URI
     def initialize(uri_or_options)
       case uri_or_options
