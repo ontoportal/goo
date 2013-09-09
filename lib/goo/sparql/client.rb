@@ -10,7 +10,8 @@ module Goo
       MIMETYPE_RAPPER_MAP = {
         "application/rdf+xml" => "rdfxml",
         "application/x-turtle" => "turtle",
-        "application/n-triples" => "ntriples"
+        "application/n-triples" => "ntriples",
+        "text/x-nquads" => "nquads"
       }
 
       def status_based_sleep_time(operation)
@@ -39,7 +40,8 @@ module Goo
         dir = Dir.mktmpdir("file_slice")
         dst_path = File.join(dir,"data.nt")
         dst_path_bnodes_out = File.join(dir,"data_no_bnodes.nt")
-        rapper_command_call = "rapper -i #{format} -o ntriples #{file_path} > #{dst_path}" 
+        out_format = format == "nquads" ? "nquads" : "ntriples"
+        rapper_command_call = "rapper -i #{format} -o #{out_format} #{file_path} > #{dst_path}" 
         stdout,stderr,status = Open3.capture3(rapper_command_call)
         if not status.success?
           raise Exception, "Rapper cannot parse #{format} file at #{file_path}: #{stderr}"
@@ -94,6 +96,10 @@ module Goo
       def append_triples_slice(graph,file_path,mime_type_in)
         slices = slice_file(file_path,mime_type_in)
         mime_type = "application/x-turtle"
+        if mime_type_in == "text/x-nquads"
+          mime_type = "text/x-nquads"
+          graph = "http://data.bogus.graph/uri"
+        end
         response = nil
         slices.each do |slice_path|
           params = {
@@ -164,6 +170,9 @@ module Goo
       end
 
       def append_triples_from_file(graph,file_path,mime_type=nil)
+        if mime_type == "text/nquads" && !graph.instance_of?(Array)
+          raise Exception, "Nquads need a list of graphs, #{graph} provided"
+        end
         if Goo.write_in_chunks?
           result = append_triples_slice(graph,file_path,mime_type)
           Goo.sparql_query_client.cache_invalidate_graph(graph)
