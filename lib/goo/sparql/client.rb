@@ -78,8 +78,8 @@ module Goo
             more_triples = false
             select_p = qepr.select(:s,:o).distinct(true).from([graph])
             select_p.where( [:s, p, :o] )
-            select_p.filter("!bnode(?s)")
-            select_p.filter("!bnode(?o)")
+            select_p.filter("!isBlank(?s)")
+            select_p.filter("!isBlank(?o)")
             select_p.limit(1000)
             select_p.options[:query_options] = query_options
             graph_delete = RDF::Graph.new
