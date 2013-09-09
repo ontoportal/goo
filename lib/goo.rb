@@ -56,14 +56,17 @@ module Goo
     @@sparql_backends[name][:query]=Goo::SPARQL::Client.new(opts[:query],
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
                    read_timeout: 10000,
+                   validate: false,
                   redis_cache: @@redis_client })
     @@sparql_backends[name][:update]=Goo::SPARQL::Client.new(opts[:update],
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
                    read_timeout: 10000,
+                   validate: false,
                    redis_cache: @@redis_client })
     @@sparql_backends[name][:data]=Goo::SPARQL::Client.new(opts[:data],
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
                    read_timeout: 10000,
+                   validate: false,
                    redis_cache: @@redis_client })
     @@sparql_backends.freeze
   end
