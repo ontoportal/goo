@@ -60,6 +60,8 @@ module Goo
         Dir.foreach(dir) do |item|
           slices << File.join(dir,item) if item.start_with?("slice")
         end
+        File.delete(dst_path)
+        File.delete(dst_path_bnodes_out)
         return slices
       end
 
@@ -123,6 +125,7 @@ module Goo
             timeout: -1
           }
           response = RestClient::Request.execute(params)
+          File.delete(slice_path)
           sleep(status_based_sleep_time(:append))
         end
         return response
