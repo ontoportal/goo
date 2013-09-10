@@ -51,7 +51,7 @@ module Goo
         if not status.success?
           raise Exception, "could not `#{filter_command}`: #{stderr}"
         end
-        split_command = "split -l 5000 #{dst_path_bnodes_out} #{dir}/slice"
+        split_command = "split -l 20000 #{dst_path_bnodes_out} #{dir}/slice"
         stdout,stderr,status = Open3.capture3(split_command)
         if not status.success?
           raise Exception, "could not split `#{split_command}`: #{stderr}"
