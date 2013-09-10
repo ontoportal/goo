@@ -15,14 +15,14 @@ module Goo
       }
 
       def status_based_sleep_time(operation)
-        status
-        if status[:running] < 2
+        st = self.status
+        if st[:running] < 2
           return 0.2
         end
-        if status[:outstanding] > 20
+        if st[:outstanding] > 20
           raise Exception, "Too many outstanding queries. We cannot write to the backend"
         end
-        if status[:outstanding] > 0
+        if st[:outstanding] > 0
           return 20
         end
         if operation == :delete
