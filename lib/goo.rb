@@ -107,6 +107,8 @@ module Goo
   end
 
   def self.add_redis_backend(*opts)
+    raise Exception, "add_redis_backend needs options" if opts.length == 0
+    opts = opts.first
     host = opts.delete :host
     port = opts.delete(:port) || 6379
     @@redis_client = Redis.new host: host, port: port
