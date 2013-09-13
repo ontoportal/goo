@@ -147,7 +147,7 @@ module Goo
     yield self
     configure_sanity_check()
     if @@search_backends.length > 0
-      @@search_connection = RSolr.connect :url => search_conf()
+      @@search_connection = RSolr.connect(:url => search_conf(), :read_timeout => 1800, :open_timeout => 1800)
     end
     @@namespaces.freeze
     @@sparql_backends.freeze
