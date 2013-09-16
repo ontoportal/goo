@@ -142,6 +142,7 @@ module Goo
         end
 
         def inverse?(attr)
+          return false if @model_settings[:attributes][attr].nil?
           return (!@model_settings[:attributes][attr][:inverse].nil?)
         end
 
