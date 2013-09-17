@@ -72,7 +72,7 @@ module Goo
 
         equivalent_predicates = nil
         if @include.first == :unmapped || includes_aliasing()
-          if @where_options_load[:collection]
+          if @where_options_load && @where_options_load[:collection]
             graph = @where_options_load[:collection].id
           else
             #TODO review this case
