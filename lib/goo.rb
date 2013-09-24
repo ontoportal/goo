@@ -10,6 +10,7 @@ require 'rsolr'
 require 'rest_client'
 require 'redis'
 require 'uuid'
+require "cube"
 
 require_relative "goo/sparql/sparql"
 require_relative "goo/search/search"
@@ -31,6 +32,7 @@ module Goo
   @@default_namespace = nil
   @@id_prefix = nil
   @@redis_client = nil
+  @@cube_options = nil
   @@namespaces = {}
   @@pluralize_models = false
   @@uuid = UUID.new
@@ -57,17 +59,20 @@ module Goo
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
                    read_timeout: 10000,
                    validate: false,
-                  redis_cache: @@redis_client })
+                   redis_cache: @@redis_client,
+                   cube_options: @@cube_options})
     @@sparql_backends[name][:update]=Goo::SPARQL::Client.new(opts[:update],
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
                    read_timeout: 10000,
                    validate: false,
-                   redis_cache: @@redis_client })
+                   redis_cache: @@redis_client,
+                   cube_options: @@cube_options})
     @@sparql_backends[name][:data]=Goo::SPARQL::Client.new(opts[:data],
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
                    read_timeout: 10000,
                    validate: false,
-                   redis_cache: @@redis_client })
+                   redis_cache: @@redis_client,
+                   cube_options: @@cube_options})
     @@sparql_backends.freeze
   end
 
@@ -122,13 +127,45 @@ module Goo
         epr[:data].redis_cache= @@redis_client
         epr[:update].redis_cache= @@redis_client
       end
-    elsif @@sparql_backends.length > 0 
+    elsif @@sparql_backends.length > 0
       @@sparql_backends.each do |k,epr|
         epr[:query].redis_cache= nil
         epr[:data].redis_cache= nil
-        epr[:update].redis_cache= nil 
+        epr[:update].redis_cache= nil
       end
     end
+  end
+
+  def self.set_cube_client
+    if @@sparql_backends.length > 0 && @@cube_options
+      @@sparql_backends.each do |k,epr|
+        epr[:query].cube_options= @@cube_options
+        epr[:data].cube_options= @@cube_options
+        epr[:update].cube_options= @@cube_options
+      end
+      puts "Using cube options in Goo #{@@cube_options}"
+    elsif @@sparql_backends.length > 0
+      @@sparql_backends.each do |k,epr|
+        epr[:query].cube_options= nil
+        epr[:data].cube_options= nil
+        epr[:update].cube_options=nil
+      end
+    end
+  end
+
+  def self.enable_cube
+    if not block_given?
+      raise ArgumentError, "Cube configuration needs to receive a code block"
+    end
+    cube_options = {}
+    yield cube_options
+    @@cube_options = cube_options
+    set_cube_client
+  end
+
+  def self.disable_cube
+    @@cube_options = nil
+    set_cube_client
   end
 
   def self.configure_sanity_check()
@@ -235,7 +272,7 @@ module Goo
     end
 
     def call(env)
-      Thread.current[:ncbo_debug] = nil
+      Thread.current[:ncbo_debug] = {}
       status, headers, response = @app.call(env)
       if Thread.current[:ncbo_debug]
         if Thread.current[:ncbo_debug][:sparql_queries]

@@ -81,6 +81,7 @@ module Goo
         query_options = { :rules => :NONE, bypass_cache: true }
         select = qepr.select(:p).distinct(true).from([graph])
         select.where( [:s, :p, :o] )
+        select.options.merge!(query_options)
         select.options[:query_options] = query_options
         select.each_solution do |sol|
           p = sol[:p]
@@ -91,6 +92,7 @@ module Goo
             select_p.filter("!isBlank(?s)")
             select_p.filter("!isBlank(?o)")
             select_p.limit(1000)
+            select_p.options.merge!(query_options)
             select_p.options[:query_options] = query_options
             graph_delete = RDF::Graph.new
             select_p.each_solution do |t|
@@ -109,11 +111,24 @@ module Goo
           url: "#{url.to_s}#{graph.to_s}",
           timeout: -1
         }
+        start = Time.now
         RestClient::Request.execute(params)
+        if @cube
+          @cube.send("sparql_write_data", DateTime.now, 
+            duration_ms: ((Time.now - start)*1000).ceil,
+            type_write: :delete_rest) rescue nil
+        end
       end
 
       def append_triples_slice(graph,file_path,mime_type_in)
+        start = Time.new
         slices = slice_file(file_path,mime_type_in)
+        if @cube
+          @cube.send("sparql_slice_file", DateTime.now, 
+            duration_ms: ((Time.now - start)*1000).ceil,
+            graph: graph,
+            file_size: File.new(file_path).size) rescue nil
+        end
         mime_type = "application/x-turtle"
         if mime_type_in == "text/x-nquads"
           mime_type = "text/x-nquads"
@@ -121,18 +136,28 @@ module Goo
         end
         response = nil
         slices.each do |slice_path|
+          data_slice = File.read(slice_path)
+          num_triples = data_slice.split("\n").length
           params = {
             method: :post,
             url: "#{url.to_s}",
             payload: {
              graph: graph.to_s,
-             data: File.read(slice_path),
+             data: data_slice,
              "mime-type" => mime_type
             },
             headers: {"mime-type" => mime_type},
             timeout: -1
           }
+          t0 = Time.now
           response = RestClient::Request.execute(params)
+          if @cube
+            @cube.send("sparql_write_data", DateTime.now, 
+              duration_ms: ((Time.now - start)*1000).ceil,
+              triples: num_triples,
+              graph: graph.to_s,
+              type_write: :append_slice) rescue nil
+          end
           File.delete(slice_path)
           sleep(status_based_sleep_time(:append))
         end
@@ -144,7 +169,7 @@ module Goo
         f = Tempfile.open('data_triple_store')
         f.write(data)
         f.close()
-        return append_triples_slice(graph,f.path,mime_type)
+        res = append_triples_slice(graph,f.path,mime_type)
       end
 
       def put_triples(graph,file_path,mime_type=nil)
