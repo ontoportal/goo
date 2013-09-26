@@ -16,6 +16,7 @@ module Goo
       end
 
       def total_pages
+        return 0 if (@page_size.nil? || @aggregate.nil?)
         (@aggregate / @page_size.to_f).ceil
       end
 

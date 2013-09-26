@@ -239,6 +239,7 @@ module Goo
         order_by = options[:order_by]
         collection = options[:collection]
         page = options[:page]
+        model_query_options = options[:query_options]
         count = options[:count]
         include_pagination = options[:include_pagination]
         equivalent_predicates = options[:equivalent_predicates]
@@ -512,6 +513,7 @@ module Goo
           query_options = { rules: ["NONE"] }
           select.options[:query_options] = query_options
         end
+        query_options.merge!(model_query_options) if model_query_options
         found = Set.new
         list_attributes = Set.new(klass.attributes(:list))
         all_attributes = Set.new(klass.attributes(:all))

@@ -29,6 +29,8 @@ module Goo
         @indexing = false
         @read_only = false
         @rules = true
+        @do_count = true
+        @query_options = nil
 
         #cache of retrieved predicates for unmapped queries
         #reused across pages
@@ -176,11 +178,12 @@ module Goo
           page_options = options_load.dup
           page_options.delete(:include)
           page_options[:include_pagination] = @include
-          if !@count
+          if !@count && @do_count
             page_options[:count] = :count 
             @count = Goo::SPARQL::Queries.model_load(page_options).to_i
           end
           page_options.delete :count
+          page_options[:query_options] = @query_options
           page_options[:page] = { page_i: @page_i, page_size: @page_size }
           models_by_id = Goo::SPARQL::Queries.model_load(page_options)
           options_load[:models] = models_by_id.values
@@ -327,6 +330,11 @@ module Goo
         self
       end
 
+      def no_count
+        @do_count = false
+        self
+      end
+
       def include(*options)
         if options.instance_of?(Array) && options.first.instance_of?(Array)
           options = options.first
@@ -365,6 +373,11 @@ module Goo
         if collection
           (@where_options_load ||= {})[:collection] = collection
         end
+        self
+      end
+
+      def query_options(opts)
+        @query_options = opts
         self
       end
 
