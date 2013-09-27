@@ -158,7 +158,7 @@ module Goo
           end
           Goo.sparql_update_client.delete_data(graph_delete, graph: self.graph)
         rescue Exception => e
-          binding.pry
+          raise e
         end
         @persistent = false
         @modified = true
