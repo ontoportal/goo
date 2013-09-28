@@ -91,7 +91,7 @@ module Goo
             select_p.where( [:s, p, :o] )
             select_p.filter("!isBlank(?s)")
             select_p.filter("!isBlank(?o)")
-            select_p.limit(5000)
+            select_p.limit(20000)
             select_p.options.merge!(query_options)
             select_p.options[:query_options] = query_options
             graph_delete = RDF::Graph.new
