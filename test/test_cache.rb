@@ -15,12 +15,10 @@ class TestCache < MiniTest::Unit::TestCase
       Goo.use_cache=false
       GooTestData.create_test_case_data
       redis = Goo.redis_client
-      redis.smembers(SPARQL::Client::SPARQL_CACHE_QUERIES).each do |q|
-        redis.del(q)
+      if redis.dbsize > 100
+        raise Exception, "This redis needs to point to testing server"
       end
-      redis.smembers(SPARQL::Client::SPARQL_CACHE_GRAPHS).each do |g|
-        redis.del(g)
-      end
+      redis.flushdb
     rescue Exception => e
       puts e.backtrace
       binding.pry
@@ -33,6 +31,7 @@ class TestCache < MiniTest::Unit::TestCase
 
   def test_cache_models
     redis = Goo.redis_client
+    redis.flushdb
     assert !Goo.use_cache?
     Goo.use_cache=true
     assert Goo.use_cache?
@@ -75,6 +74,7 @@ class TestCache < MiniTest::Unit::TestCase
 
   def test_cache_models_back_door
     redis = Goo.redis_client
+    redis.flushdb
     assert !Goo.use_cache?
     Goo.use_cache=true
     assert Goo.use_cache?
@@ -120,6 +120,7 @@ class TestCache < MiniTest::Unit::TestCase
 
   def test_cache_successful_hit
     redis = Goo.redis_client
+    redis.flushdb
     assert !Goo.use_cache?
     Goo.use_cache=true
     assert Goo.use_cache?
