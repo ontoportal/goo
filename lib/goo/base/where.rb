@@ -205,7 +205,8 @@ module Goo
 
         options_load[:ids] = ids if ids
         models_by_id = {}
-        if @count.nil? || @count > 0
+        if (@page_i && options_load[:models].length > 0) || 
+            (!@page_i && (@count.nil? || @count > 0))
           models_by_id = Goo::SPARQL::Queries.model_load(options_load)
           if @aggregate
             if models_by_id.length > 0
