@@ -85,6 +85,7 @@ module Goo
         select.options[:query_options] = query_options
         select.each_solution do |sol|
           p = sol[:p]
+          loop_count = 0
           begin
             more_triples = false
             select_p = qepr.select(:s,:o).distinct(true).from([graph])
@@ -103,7 +104,8 @@ module Goo
               Goo.sparql_update_client.delete_data(graph_delete, graph: graph, bypass_cache: true)
               sleep(status_based_sleep_time(:delete))
             end
-          end while(more_triples)
+            loop_count =+ 1
+          end while(more_triples && loop_count < 200)
         end
         #remaining stuff ... i.e: bnodes
         params = {
