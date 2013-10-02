@@ -116,7 +116,7 @@ module Goo
     opts = opts.first
     host = opts.delete :host
     port = opts.delete(:port) || 6379
-    @@redis_client = Redis.new host: host, port: port, timeout: 60
+    @@redis_client = Redis.new host: host, port: port, timeout: 300
     set_sparql_cache
   end
 
