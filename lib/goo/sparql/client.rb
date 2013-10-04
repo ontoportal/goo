@@ -54,10 +54,8 @@ module Goo
         count_lines = 0
         IO.foreach(dst_path_bnodes_out) { |line| count_lines = count_lines + 1 }
         slice_size = 5000
-        if count_lines > 5e6
+        if count_lines > 2e6
           slice_size = (count_lines / 500).to_i
-        elsif count_lines > 1e6
-          slice_size = (count_lines / 200).to_i
         end
         split_command = "split -l #{slice_size} #{dst_path_bnodes_out} #{dir}/slice"
         stdout,stderr,status = Open3.capture3(split_command)
