@@ -15,6 +15,7 @@ module Goo
       }
 
       def status_based_sleep_time(operation)
+        sleep(0.1)
         st = self.status
         if st[:outstanding] > 50
           raise Exception, "Too many outstanding queries. We cannot write to the backend"
@@ -23,12 +24,9 @@ module Goo
           return 2.5
         end
         if st[:running] < 4
-          return 0.2
+          return 0.8
         end
-        if operation == :delete
-          return 1.0 
-        end 
-        return 0.5
+        return 1.2
       end
 
       def slice_file(file_path,mime_type)
@@ -55,7 +53,7 @@ module Goo
         IO.foreach(dst_path_bnodes_out) { |line| count_lines = count_lines + 1 }
         slice_size = 5000
         if count_lines > 2e6
-          slice_size = (count_lines / 500).to_i
+          slice_size = (count_lines / 600).to_i
         end
         split_command = "split -l #{slice_size} #{dst_path_bnodes_out} #{dir}/slice"
         stdout,stderr,status = Open3.capture3(split_command)
