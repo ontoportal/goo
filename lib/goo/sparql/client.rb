@@ -88,6 +88,7 @@ module Goo
           loop_count = 0
           begin
             more_triples = false
+            deleted = 0
             select_p = qepr.select(:s,:o).distinct(true).from([graph])
             select_p.where( [:s, p, :o] )
             select_p.filter("!isBlank(?s)")
@@ -99,13 +100,14 @@ module Goo
             select_p.each_solution do |t|
               more_triples = true
               graph_delete << [t[:s],p,t[:o]]
+              deleted += 1
             end
             if more_triples
               Goo.sparql_update_client.delete_data(graph_delete, graph: graph, bypass_cache: true)
               sleep(status_based_sleep_time(:delete))
             end
             loop_count =+ 1
-          end while(more_triples && loop_count < 200)
+          end while(more_triples && loop_count < 200 && (deleted > 3490))
         end
         #remaining stuff ... i.e: bnodes
         params = {
