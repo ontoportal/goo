@@ -82,6 +82,11 @@ module Goo
         select.each_solution do |sol|
           p = sol[:p]
           loop_count = 0
+          limit_by_predicate = 3500
+          if p.to_s["ns#type"] || p.to_s["schema#label"] || p.to_s["schema#subClassOf"] ||
+             p.to_s["core#prefLabel"] || p.to_s["core#notation"] || p.to_s["core#altLabel"]
+            limit_by_predicate = 600
+          end
           begin
             more_triples = false
             deleted = 0
@@ -89,7 +94,7 @@ module Goo
             select_p.where( [:s, p, :o] )
             select_p.filter("!isBlank(?s)")
             select_p.filter("!isBlank(?o)")
-            select_p.limit(3500)
+            select_p.limit(limit_by_predicate)
             select_p.options.merge!(query_options)
             select_p.options[:query_options] = query_options
             graph_delete = RDF::Graph.new
