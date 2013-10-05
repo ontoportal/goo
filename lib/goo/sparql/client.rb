@@ -104,11 +104,20 @@ module Goo
               deleted += 1
             end
             if more_triples
-              Goo.sparql_update_client.delete_data(graph_delete, graph: graph, bypass_cache: true)
+              attempts = 0
+              begin
+                Goo.sparql_update_client.delete_data(graph_delete, graph: graph, bypass_cache: true)
+              rescue Exception => e
+                if attempts < 3
+                  attempts += 1
+                  sleep(5)
+                  retry
+                end
+              end
               sleep(status_based_sleep_time(:delete))
             end
             loop_count =+ 1
-          end while(more_triples && loop_count < 200 && (deleted > 3490))
+          end while(more_triples && loop_count < 350 && (deleted > (limit_by_predicate-100)))
         end
         #remaining stuff ... i.e: bnodes
         params = {
@@ -117,7 +126,16 @@ module Goo
           timeout: -1
         }
         start = Time.now
-        RestClient::Request.execute(params)
+        attempts = 0
+        begin
+          RestClient::Request.execute(params)
+        rescue Exception => e
+          if attempts < 3
+            attempts += 1
+            sleep(5)
+            retry
+          end
+        end
         if @cube
           @cube.send("sparql_write_data", DateTime.now, 
             duration_ms: ((Time.now - start)*1000).ceil,
