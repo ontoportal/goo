@@ -1,5 +1,3 @@
-ncbo_branch = ENV["NCBO_BRANCH"] || `git rev-parse --abbrev-ref HEAD` || "staging"
-
 source 'https://rubygems.org'
 
 gemspec
@@ -21,4 +19,6 @@ group :profiling do
   gem 'thin'
 end
 
+# NCBO Dependencies
+ncbo_branch = ENV["NCBO_BRANCH"] || `git rev-parse --abbrev-ref HEAD` || "staging"
 gem 'sparql-client', github: 'ncbo/sparql-client', branch: ncbo_branch
