@@ -1,7 +1,0 @@
-# Local gemfile
-# This gets included by a back-door in bundler so it doesn't affect
-# the Gemfile.lock (which gets committed to avoid different dependency versions)
-
-source 'https://rubygems.org'
-
-gem 'sparql-client', :path => '~/Development/sparql-client'
