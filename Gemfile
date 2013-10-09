@@ -20,5 +20,5 @@ group :profiling do
 end
 
 # NCBO Dependencies
-ncbo_branch = ENV["NCBO_BRANCH"] || `git rev-parse --abbrev-ref HEAD` || "staging"
+ncbo_branch = ENV["NCBO_BRANCH"] || `git rev-parse --abbrev-ref HEAD`.strip || "staging"
 gem 'sparql-client', github: 'ncbo/sparql-client', branch: ncbo_branch
