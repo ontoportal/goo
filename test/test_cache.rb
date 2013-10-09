@@ -26,6 +26,7 @@ class TestCache < MiniTest::Unit::TestCase
   end
 
   def self.after_suite
+    Goo.use_cache=false
     GooTestData.delete_test_case_data
   end
 
