@@ -88,7 +88,7 @@ module Goo
           else
             if p.to_s["schema#label"] || p.to_s["schema#subClassOf"] ||
                  p.to_s["core#prefLabel"] || p.to_s["core#notation"] || p.to_s["core#altLabel"]
-              limit_by_predicate = 600
+              limit_by_predicate = 1500
             end
           end
           begin
