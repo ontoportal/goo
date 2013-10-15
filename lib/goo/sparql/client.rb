@@ -176,6 +176,9 @@ module Goo
             headers: {"mime-type" => mime_type},
             timeout: -1
           }
+          #for some reason \\\\ breaks parsing
+          params[:payload][:data] =
+           params[:payload][:data].split("\n").map { |x| x.sub("\\\\","") }.join("\n")
           t0 = Time.now
           response = RestClient::Request.execute(params)
           if @cube
