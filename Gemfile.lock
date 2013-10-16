@@ -12,7 +12,7 @@ PATH
   remote: .
   specs:
     goo (0.0.2)
-      rdf
+      rdf (= 1.0.8)
       redis
       rest-client
       rsolr
@@ -42,7 +42,7 @@ GEM
     method_source (0.8.2)
     mime-types (1.25)
     minitest (4.7.5)
-    multi_json (1.8.1)
+    multi_json (1.8.2)
     net-http-persistent (2.9)
     pry (0.9.12.2)
       coderay (~> 1.0.5)
