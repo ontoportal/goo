@@ -15,7 +15,7 @@ module Goo
       }
 
       def status_based_sleep_time(operation)
-        sleep(0.1)
+        sleep(0.5)
         st = self.status
         if st[:outstanding] > 50
           raise Exception, "Too many outstanding queries. We cannot write to the backend"
@@ -83,9 +83,13 @@ module Goo
           p = sol[:p]
           loop_count = 0
           limit_by_predicate = 3500
-          if p.to_s["ns#type"] || p.to_s["schema#label"] || p.to_s["schema#subClassOf"] ||
-             p.to_s["core#prefLabel"] || p.to_s["core#notation"] || p.to_s["core#altLabel"]
-            limit_by_predicate = 600
+          if p.to_s["ns#type"]
+              limit_by_predicate = 300
+          else
+            if p.to_s["schema#label"] || p.to_s["schema#subClassOf"] ||
+                 p.to_s["core#prefLabel"] || p.to_s["core#notation"] || p.to_s["core#altLabel"]
+              limit_by_predicate = 1500
+            end
           end
           begin
             more_triples = false
@@ -117,7 +121,7 @@ module Goo
               sleep(status_based_sleep_time(:delete))
             end
             loop_count =+ 1
-          end while(more_triples && loop_count < 350 && (deleted > (limit_by_predicate-100)))
+          end while(more_triples && loop_count < 700 && (deleted > (limit_by_predicate-100)))
         end
         #remaining stuff ... i.e: bnodes
         params = {
@@ -172,6 +176,9 @@ module Goo
             headers: {"mime-type" => mime_type},
             timeout: -1
           }
+          #for some reason \\\\ breaks parsing
+          params[:payload][:data] =
+           params[:payload][:data].split("\n").map { |x| x.sub("\\\\","") }.join("\n")
           t0 = Time.now
           response = RestClient::Request.execute(params)
           if @cube

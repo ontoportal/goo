@@ -19,4 +19,6 @@ group :profiling do
   gem 'thin'
 end
 
-gem 'sparql-client', :git => 'https://github.com/ncbo/sparql-client.git', :branch => "master"
+# NCBO Dependencies
+ncbo_branch = ENV["NCBO_BRANCH"] || `git rev-parse --abbrev-ref HEAD`.strip || "staging"
+gem 'sparql-client', github: 'ncbo/sparql-client', branch: ncbo_branch

@@ -114,9 +114,13 @@ module Goo
           filter_var = inspected_patterns[filter_pattern_match]
           if !filter_operation.value.instance_of?(Goo::Filter)
             unless filter_operation.operator == :unbound || filter_operation.operator == :bound
+              value = RDF::Literal.new(filter_operation.value)
+              if filter_operation.value.is_a? String
+                value = RDF::Literal.new(filter_operation.value, :datatype => RDF::XSD.string)
+              end
               filter_operations << (
                 "?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
-                " #{RDF::Literal.new(filter_operation.value).to_ntriples}")
+                " #{value.to_ntriples}")
             else
               if filter_operation.operator == :unbound
                 filter_operations << "!BOUND(?#{filter_var.to_s})"

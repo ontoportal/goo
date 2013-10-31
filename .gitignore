@@ -23,9 +23,5 @@ doc/
 # Mac artifacts
 **.DS_Store
 
-Gemfile.local
-
-Gemfile.lock
-
 .idea/*
 projectFilesBackup/*
