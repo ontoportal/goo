@@ -48,6 +48,53 @@ class TestModelComplex < MiniTest::Unit::TestCase
     Goo.sparql_update_client.update("DELETE {?s ?p ?o } WHERE { ?s ?p ?o }")
   end
 
+  def test_multiple_collection()
+    submissions = [Submission.new(name: "submission1"),
+                   Submission.new(name: "submission2"),
+                   Submission.new(name: "submission3")]
+
+    submissions.each do |submission|
+      unless submission.exist?
+        submission.save
+      else
+        submission = Submission.find("submission1").first
+      end
+    end
+    submissions = Submission.where.include(:name).all
+
+    submissions.each do |submission|
+      terms = Term.where.in(submission).to_a
+      terms.each do |t|
+        t.delete
+      end
+    end
+
+    10.times do |x|
+      vehicle = Term.new
+      s = (x % 3) + 1
+      vehicle.submission = submissions.select {|x| x.name == "submission#{s}" }.first
+      vehicle.prefLabel = "vehicle#{x}"
+      vehicle.synonym = ["transport", "vehicles"]
+      vehicle.definition = ["vehicle def 1", "vehicle def 2"]
+      assert !vehicle.valid?
+      assert !vehicle.errors[:id].nil?
+      vehicle.id = RDF::URI.new "http://someiri.org/vehicle/#{x}"
+      assert vehicle.valid?
+      vehicle.save
+    end
+    ss1 = submissions.select {|x| x.name == "submission1" }.first
+    assert_equal 4, GooTest.count_pattern(
+      "GRAPH #{ss1.id.to_ntriples} { ?s a #{Term.type_uri.to_ntriples} . }")
+
+    res =  Term.find("http://someiri.org/vehicle/0").in(ss1).first
+
+    assert res.id == RDF::URI.new("http://someiri.org/vehicle/0")
+
+    Goo.sparql_data_client.delete_graph(Term.type_uri)
+    Goo.sparql_data_client.delete_graph(Submission.type_uri)
+
+  end
+
   def test_collection()
 
     submission = Submission.new(name: "submission1")
