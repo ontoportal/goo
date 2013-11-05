@@ -74,7 +74,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
       s = (x % 3) + 1
       vehicle.submission = submissions.select {|x| x.name == "submission#{s}" }.first
       vehicle.prefLabel = "vehicle#{x}"
-      vehicle.synonym = ["transport", "vehicles"]
+      vehicle.synonym = ["transport#{x}", "vehicles#{x}"]
       vehicle.definition = ["vehicle def 1", "vehicle def 2"]
       assert !vehicle.valid?
       assert !vehicle.errors[:id].nil?
@@ -83,12 +83,28 @@ class TestModelComplex < MiniTest::Unit::TestCase
       vehicle.save
     end
     ss1 = submissions.select {|x| x.name == "submission1" }.first
+    ss2 = submissions.select {|x| x.name == "submission2" }.first
+    ss3 = submissions.select {|x| x.name == "submission3" }.first
+
     assert_equal 4, GooTest.count_pattern(
       "GRAPH #{ss1.id.to_ntriples} { ?s a #{Term.type_uri.to_ntriples} . }")
 
     res =  Term.find("http://someiri.org/vehicle/0").in(ss1).first
-
     assert res.id == RDF::URI.new("http://someiri.org/vehicle/0")
+
+    Term.where.in([ss1,ss2]).include(:prefLabel,:synonym).all.each do |term|
+      assert term.submission.id == ss1.id || term.submission.id == ss2.id
+      assert [0,1,3,4,6,7,9].index(term.id.to_s[-1].to_i)
+      if [0,3,6,9].index(term.id.to_s[-1].to_i)
+        assert term.submission.id == ss1.id
+      else
+        assert term.submission.id == ss2.id
+      end
+      assert term.prefLabel.to_s[-1].to_i == term.id.to_s[-1].to_i
+      term.synonym.each do |sy|
+        assert sy.to_s[-1].to_i == term.id.to_s[-1].to_i
+      end
+    end
 
     Goo.sparql_data_client.delete_graph(Term.type_uri)
     Goo.sparql_data_client.delete_graph(Submission.type_uri)
