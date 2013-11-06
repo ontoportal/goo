@@ -258,8 +258,6 @@ module Goo
           else
             raise ArgumentError, "Collection `#{opts}` is not an attribute"
           end
-        else
-          binding.pry
         end
       end
       
@@ -292,7 +290,7 @@ module Goo
           begin
             Goo.sparql_update_client.delete_data(graph_delete, graph: graph)
           rescue Exception => e
-            binding.pry
+            raise e
           end
         end
         if graph_insert and graph_insert.size > 0
