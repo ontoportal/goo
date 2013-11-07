@@ -30,7 +30,8 @@ module Goo
                   if eq_p.include?(pattern.predicate.to_s)
                     if attribute_mappings.include?(pattern.predicate.to_s)
                       #reuse filter
-                      pattern.predicate = RDF::Query::Variable.new(attribute_mappings[pattern.predicate.to_s])
+                      pattern.predicate = 
+                        RDF::Query::Variable.new(attribute_mappings[pattern.predicate.to_s])
                     else
                       query_predicate = pattern.predicate
                       var_name = "rewrite#{count_rewrites}"
