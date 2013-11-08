@@ -64,6 +64,7 @@ module Goo
       end
 
       def self.sub_property_predicates(*graphs)
+        graphs = graphs.flatten!
         client = Goo.sparql_query_client(:main)
         select = client.select(:subP, :superP).distinct()
         select.where([:subP, Goo.vocabulary(:rdfs)[:subPropertyOf], :superP])
@@ -309,8 +310,12 @@ module Goo
         end
 
         graphs = [klass.uri_type]
-        if collection && collection.length > 0
-          graphs = collection.map { |x| x.id }
+        if collection
+          if collection.is_a?Array and collection.length > 0
+            graphs = collection.map { |x| x.id }
+          elsif !collection.is_a?Array
+            graphs = [collection.id]
+          end
         end
         models_by_id = {}
         if models
@@ -681,19 +686,28 @@ module Goo
         end
         return models_by_id if bnode_extraction
 
-        if collection and klass.collection_opts.instance_of?(Symbol)
+        collection_value = nil
+        if klass.collection_opts.instance_of?(Symbol)
+          if collection.is_a?Array and collection.length == 1
+            collection_value = collection.first
+          end
+          if collection.respond_to?:id
+            collection_value = collection
+          end
+        end
+        if collection_value
           collection_attribute = klass.collection_opts
           models_by_id.each do |id,m|
-            m.send("#{collection_attribute}=", collection)
+            m.send("#{collection_attribute}=", collection_value)
           end
           objects_new.each do |id,obj_new|
             if obj_new.respond_to?(:klass)
               collection_attribute = obj_new[:klass].collection_opts
-              obj_new[collection_attribute] = collection
+              obj_new[collection_attribute] = collection_value
             elsif obj_new.class.respond_to?(:collection_opts) &&
                 obj_new.class.collection_opts.instance_of?(Symbol)
               collection_attribute = obj_new.class.collection_opts
-              obj_new.send("#{collection_attribute}=", collection)
+              obj_new.send("#{collection_attribute}=", collection_value)
             end
           end
         end

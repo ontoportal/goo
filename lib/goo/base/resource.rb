@@ -193,6 +193,13 @@ module Goo
           return self.class.uri_type
         end
         col = collection
+        if col.is_a?Array
+          if col.length == 1
+            col = col.first
+          else
+            raise Exception, "collection in save only can be len=1"
+          end
+        end
         return col ? col.id : nil
       end
 
