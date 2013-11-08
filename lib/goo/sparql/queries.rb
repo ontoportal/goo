@@ -77,6 +77,7 @@ module Goo
       end
 
       def self.graph_predicates(*graphs)
+        graphs = graphs.flatten
         client = Goo.sparql_query_client(:main)
         select = client.select(:predicate).distinct()
         select.where([:subject, :predicate, :object])

@@ -102,7 +102,7 @@ module Goo
         predicates = nil
         if @include.first == :unmapped
           if @where_options_load[:collection]
-            graph = @where_options_load[:collection].id
+            graph = @where_options_load[:collection].map { |x| x.id }
           else
             #TODO review this case
             raise ArgumentError, "Unmapped wihout collection not tested"
