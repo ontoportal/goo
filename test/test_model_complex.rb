@@ -93,13 +93,15 @@ class TestModelComplex < MiniTest::Unit::TestCase
     assert res.id == RDF::URI.new("http://someiri.org/vehicle/0")
 
     Term.where.in([ss1,ss2]).include(:prefLabel,:synonym).all.each do |term|
-#      assert term.submission.id == ss1.id || term.submission.id == ss2.id
       assert [0,1,3,4,6,7,9].index(term.id.to_s[-1].to_i)
-#      if [0,3,6,9].index(term.id.to_s[-1].to_i)
-#        assert term.submission.id == ss1.id
-#      else
-#        assert term.submission.id == ss2.id
-#      end
+      assert term.prefLabel.to_s[-1].to_i == term.id.to_s[-1].to_i
+      term.synonym.each do |sy|
+        assert sy.to_s[-1].to_i == term.id.to_s[-1].to_i
+      end
+    end
+    
+    Term.where.in([ss3]).include(:prefLabel,:synonym).all.each do |term|
+      assert [2,5,8].index(term.id.to_s[-1].to_i)
       assert term.prefLabel.to_s[-1].to_i == term.id.to_s[-1].to_i
       term.synonym.each do |sy|
         assert sy.to_s[-1].to_i == term.id.to_s[-1].to_i
