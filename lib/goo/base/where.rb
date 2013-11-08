@@ -370,9 +370,13 @@ module Goo
         self
       end
 
-      def in(collection)
-        if collection
-          (@where_options_load ||= {})[:collection] = collection
+      def in(*opts)
+        opts = opts.flatten
+        if opts && opts.length > 0
+          opts = opts.select { |x| !x.nil? }
+          if opts.length > 0
+            (@where_options_load ||= {})[:collection] = opts
+          end
         end
         self
       end

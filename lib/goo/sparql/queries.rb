@@ -308,7 +308,10 @@ module Goo
           end
         end
 
-        graphs = [collection ? collection.id : klass.uri_type]
+        graphs = [klass.uri_type]
+        if collection && collection.length > 0
+          graphs = collection.map { |x| x.id }
+        end
         models_by_id = {}
         if models
           ids = []
