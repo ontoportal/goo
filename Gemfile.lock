@@ -1,12 +1,7 @@
 GIT
   remote: git://github.com/ncbo/sparql-client.git
-<<<<<<< HEAD
-  revision: de82689e690f400833653b0ecc51676396e945a8
-  branch: master
-=======
   revision: 972f264109779a7522552cda0325755dbc004edc
-  branch: staging
->>>>>>> sparql-client lock update
+  branch: master
   specs:
     sparql-client (1.0.4.1)
       json_pure (>= 1.4)
@@ -36,12 +31,14 @@ GEM
     addressable (2.3.5)
     atomic (1.1.14)
     builder (3.2.2)
-    coderay (1.0.9)
+    coderay (1.1.0)
     cube-ruby (0.0.3)
     daemons (1.1.9)
+    docile (1.1.0)
     eventmachine (1.0.3)
     i18n (0.6.5)
     json_pure (1.8.1)
+    lockfile (2.1.0)
     macaddr (1.6.1)
       systemu (~> 2.5.0)
     method_source (0.8.2)
@@ -49,8 +46,8 @@ GEM
     minitest (4.7.5)
     multi_json (1.8.2)
     net-http-persistent (2.9)
-    pry (0.9.12.2)
-      coderay (~> 1.0.5)
+    pry (0.9.12.3)
+      coderay (~> 1.0)
       method_source (~> 0.8)
       slop (~> 3.4)
     rack (1.5.2)
@@ -68,10 +65,12 @@ GEM
       mime-types (>= 1.16)
     rsolr (1.0.9)
       builder (>= 2.1.2)
-    simplecov (0.7.1)
-      multi_json (~> 1.0)
-      simplecov-html (~> 0.7.1)
-    simplecov-html (0.7.1)
+    simplecov (0.8.1)
+      docile (~> 1.1.0)
+      lockfile (>= 2.1.0)
+      multi_json
+      simplecov-html (~> 0.8.0)
+    simplecov-html (0.8.0)
     sinatra (1.4.4)
       rack (~> 1.4)
       rack-protection (~> 1.4)
