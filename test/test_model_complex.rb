@@ -44,7 +44,10 @@ class Term < Goo::Base::Resource
 
   def self.tree_property(*args)
     collection = args.first
-    return RDF::RDFS[:subClassOf]
+    if collection.id.to_s["submission1"]
+      return RDF::RDFS[:subClassOf]
+    end
+    return RDF::SKOS[:broader]
   end
 end
 
@@ -296,7 +299,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
     van.save
 
     assert_equal 1, GooTest.count_pattern(
-      "GRAPH #{submission.id.to_ntriples} { #{van.id.to_ntriples} <http://www.w3.org/2000/01/rdf-schema#subClassOf> ?p . }")
+      "GRAPH #{submission.id.to_ntriples} { #{van.id.to_ntriples} #{RDF::RDFS[:subClassOf].to_ntriples} ?p . }")
     cargo = Term.new
     cargo.submission = submission
     cargo.id = RDF::URI.new "http://someiri.org/cargo"
