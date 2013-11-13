@@ -189,7 +189,9 @@ module Goo
         end
 
         def attribute_uri(attr)
-          raise ArgumentError, ":id cannot be treated as predicate for .where, use find " if attr == :id
+          if attr == :id
+            raise ArgumentError, ":id cannot be treated as predicate for .where, use find "
+          end
           uri = @attribute_uris[attr]
           return uri unless uri.nil?
           attr_string = attr.to_s
@@ -207,7 +209,9 @@ module Goo
           return if attr == :resource_id
           attr = attr.to_sym
           define_method("#{attr}=") do |*args|
-            if self.class.inverse?(attr) && !(args && args.last.instance_of?(Hash) && args.last[:on_load])
+            if self.class.inverse?(attr) &&
+                 !(args && args.last.instance_of?(Hash) &&
+                 args.last[:on_load])
               raise ArgumentError,
                 "`#{attr}` is an inverse attribute. Values cannot be assigned."
             end
@@ -215,7 +219,8 @@ module Goo
             value = args[0]
             unless args.last.instance_of?(Hash) and args.last[:on_load]
               if self.persistent? and self.class.name_with == attr
-                raise ArgumentError, "`#{attr}` attribute is used to name this resource and cannot be modified."
+                raise ArgumentError, 
+                    "`#{attr}` attribute is used to name this resource and cannot be modified."
               end
               prev = self.instance_variable_get("@#{attr}")
               if !prev.nil? and !@modified_attributes.include?(attr)
@@ -319,8 +324,12 @@ module Goo
         ##
         # Return a struct-based, read-only instance for a class that is populated with the contents of `attributes`
         def read_only(attributes)
-          raise ArgumentError, "`attributes` must be a hash of attribute/value pairs" if !attributes.is_a?(Hash) || attributes.empty?
-          raise ArgumentError, "`attributes` must contain a key for `id`" unless attributes.key?(:id)
+          if !attributes.is_a?(Hash) || attributes.empty?
+            raise ArgumentError, "`attributes` must be a hash of attribute/value pairs"
+          end
+          unless attributes.key?(:id)
+            raise ArgumentError, "`attributes` must contain a key for `id`"
+          end
           attributes = attributes.symbolize_keys
           STRUCT_CACHE[attributes.keys.hash] ||= struct_object(attributes.keys)
           cls = STRUCT_CACHE[attributes.keys.hash]
