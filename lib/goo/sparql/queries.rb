@@ -97,7 +97,10 @@ module Goo
       end
 
       def self.query_filter_sparql(klass,filter,filter_patterns,filter_graphs,
-                                   filter_operations,internal_variables,inspected_patterns)
+                                   filter_operations,
+                                   internal_variables,
+                                   inspected_patterns,
+                                   collection)
         #create a object variable to project the value in the filter
         filter.filter_tree.each do |filter_operation|
           filter_pattern_match = {}
@@ -111,7 +114,8 @@ module Goo
             patterns_for_match(klass, attr, filter_pattern_match[attr],
                                filter_graphs, filter_patterns,
                                    [],internal_variables,
-                                   subject=:id,in_union=false,in_aggregate=false)
+                                   subject=:id,in_union=false,in_aggregate=false, 
+                                   collection=collection)
             inspected_patterns[filter_pattern_match] = internal_variables.last
           end
           filter_var = inspected_patterns[filter_pattern_match]
@@ -136,7 +140,7 @@ module Goo
             filter_operations << "#{sparql_op_string(filter_operation.operator)}"
             query_filter_sparql(klass,filter_operation.value,filter_patterns,
                                 filter_graphs,filter_operations,
-                                internal_variables,inspected_patterns)
+                                internal_variables,inspected_patterns,collection)
           end
         end
       end
@@ -174,7 +178,8 @@ module Goo
       end
 
       def self.walk_pattern(klass, match_patterns, graphs, patterns, unions,
-                                internal_variables,in_aggregate=false,query_options={})
+                                internal_variables,in_aggregate=false,query_options={},
+                                collection)
         match_patterns.each do |match,in_union|
           unions << [] if in_union
           match = match.is_a?(Symbol) ? { match => [] } : match
@@ -182,7 +187,9 @@ module Goo
             patterns_for_match(klass, attr, value, graphs, patterns,
                                unions,internal_variables,
                                subject=:id,in_union=in_union,
-                               in_aggregate=in_aggregate,query_options=query_options)
+                               in_aggregate=in_aggregate,
+                               query_options=query_options,
+                               collection)
           end
         end
       end
@@ -198,7 +205,7 @@ module Goo
 
       def self.patterns_for_match(klass,attr,value,graphs,patterns,unions,
                                   internal_variables,subject=:id,in_union=false,
-                                  in_aggregate=false,query_options={})
+                                  in_aggregate=false,query_options={},collection=nil)
         if value.respond_to?(:each) || value.instance_of?(Symbol)
           next_pattern = value.instance_of?(Array) ? value.first : value
 
@@ -212,7 +219,8 @@ module Goo
           internal_variables << value
         end
         add_rules(attr,klass,query_options)
-        graph, pattern = query_pattern(klass,attr,value: value,subject: subject)
+        graph, pattern = 
+          query_pattern(klass,attr,value: value,subject: subject, collection: collection)
         if pattern
           if !in_union
             patterns << pattern
@@ -226,7 +234,7 @@ module Goo
           next_pattern.each do |next_attr,next_value|
             patterns_for_match(range, next_attr, next_value, graphs,
                   patterns, unions, internal_variables, subject=value,
-                  in_union, in_aggregate)
+                  in_union, in_aggregate, collection=collection)
           end
         end
       end
@@ -403,7 +411,7 @@ module Goo
           #make it deterministic - for caching
           graph_match_iteration = Goo::Base::PatternIteration.new(graph_match)
           walk_pattern(klass,graph_match_iteration,graphs,patterns,unions,
-                             internal_variables,in_aggregate=false,query_options)
+                             internal_variables,in_aggregate=false,query_options,collection)
           graphs.uniq!
         end
 
@@ -424,7 +432,7 @@ module Goo
             filter_operations = []
             type = query_filter_sparql(klass,query_filter,filter_patterns,filter_graphs,
                                                 filter_operations, internal_variables,
-                                                 inspected_patterns)
+                                                 inspected_patterns,collection)
             query_filter_str << filter_operations.join(" ")
             graphs.concat(filter_graphs) if filter_graphs.length > 0
             if filter_patterns.length > 0
@@ -445,7 +453,7 @@ module Goo
             graph_match_iteration =
               Goo::Base::PatternIteration.new(Goo::Base::Pattern.new(agg.pattern))
             walk_pattern(klass,graph_match_iteration,graphs,agg_patterns,unions,
-                             internal_variables,in_aggregate=agg.aggregate)
+                             internal_variables,in_aggregate=agg.aggregate,collection)
             if agg_patterns.length > 0
               projection = "#{internal_variables.last.to_s}_projection".to_sym
               aggregate_on_attr = internal_variables.last.to_s
