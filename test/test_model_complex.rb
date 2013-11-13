@@ -21,11 +21,31 @@ class Term < Goo::Base::Resource
   attribute :definition, namespace: :skos, enforce: [:list]
   attribute :deprecated, namespace: :owl
 
-  attribute :parents, namespace: :rdfs, property: :subClassOf, enforce: [:list, :class]
-  attribute :ancestors, namespace: :rdfs, property: :subClassOf, enforce: [:list, :class], transitive: true
+  attribute :parents, 
+            namespace: :rdfs, 
+            property: lambda { |x| tree_property(x) },
+            enforce: [:list, :class]
 
-  attribute :children, namespace: :rdfs, property: :subClassOf, inverse: { on: :class , attribute: :parents }
-  attribute :descendants, namespace: :rdfs, property: :subClassOf, inverse: { on: :class , attribute: :parents }, transitive: true
+  attribute :ancestors, 
+            namespace: :rdfs, 
+            property: lambda { |x| tree_property(x) },
+            enforce: [:list, :class], transitive: true
+
+  attribute :children, 
+            namespace: :rdfs, 
+            property: lambda { |x| tree_property(x) },
+            inverse: { on: :class , attribute: :parents }
+
+  attribute :descendants, 
+            namespace: :rdfs, 
+            property: lambda { |x| tree_property(x) },
+            inverse: { on: :class , attribute: :parents }, 
+            transitive: true
+
+  def self.tree_property(*args)
+    collection = args.first
+    return RDF::RDFS[:subClassOf]
+  end
 end
 
 class TestModelComplex < MiniTest::Unit::TestCase
