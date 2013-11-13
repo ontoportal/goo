@@ -322,7 +322,8 @@ module Goo
 
         STRUCT_CACHE = {}
         ##
-        # Return a struct-based, read-only instance for a class that is populated with the contents of `attributes`
+        # Return a struct-based, 
+        # read-only instance for a class that is populated with the contents of `attributes`
         def read_only(attributes)
           if !attributes.is_a?(Hash) || attributes.empty?
             raise ArgumentError, "`attributes` must be a hash of attribute/value pairs"
