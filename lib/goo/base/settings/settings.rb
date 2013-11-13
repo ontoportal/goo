@@ -188,11 +188,14 @@ module Goo
           set_range(attr_name)
         end
 
-        def attribute_uri(attr)
+        def attribute_uri(attr,*args)
           if attr == :id
             raise ArgumentError, ":id cannot be treated as predicate for .where, use find "
           end
           uri = @attribute_uris[attr]
+          if uri.is_a?(Proc)
+            uri = uri.call(*args.flatten)
+          end
           return uri unless uri.nil?
           attr_string = attr.to_s
           Goo.namespaces.keys.each do |ns|
