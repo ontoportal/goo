@@ -152,7 +152,6 @@ module Goo
             #graph_items_collection = attr
             #inverse_klass_collection = inverse_klass
             #return [nil, nil]
-            #binding.pry
           end
           predicate = inverse_klass.attribute_uri(inverse_opts[:attribute])
           return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, subject ]]
@@ -717,7 +716,6 @@ module Goo
           #here we need a where call using collection
           #inverse_klass_collection.where
           #
-          #binding.pry
         end
 
         #remove from models_by_id elements that were not touched
