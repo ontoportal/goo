@@ -141,7 +141,10 @@ module Goo
         end
       end
 
-      def self.query_pattern(klass,attr,value=nil,subject=:id)
+      def self.query_pattern(klass,attr,**opts)
+        value = opts[:value] || nil
+        subject = opts[:subject] || :id
+        collection = opts[:collection] || nil
         value = value.id if value.class.respond_to?(:model_settings)
         if klass.attributes(:all).include?(attr) && klass.inverse?(attr)
           inverse_opts = klass.inverse_opts(attr)
@@ -153,12 +156,12 @@ module Goo
             #inverse_klass_collection = inverse_klass
             #return [nil, nil]
           end
-          predicate = inverse_klass.attribute_uri(inverse_opts[:attribute])
+          predicate = inverse_klass.attribute_uri(inverse_opts[:attribute],collection)
           return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, subject ]]
         else
           predicate = nil
           if attr.is_a?(Symbol)
-            predicate = klass.attribute_uri(attr)
+            predicate = klass.attribute_uri(attr,collection)
           elsif attr.is_a?(RDF::URI)
             predicate = attr
           else
@@ -209,7 +212,7 @@ module Goo
           internal_variables << value
         end
         add_rules(attr,klass,query_options)
-        graph, pattern = query_pattern(klass,attr,value,subject)
+        graph, pattern = query_pattern(klass,attr,value: value,subject: subject)
         if pattern
           if !in_union
             patterns << pattern
@@ -353,10 +356,10 @@ module Goo
             klass_attr = bnode_conf.keys.first
             bnode_extraction=klass_attr
             bnode = RDF::Node.new
-            patterns << [:id, klass.attribute_uri(klass_attr), bnode]
+            patterns << [:id, klass.attribute_uri(klass_attr,collection), bnode]
             bnode_conf[klass_attr].each do |in_bnode_attr|
               variables << in_bnode_attr
-              patterns << [bnode, klass.attribute_uri(in_bnode_attr), in_bnode_attr]
+              patterns << [bnode, klass.attribute_uri(in_bnode_attr,collection), in_bnode_attr]
             end
           elsif incl.first == :unmapped
             #a filter with for ?predicate will be included
@@ -387,7 +390,7 @@ module Goo
               incl.concat(embed_variables)
             end
             incl.each do |attr|
-              graph, pattern = query_pattern(klass,attr)
+              graph, pattern = query_pattern(klass,attr,collection: collection)
               add_rules(attr,klass,query_options)
               optional_patterns << pattern if pattern
               graphs << graph if graph && (!klass.collection_opts || klass.inverse?(attr))
@@ -462,7 +465,7 @@ module Goo
           order_by = order_by.first
           #simple ordering ... needs to use pattern inspection
           order_by.each do |attr,direction|
-            quad = query_pattern(klass,attr,nil,:id)
+            quad = query_pattern(klass,attr)
             patterns << quad[1]
           end
         end
@@ -715,7 +718,6 @@ module Goo
         if graph_items_collection
           #here we need a where call using collection
           #inverse_klass_collection.where
-          #
         end
 
         #remove from models_by_id elements that were not touched

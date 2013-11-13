@@ -10,7 +10,7 @@ module Goo
         bnode_delete = {}
         model.class.attributes.each do |attr|
           next if model.class.collection?(attr)
-          predicate = model.class.attribute_uri(attr)
+          predicate = model.class.attribute_uri(attr,model.collection)
           value = model.send("#{attr}")
           values = value.kind_of?(Array) ? value : [value]
           values.each do |v|
@@ -49,7 +49,7 @@ module Goo
         if model.previous_values
           graph_delete = RDF::Graph.new
           model.previous_values.each do |attr,value|
-            predicate = model.class.attribute_uri(attr)
+            predicate = model.class.attribute_uri(attr,model.collection)
             values = value.kind_of?(Array) ? value : [value]
             values.each do |v|
               object = v.class.respond_to?(:shape_attribute) ? v.id : v
@@ -76,7 +76,7 @@ module Goo
 
         model.modified_attributes.each do |attr|
           next if model.class.collection?(attr)
-          predicate = model.class.attribute_uri(attr)
+          predicate = model.class.attribute_uri(attr,model.collection)
           value = model.send("#{attr}")
           next if value.nil?
           values = value.kind_of?(Array) ? value : [value]

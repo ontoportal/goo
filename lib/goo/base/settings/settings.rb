@@ -181,7 +181,11 @@ module Goo
           namespace = attribute_namespace(attr_name)
           namespace = namespace || @model_settings[:namespace]
           vocab = Goo.vocabulary(namespace) #returns default for nil input
-          @attribute_uris[attr_name] = vocab[options[:property] || attr_name]
+          if options[:property].is_a?(Proc)
+            @attribute_uris[attr_name] = options[:property]
+          else
+            @attribute_uris[attr_name] = vocab[options[:property] || attr_name]
+          end
           if options[:enforce].include?(:unique) and options[:enforce].include?(:list)
             raise ArgumentError, ":list options cannot be combined with :list"
           end
