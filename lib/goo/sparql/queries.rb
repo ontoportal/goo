@@ -92,7 +92,7 @@ module Goo
       def self.model_exist(model,id=nil,store=:main)
         id = id || model.id
         so = Goo.sparql_query_client(store).ask.from(model.graph).
-          whether([id, RDF.type, model.class.uri_type])
+          whether([id, RDF.type, model.class.uri_type(model.collection)])
         return so.true?
       end
 
@@ -161,7 +161,8 @@ module Goo
             #return [nil, nil]
           end
           predicate = inverse_klass.attribute_uri(inverse_opts[:attribute],collection)
-          return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, subject ]]
+          return [ inverse_klass.uri_type(collection) ,
+                   [ value.nil? ? attr : value, predicate, subject ]]
         else
           predicate = nil
           if attr.is_a?(Symbol)
@@ -172,7 +173,8 @@ module Goo
             raise ArgumentError, "Unknown attribute param for query `#{attr}`"
           end
           #unknown predicate
-          return [klass.uri_type, [ subject , predicate , value.nil? ? attr : value]]
+          return [klass.uri_type(collection),
+                   [ subject , predicate , value.nil? ? attr : value]]
         end
 
       end
@@ -320,7 +322,7 @@ module Goo
           end
         end
 
-        graphs = [klass.uri_type]
+        graphs = [klass.uri_type(collection)]
         if collection
           if collection.is_a?Array and collection.length > 0
             graphs = collection.map { |x| x.id }
@@ -349,7 +351,7 @@ module Goo
 
         query_options = {}
         #TODO: breaks the reasoner
-        patterns = [[ :id ,RDF.type, klass.uri_type]]
+        patterns = [[ :id ,RDF.type, klass.uri_type(collection)]]
         unions = []
         optional_patterns = []
         graph_items_collection = nil
@@ -549,7 +551,7 @@ module Goo
         expand_equivalent_predicates(select,equivalent_predicates)
 
         select.each_solution do |sol|
-          next if sol[:some_type] && klass.type_uri != sol[:some_type]
+          next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
           if count
             return sol[:count_var].object
           end

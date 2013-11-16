@@ -43,6 +43,7 @@ module Goo
           @uri_type = @namespace[@model_name.to_s.camelize]
           @model_settings[:range] = {}
           @model_settings[:attributes] = {}
+          @model_settings[:rdf_type] = options[:rdf_type]
 
           #registering a new models forces to redo ranges
           Goo.models.each do |k,m|
@@ -261,7 +262,10 @@ module Goo
           return namespace[ model_name_uri + '/' + Goo.uuid]
         end
 
-        def uri_type
+        def uri_type(*args)
+          if @model_settings[:rdf_type]
+            return @model_settings[:rdf_type].call(*args)
+          end
           return @uri_type
         end
         alias :type_uri :uri_type

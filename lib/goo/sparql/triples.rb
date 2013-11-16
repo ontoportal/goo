@@ -6,7 +6,7 @@ module Goo
         subject = model.id
         graph_delete = nil
         graph_delete = RDF::Graph.new
-        graph_delete << [subject, RDF.type, model.class.uri_type]
+        graph_delete << [subject, RDF.type, model.class.uri_type(model.collection)]
         bnode_delete = {}
         model.class.attributes.each do |attr|
           next if model.class.collection?(attr)
@@ -61,7 +61,7 @@ module Goo
           
         graph_insert = RDF::Graph.new
         unless model.persistent?
-          graph_insert << [subject, RDF.type, model.class.uri_type]
+          graph_insert << [subject, RDF.type, model.class.uri_type(model.collection)]
         end
         #set default values before saving
         if not model.persistent?

@@ -13,7 +13,8 @@ class Term < Goo::Base::Resource
   model :class,
         namespace: :owl,
         collection: :submission,
-        name_with: :id
+        name_with: :id,
+        rdf_type: lambda { |x| self.class_rdf_type(x) }
 
   attribute :submission, enforce: [:existence]
   attribute :prefLabel, namespace: :skos, enforce: [:existence]
@@ -43,11 +44,19 @@ class Term < Goo::Base::Resource
             transitive: true
 
   def self.tree_property(*args)
-    collection = args.first
+    collection = args.flatten.first
     if collection.id.to_s["submission1"]
       return RDF::RDFS[:subClassOf]
     end
     return RDF::SKOS[:broader]
+  end
+
+  def self.class_rdf_type(*args)
+    collection = args.flatten.first
+    if collection.id.to_s["submission1"]
+      return RDF::OWL[:Class]
+    end
+    return RDF::SKOS[:Concept]
   end
 end
 
@@ -110,7 +119,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
     ss3 = submissions.select {|x| x.name == "submission3" }.first
 
     assert_equal 4, GooTest.count_pattern(
-      "GRAPH #{ss1.id.to_ntriples} { ?s a #{Term.type_uri.to_ntriples} . }")
+      "GRAPH #{ss1.id.to_ntriples} { ?s a #{Term.type_uri(ss1).to_ntriples} . }")
 
     res =  Term.find("http://someiri.org/vehicle/0").in(ss1).first
     assert res.id == RDF::URI.new("http://someiri.org/vehicle/0")
