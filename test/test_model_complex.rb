@@ -131,7 +131,9 @@ class TestModelComplex < MiniTest::Unit::TestCase
       end
     end
 
-    Goo.sparql_data_client.delete_graph(Term.type_uri)
+    Goo.sparql_data_client.delete_graph(ss1.id)
+    Goo.sparql_data_client.delete_graph(ss2.id)
+    Goo.sparql_data_client.delete_graph(ss3.id)
     Goo.sparql_data_client.delete_graph(Submission.type_uri)
 
   end
