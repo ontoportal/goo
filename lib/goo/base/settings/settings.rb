@@ -161,7 +161,7 @@ module Goo
           if @model_settings[:attributes][attr][:inverse]
             on = @model_settings[:attributes][attr][:inverse][:on]
             if Goo.models.include?(on) || on.respond_to?(:model_name)
-              on = Goo.models[on] if on.instance_of?(Symbol) rescue binding.pry
+              on = Goo.models[on] if on.instance_of?(Symbol)
               @model_settings[:range][attr]=on
             end
           end
