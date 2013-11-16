@@ -19,7 +19,7 @@ module Goo
         def model(*args)
 
           if args.length == 0
-            binding.pry
+            raise ArgumentError, "model should have args"
           end
 
           model_name = args[0]
