@@ -2,6 +2,7 @@ GIT
   remote: git://github.com/ncbo/sparql-client.git
   revision: 1dc17f0bd9966b3a4d93d5d9ccc1b2d8f0cd4e8e
   branch: master
+>>>>>>> staging
   specs:
     sparql-client (1.0.4.1)
       json_pure (>= 1.4)
@@ -34,7 +35,7 @@ GEM
     coderay (1.1.0)
     cube-ruby (0.0.3)
     daemons (1.1.9)
-    docile (1.1.0)
+    docile (1.1.1)
     eventmachine (1.0.3)
     i18n (0.6.5)
     json_pure (1.8.1)
@@ -45,7 +46,7 @@ GEM
     minitest (4.7.5)
     multi_json (1.8.2)
     net-http-persistent (2.9)
-    pry (0.9.12.3)
+    pry (0.9.12.4)
       coderay (~> 1.0)
       method_source (~> 0.8)
       slop (~> 3.4)
