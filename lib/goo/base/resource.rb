@@ -59,6 +59,9 @@ module Goo
             rescue ArgumentError => e
               (validation_errors[uattr] ||= {})[:existence] = e.message
             end
+            if self.class.name_with == :id && @id.nil?
+              (validation_errors[:id] ||= {})[:existence] = ":id must be set if configured in name_with"
+            end
           end
         end
 
@@ -78,7 +81,6 @@ module Goo
         if @id.nil?
           if self.class.name_with == :id
             raise IDGenerationError, ":id must be set if configured in name_with"
-            return nil
           end
           custom_name = self.class.name_with
           if custom_name.instance_of?(Symbol)
@@ -111,7 +113,7 @@ module Goo
       def exist?(from_valid=false)
         #generate id with proc
         begin
-          id() unless self.class.name_with.kind_of?(Symbol)
+          id() unless self.class.name_with.kind_of?(Symbol) 
         rescue IDGenerationError
         end
 
