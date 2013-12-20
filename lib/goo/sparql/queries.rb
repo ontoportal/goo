@@ -625,11 +625,11 @@ module Goo
 
             #dependent model creation
             if object.kind_of?(RDF::URI) && v != :id
-              if objects_new.include?(object)
-                object = objects_new[object]
-              else
-                range_for_v = klass.range(v)
-                if range_for_v
+              range_for_v = klass.range(v)
+              if range_for_v
+                if objects_new.include?(object)
+                  object = objects_new[object]
+                else
                   unless range_for_v.inmutable?
                     pre_val = nil
                     if models_by_id[id] &&

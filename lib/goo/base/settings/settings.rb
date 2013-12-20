@@ -268,7 +268,7 @@ module Goo
 
         def id_from_unique_attribute(attr,value_attr)
           if value_attr.nil?
-            raise ArgumentError, "`#{attr}` value is nil. Id for resource cannot be generated."
+            raise Goo::Base::IDGenerationError, "`#{attr}` value is nil. Id for resource cannot be generated."
           end
           uri_last_fragment = CGI.escape(value_attr)
           model_prefix_uri = id_prefix()
