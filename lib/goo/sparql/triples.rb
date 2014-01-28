@@ -11,7 +11,11 @@ module Goo
         model.class.attributes.each do |attr|
           next if model.class.collection?(attr)
           predicate = model.class.attribute_uri(attr)
-          value = model.send("#{attr}")
+          begin
+            value = model.send("#{attr}")
+          rescue Goo::Base::AttributeNotLoaded => e
+            next
+          end
           values = value.kind_of?(Array) ? value : [value]
           values.each do |v|
             if v.is_a?(Struct) #bnode
