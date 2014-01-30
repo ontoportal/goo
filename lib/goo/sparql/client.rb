@@ -44,7 +44,7 @@ module Goo
         if not status.success?
           raise Exception, "Rapper cannot parse #{format} file at #{file_path}: #{stderr}"
         end
-        filter_command = "grep -v '_:genid' #{dst_path} > #{dst_path_bnodes_out}"
+        filter_command = "LANG=C grep -v '_:genid' #{dst_path} > #{dst_path_bnodes_out}"
         stdout,stderr,status = Open3.capture3(filter_command)
         if not status.success?
           raise Exception, "could not `#{filter_command}`: #{stderr}"

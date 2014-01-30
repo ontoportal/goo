@@ -229,11 +229,35 @@ module Goo
         end
       end
 
+      def self.model_load(*options)
+        options = options.last
+        if options[:models] and options[:models].is_a?(Array) and\
+                             options[:models].length > Goo.slice_loading_size
+          options = options.dup
+          models = options[:models]
+          include_options = options[:include]
+          models_by_id = Hash.new
+          models.each_slice(Goo.slice_loading_size) do |model_slice|
+            options[:models] = model_slice
+            unless include_options.nil?
+              options[:include] = include_options.dup
+            end
+            model_load_sliced(options)
+            model_slice.each do |m|
+              models_by_id[m.id] = m
+            end
+          end
+          return models_by_id
+        else
+          return self.model_load_sliced(options)
+        end
+      end
       ##
       # always a list of attributes with subject == id
       ##
-      def self.model_load(*options)
+      def self.model_load_sliced(*options)
         options = options.last
+        #binding.pry if options[:models]
         ids = options[:ids]
         klass = options[:klass]
         incl = options[:include]

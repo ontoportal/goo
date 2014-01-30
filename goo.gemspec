@@ -13,4 +13,5 @@ Gem::Specification.new do |s|
   s.add_dependency("sparql-client")
   s.add_dependency("rest-client")
   s.add_dependency("redis")
+  s.add_dependency("pry")
 end

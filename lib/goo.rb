@@ -39,6 +39,8 @@ module Goo
   @@debug_enabled = false
   @@use_cache = false
 
+  @@slice_loading_size = 500
+
   def self.add_namespace(shortcut, namespace,default=false)
     if !(namespace.instance_of? RDF::Vocabulary)
       raise ArgumentError, "Namespace must be a RDF::Vocabulary object"
@@ -91,6 +93,14 @@ module Goo
 
   def self.use_cache?
     @@use_cache
+  end
+
+  def self.slice_loading_size=(value)
+    @@slice_loading_size = value
+  end
+
+  def self.slice_loading_size
+    return @@slice_loading_size
   end
 
   def self.queries_debug(flag)
