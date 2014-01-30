@@ -12,6 +12,7 @@ PATH
   remote: .
   specs:
     goo (0.0.2)
+      pry
       rdf (= 1.0.8)
       redis
       rest-client
@@ -34,18 +35,18 @@ GEM
     coderay (1.1.0)
     cube-ruby (0.0.3)
     daemons (1.1.9)
-    docile (1.1.1)
+    docile (1.1.2)
     eventmachine (1.0.3)
     i18n (0.6.9)
     json_pure (1.8.1)
     macaddr (1.6.1)
       systemu (~> 2.5.0)
     method_source (0.8.2)
-    mime-types (2.0)
+    mime-types (2.1)
     minitest (4.7.5)
-    multi_json (1.8.2)
-    net-http-persistent (2.9)
-    pry (0.9.12.4)
+    multi_json (1.8.4)
+    net-http-persistent (2.9.1)
+    pry (0.9.12.6)
       coderay (~> 1.0)
       method_source (~> 0.8)
       slop (~> 3.4)
@@ -54,12 +55,12 @@ GEM
       rack (>= 0.4)
     rack-post-body-to-params (0.1.8)
       activesupport (>= 2.3)
-    rack-protection (1.5.1)
+    rack-protection (1.5.2)
       rack
-    rake (10.1.0)
+    rake (10.1.1)
     rdf (1.0.8)
       addressable (>= 2.2)
-    redis (3.0.6)
+    redis (3.0.7)
     rest-client (1.6.7)
       mime-types (>= 1.16)
     rsolr (1.0.9)
