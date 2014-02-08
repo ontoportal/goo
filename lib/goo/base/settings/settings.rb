@@ -18,10 +18,6 @@ module Goo
 
         def model(*args)
 
-          if args.length == 0
-            binding.pry
-          end
-
           model_name = args[0]
           @model_name = model_name.to_sym
 

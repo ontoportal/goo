@@ -152,7 +152,6 @@ module Goo
             #graph_items_collection = attr
             #inverse_klass_collection = inverse_klass
             #return [nil, nil]
-            #binding.pry
           end
           predicate = inverse_klass.attribute_uri(inverse_opts[:attribute])
           return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, subject ]]
@@ -254,7 +253,6 @@ module Goo
       ##
       def self.model_load_sliced(*options)
         options = options.last
-        #binding.pry if options[:models]
         ids = options[:ids]
         klass = options[:klass]
         incl = options[:include]
@@ -746,7 +744,6 @@ module Goo
           #here we need a where call using collection
           #inverse_klass_collection.where
           #
-          #binding.pry
         end
 
         #remove from models_by_id elements that were not touched
