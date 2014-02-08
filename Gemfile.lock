@@ -12,6 +12,7 @@ PATH
   remote: .
   specs:
     goo (0.0.2)
+      pry
       rdf (= 1.0.8)
       redis
       rest-client
@@ -41,7 +42,7 @@ GEM
     macaddr (1.6.1)
       systemu (~> 2.5.0)
     method_source (0.8.2)
-    mime-types (2.0)
+    mime-types (2.1)
     minitest (4.7.5)
     multi_json (1.8.2)
     net-http-persistent (2.9)
@@ -59,7 +60,7 @@ GEM
     rake (10.1.0)
     rdf (1.0.8)
       addressable (>= 2.2)
-    redis (3.0.6)
+    redis (3.0.7)
     rest-client (1.6.7)
       mime-types (>= 1.16)
     rsolr (1.0.9)
