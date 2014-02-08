@@ -189,9 +189,6 @@ module Goo
         if klass.transitive?(attr)
           (query_options[:rules] ||=[]) << :SUBC
         end
-        if klass.alias?(attr)
-          #(query_options[:rules] ||=[]) << :SUBP
-        end
       end
 
       def self.patterns_for_match(klass,attr,value,graphs,patterns,unions,
@@ -542,7 +539,6 @@ module Goo
           offset = (page[:page_i]-1) * page[:page_size]
           select.slice(offset,page[:page_size])
         end
-        select.from(graphs)
         select.distinct(true)
         if query_options && !binding_as
           query_options[:rules] = query_options[:rules].map { |x| x.to_s }.join("+")
@@ -551,6 +547,15 @@ module Goo
           query_options = { rules: ["NONE"] }
           select.options[:query_options] = query_options
         end
+
+        unless options[:no_graphs]
+          select.from(graphs.uniq)
+        else
+          #still we need to use the graphs for caching
+          query_options = {} if query_options.nil?
+          query_options[:graphs] = graphs
+        end
+
         query_options.merge!(model_query_options) if model_query_options
         found = Set.new
         list_attributes = Set.new(klass.attributes(:list))
