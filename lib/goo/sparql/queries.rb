@@ -549,9 +549,7 @@ module Goo
         unless options[:no_graphs]
           select.from(graphs.uniq)
         else
-          #still we need to use the graphs for caching
-          query_options = {} if query_options.nil?
-          query_options[:graphs] = graphs
+          select.options[:graphs] = graphs.uniq
         end
 
         query_options.merge!(model_query_options) if model_query_options
