@@ -1,6 +1,6 @@
 GIT
   remote: git://github.com/ncbo/sparql-client.git
-  revision: e1dfb143a3097066f81bfe13393ed93ec01c37ad
+  revision: e6a2d6b4fda4e23d77a70c440f058bd08c801e26
   branch: staging
   specs:
     sparql-client (1.0.4.1)
@@ -23,7 +23,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (4.0.1)
+    activesupport (4.0.2)
       i18n (~> 0.6, >= 0.6.4)
       minitest (~> 4.2)
       multi_json (~> 1.3)
@@ -35,18 +35,18 @@ GEM
     coderay (1.1.0)
     cube-ruby (0.0.3)
     daemons (1.1.9)
-    docile (1.1.1)
+    docile (1.1.3)
     eventmachine (1.0.3)
-    i18n (0.6.5)
+    i18n (0.6.9)
     json_pure (1.8.1)
     macaddr (1.6.1)
       systemu (~> 2.5.0)
     method_source (0.8.2)
     mime-types (2.1)
     minitest (4.7.5)
-    multi_json (1.8.2)
-    net-http-persistent (2.9)
-    pry (0.9.12.4)
+    multi_json (1.8.4)
+    net-http-persistent (2.9.4)
+    pry (0.9.12.6)
       coderay (~> 1.0)
       method_source (~> 0.8)
       slop (~> 3.4)
@@ -55,9 +55,9 @@ GEM
       rack (>= 0.4)
     rack-post-body-to-params (0.1.8)
       activesupport (>= 2.3)
-    rack-protection (1.5.1)
+    rack-protection (1.5.2)
       rack
-    rake (10.1.0)
+    rake (10.1.1)
     rdf (1.0.8)
       addressable (>= 2.2)
     redis (3.0.7)
