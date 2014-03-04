@@ -152,7 +152,6 @@ module Goo
             #graph_items_collection = attr
             #inverse_klass_collection = inverse_klass
             #return [nil, nil]
-            #binding.pry
           end
           predicate = inverse_klass.attribute_uri(inverse_opts[:attribute])
           return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, subject ]]
@@ -188,9 +187,6 @@ module Goo
       def self.add_rules(attr,klass,query_options)
         if klass.transitive?(attr)
           (query_options[:rules] ||=[]) << :SUBC
-        end
-        if klass.alias?(attr)
-          #(query_options[:rules] ||=[]) << :SUBP
         end
       end
 
@@ -257,7 +253,6 @@ module Goo
       ##
       def self.model_load_sliced(*options)
         options = options.last
-        #binding.pry if options[:models]
         ids = options[:ids]
         klass = options[:klass]
         incl = options[:include]
@@ -542,7 +537,6 @@ module Goo
           offset = (page[:page_i]-1) * page[:page_size]
           select.slice(offset,page[:page_size])
         end
-        select.from(graphs)
         select.distinct(true)
         if query_options && !binding_as
           query_options[:rules] = query_options[:rules].map { |x| x.to_s }.join("+")
@@ -551,6 +545,13 @@ module Goo
           query_options = { rules: ["NONE"] }
           select.options[:query_options] = query_options
         end
+
+        unless options[:no_graphs]
+          select.from(graphs.uniq)
+        else
+          select.options[:graphs] = graphs.uniq
+        end
+
         query_options.merge!(model_query_options) if model_query_options
         found = Set.new
         list_attributes = Set.new(klass.attributes(:list))
@@ -741,7 +742,6 @@ module Goo
           #here we need a where call using collection
           #inverse_klass_collection.where
           #
-          #binding.pry
         end
 
         #remove from models_by_id elements that were not touched

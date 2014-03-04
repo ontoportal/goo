@@ -31,6 +31,7 @@ module Goo
         @rules = true
         @do_count = true
         @query_options = nil
+        @no_graphs = false
 
         #cache of retrieved predicates for unmapped queries
         #reused across pages
@@ -67,6 +68,11 @@ module Goo
             end
           end
         end while(changed)
+      end
+
+      def no_graphs
+        @no_graphs = true
+        return self
       end
 
       def retrieve_equivalent_predicates()
@@ -147,6 +153,7 @@ module Goo
                          filters: @filters, order_by: @order_by ,
                          read_only: @read_only, rules: @rules,
                          predicates: @predicates,
+                         no_graphs: @no_graphs,
                          equivalent_predicates: @equivalent_predicates }
 
 
