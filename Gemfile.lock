@@ -18,6 +18,7 @@ PATH
       rest-client
       rsolr
       sparql-client
+      systemu
       uuid
 
 GEM
