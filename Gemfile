@@ -7,6 +7,7 @@ gem 'pry'
 gem 'simplecov'
 gem 'minitest', '< 5.0'
 gem 'activesupport'
+gem 'addressable', '= 2.3.5'
 gem "uuid"
 gem 'cube-ruby', require: "cube"
 
