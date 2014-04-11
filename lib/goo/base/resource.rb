@@ -301,7 +301,9 @@ module Goo
         end
 
         if !batch_file
-          raise ArgumentError, "Object is not modified" unless modified?
+          if not modified?
+            return self
+          end
           raise Goo::Base::NotValidException, "Object is not valid. Check errors." unless valid?
         end
 
