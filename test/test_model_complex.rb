@@ -63,13 +63,14 @@ class TestModelComplex < MiniTest::Unit::TestCase
     assert_raises ArgumentError do
       x.methodBased= "aaaa"
     end
-    sub = Submission.new(name: "submission1").save
+    sub = Submission.new(name: "submissionX").save
     x.submission = sub
     x.id = RDF::URI.new "http://someiri.org/term/x"
     x.prefLabel = "x"
     x.save
     y = Term.find(x.id).in(sub).first
     y.delete
+    sub.delete
   end
 
   def test_multiple_collection()
