@@ -69,6 +69,9 @@ class TestModelComplex < MiniTest::Unit::TestCase
     x.prefLabel = "x"
     x.save
     y = Term.find(x.id).in(sub).first
+    assert_raises ArgumentError do
+      y.bring(:methodBased)
+    end
     y.delete
     sub.delete
   end

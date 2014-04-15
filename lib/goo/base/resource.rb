@@ -186,9 +186,15 @@ module Goo
         opts.each do |k|
           if k.kind_of?(Hash)
             k.each do |k2,v|
+              if self.class.handler?(k2)
+                raise ArgumentError, "Unable to bring a method based attr #{k2}"
+              end
               self.instance_variable_set("@#{k2}",nil)
             end
           else
+            if self.class.handler?(k)
+              raise ArgumentError, "Unable to bring a method based attr #{k}"
+            end
             self.instance_variable_set("@#{k}",nil)
           end
         end
