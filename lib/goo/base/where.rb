@@ -348,6 +348,9 @@ module Goo
           options = options.first
         end
         options.each do |opt|
+          if @klass.handler?(opt)
+            raise ArgumentError, "Method based attribute cannot be included"
+          end
           @include << opt if opt.instance_of?(Symbol)
           @include_embed.merge!(opt) if opt.instance_of?(Hash)
         end

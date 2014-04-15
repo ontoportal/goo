@@ -69,6 +69,12 @@ class TestModelComplex < MiniTest::Unit::TestCase
     x.id = RDF::URI.new "http://someiri.org/term/x"
     x.prefLabel = "x"
     x.save
+    assert_raises ArgumentError do
+      y = Term.find(x.id).in(sub).include(:methodBased).first
+    end
+    assert_raises ArgumentError do
+      y = Term.where.in(sub).include(:methodBased).all
+    end
     y = Term.find(x.id).in(sub).first
     assert_raises ArgumentError do
       y.bring(:methodBased)
