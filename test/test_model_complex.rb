@@ -59,6 +59,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
   def test_method_handler
     x = Term.new 
     y = x.methodBased
+    x.methodBased
     assert y == "aaaa"
     assert_raises ArgumentError do
       x.methodBased= "aaaa"

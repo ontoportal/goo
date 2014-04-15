@@ -242,7 +242,13 @@ module Goo
           end
           define_method("#{attr}") do |*args|
             if self.class.handler?(attr)
-              return self.send("#{self.class.handler(attr)}")
+              if @loaded_attributes.include?(attr)
+                return self.instance_variable_get("@#{attr}")
+              end
+              value = self.send("#{self.class.handler(attr)}")
+              self.instance_variable_set("@#{attr}",value)
+              @loaded_attributes << attr
+              return value
             end
             if (not @persistent) or @loaded_attributes.include?(attr)
               return self.instance_variable_get("@#{attr}")
