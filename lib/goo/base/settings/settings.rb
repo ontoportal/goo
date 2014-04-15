@@ -65,7 +65,8 @@ module Goo
             return atts
           end
           return @model_settings[:attributes].keys.
-            select{ |k| @model_settings[:attributes][k][:inverse].nil? }
+            select{ |k| @model_settings[:attributes][k][:inverse].nil? }.
+            select{ |k| !handler?(k) }
         end
 
         def inmutable?
