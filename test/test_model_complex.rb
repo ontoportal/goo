@@ -73,6 +73,9 @@ class TestModelComplex < MiniTest::Unit::TestCase
       y = Term.find(x.id).in(sub).include(:methodBased).first
     end
     assert_raises ArgumentError do
+      y = Term.find(x.id).in(sub).include(methodBased: [:prefLabel]).first
+    end
+    assert_raises ArgumentError do
       y = Term.where.in(sub).include(:methodBased).all
     end
     y = Term.find(x.id).in(sub).first
