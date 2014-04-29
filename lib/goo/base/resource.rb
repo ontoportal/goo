@@ -186,9 +186,15 @@ module Goo
         opts.each do |k|
           if k.kind_of?(Hash)
             k.each do |k2,v|
+              if self.class.handler?(k2)
+                raise ArgumentError, "Unable to bring a method based attr #{k2}"
+              end
               self.instance_variable_set("@#{k2}",nil)
             end
           else
+            if self.class.handler?(k)
+              raise ArgumentError, "Unable to bring a method based attr #{k}"
+            end
             self.instance_variable_set("@#{k}",nil)
           end
         end
@@ -301,7 +307,9 @@ module Goo
         end
 
         if !batch_file
-          raise ArgumentError, "Object is not modified" unless modified?
+          if not modified?
+            return self
+          end
           raise Goo::Base::NotValidException, "Object is not valid. Check errors." unless valid?
         end
 

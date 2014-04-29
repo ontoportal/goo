@@ -65,7 +65,8 @@ module Goo
             return atts
           end
           return @model_settings[:attributes].keys.
-            select{ |k| @model_settings[:attributes][k][:inverse].nil? }
+            select{ |k| @model_settings[:attributes][k][:inverse].nil? }.
+            select{ |k| !handler?(k) }
         end
 
         def inmutable?
@@ -137,6 +138,16 @@ module Goo
           return (@model_settings[:attributes][attr][:alias] == true)
         end
 
+        def handler?(attr)
+          return false if @model_settings[:attributes][attr].nil?
+          return (!@model_settings[:attributes][attr][:handler].nil?)
+        end
+
+        def handler(attr)
+          return false if @model_settings[:attributes][attr].nil?
+          return @model_settings[:attributes][attr][:handler]
+        end
+
         def inverse?(attr)
           return false if @model_settings[:attributes][attr].nil?
           return (!@model_settings[:attributes][attr][:inverse].nil?)
@@ -203,6 +214,9 @@ module Goo
           return if attr == :resource_id
           attr = attr.to_sym
           define_method("#{attr}=") do |*args|
+            if self.class.handler?(attr)
+              raise ArgumentError, "Method based attributes cannot be set"
+            end
             if self.class.inverse?(attr) && !(args && args.last.instance_of?(Hash) && args.last[:on_load])
               raise ArgumentError,
                 "`#{attr}` is an inverse attribute. Values cannot be assigned."
@@ -228,6 +242,15 @@ module Goo
             self.instance_variable_set("@#{attr}",value)
           end
           define_method("#{attr}") do |*args|
+            if self.class.handler?(attr)
+              if @loaded_attributes.include?(attr)
+                return self.instance_variable_get("@#{attr}")
+              end
+              value = self.send("#{self.class.handler(attr)}")
+              self.instance_variable_set("@#{attr}",value)
+              @loaded_attributes << attr
+              return value
+            end
             if (not @persistent) or @loaded_attributes.include?(attr)
               return self.instance_variable_get("@#{attr}")
             else
