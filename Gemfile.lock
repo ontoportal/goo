@@ -1,6 +1,6 @@
 GIT
   remote: git://github.com/ncbo/sparql-client.git
-  revision: e6a2d6b4fda4e23d77a70c440f058bd08c801e26
+  revision: 1cb3adaf2e47d1bc7189fc21e3395343276c488e
   branch: staging
   specs:
     sparql-client (1.0.4.1)
@@ -45,7 +45,7 @@ GEM
     method_source (0.8.2)
     mime-types (2.2)
     minitest (4.7.5)
-    multi_json (1.9.2)
+    multi_json (1.10.0)
     net-http-persistent (2.9.4)
     pry (0.9.12.6)
       coderay (~> 1.0)
@@ -58,7 +58,7 @@ GEM
       activesupport (>= 2.3)
     rack-protection (1.5.3)
       rack
-    rake (10.2.2)
+    rake (10.3.1)
     rdf (1.0.8)
       addressable (>= 2.2)
     redis (3.0.7)
