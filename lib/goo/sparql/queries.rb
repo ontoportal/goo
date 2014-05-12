@@ -717,8 +717,10 @@ module Goo
                 models_by_id[id][v] = object
               end
             else
-              unless object.nil? && !models_by_id[id].instance_variable_get("@#{v.to_s}").nil?
-                models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
+              if not models_by_id[id].class.handler?(v) 
+                unless object.nil? && !models_by_id[id].instance_variable_get("@#{v.to_s}").nil?
+                  models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
+                end
               end
             end
           end
