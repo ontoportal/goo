@@ -64,8 +64,6 @@ class Term < Goo::Base::Resource
     return "aaaa"
   end
 
-
->>>>>>> staging
 end
 
 class TestModelComplex < MiniTest::Unit::TestCase
