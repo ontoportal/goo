@@ -619,10 +619,7 @@ module Goo
                 pred = predicates_map[var] 
                 if models_by_id[id].respond_to?:klass #struct
                   models_by_id[id][:unmapped] ||= {}
-                  (models_by_id[id][:unmapped][pred] ||= []) << sol[:object]
-                  if models_by_id[id][:unmapped][pred].instance_of? array
-                    models_by_id[id][:unmapped][pred].uniq!
-                  end
+                  (models_by_id[id][:unmapped][pred] ||= Set.new) << sol[:object]
                 else
                   models_by_id[id].unmapped_set(pred,sol[:object])
                 end
@@ -798,6 +795,11 @@ module Goo
             klass.where.models(models_by_id.select { |x,y| ids.include?(x) }.values)
                           .in(collection)
                           .include(bnode: { attr => bnode_attrs}).all
+          end
+        end
+        if unmapped
+          models_by_id.each do |idm,m|
+            m.unmmaped_to_array
           end
         end
 

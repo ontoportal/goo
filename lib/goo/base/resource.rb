@@ -140,10 +140,15 @@ module Goo
 
       def unmapped_set(attribute,value)
         @unmapped ||= {}
-        (@unmapped[attribute] ||= []) << value
-        if @unmapped[attribute].length > 1
-          @unmapped[attribute].uniq!
+        (@unmapped[attribute] ||= Set.new) << value
+      end
+
+      def unmmaped_to_array
+        cpy = {}
+        @unmapped.each do |attr,v|
+          cpy[attr] = v.to_a
         end
+        @unmapped = cpy
       end
 
       def delete(*args)
