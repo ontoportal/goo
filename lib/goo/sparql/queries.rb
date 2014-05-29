@@ -92,12 +92,15 @@ module Goo
       def self.model_exist(model,id=nil,store=:main)
         id = id || model.id
         so = Goo.sparql_query_client(store).ask.from(model.graph).
-          whether([id, RDF.type, model.class.uri_type])
+          whether([id, RDF.type, model.class.uri_type(model.collection)])
         return so.true?
       end
 
       def self.query_filter_sparql(klass,filter,filter_patterns,filter_graphs,
-                                   filter_operations,internal_variables,inspected_patterns)
+                                   filter_operations,
+                                   internal_variables,
+                                   inspected_patterns,
+                                   collection)
         #create a object variable to project the value in the filter
         filter.filter_tree.each do |filter_operation|
           filter_pattern_match = {}
@@ -111,7 +114,8 @@ module Goo
             patterns_for_match(klass, attr, filter_pattern_match[attr],
                                filter_graphs, filter_patterns,
                                    [],internal_variables,
-                                   subject=:id,in_union=false,in_aggregate=false)
+                                   subject=:id,in_union=false,in_aggregate=false, 
+                                   collection=collection)
             inspected_patterns[filter_pattern_match] = internal_variables.last
           end
           filter_var = inspected_patterns[filter_pattern_match]
@@ -136,12 +140,15 @@ module Goo
             filter_operations << "#{sparql_op_string(filter_operation.operator)}"
             query_filter_sparql(klass,filter_operation.value,filter_patterns,
                                 filter_graphs,filter_operations,
-                                internal_variables,inspected_patterns)
+                                internal_variables,inspected_patterns,collection)
           end
         end
       end
 
-      def self.query_pattern(klass,attr,value=nil,subject=:id)
+      def self.query_pattern(klass,attr,**opts)
+        value = opts[:value] || nil
+        subject = opts[:subject] || :id
+        collection = opts[:collection] || nil
         value = value.id if value.class.respond_to?(:model_settings)
         if klass.attributes(:all).include?(attr) && klass.inverse?(attr)
           inverse_opts = klass.inverse_opts(attr)
@@ -153,25 +160,28 @@ module Goo
             #inverse_klass_collection = inverse_klass
             #return [nil, nil]
           end
-          predicate = inverse_klass.attribute_uri(inverse_opts[:attribute])
-          return [ inverse_klass.uri_type , [ value.nil? ? attr : value, predicate, subject ]]
+          predicate = inverse_klass.attribute_uri(inverse_opts[:attribute],collection)
+          return [ inverse_klass.uri_type(collection) ,
+                   [ value.nil? ? attr : value, predicate, subject ]]
         else
           predicate = nil
           if attr.is_a?(Symbol)
-            predicate = klass.attribute_uri(attr)
+            predicate = klass.attribute_uri(attr,collection)
           elsif attr.is_a?(RDF::URI)
             predicate = attr
           else
             raise ArgumentError, "Unknown attribute param for query `#{attr}`"
           end
           #unknown predicate
-          return [klass.uri_type, [ subject , predicate , value.nil? ? attr : value]]
+          return [klass.uri_type(collection),
+                   [ subject , predicate , value.nil? ? attr : value]]
         end
 
       end
 
       def self.walk_pattern(klass, match_patterns, graphs, patterns, unions,
-                                internal_variables,in_aggregate=false,query_options={})
+                                internal_variables,in_aggregate=false,query_options={},
+                                collection)
         match_patterns.each do |match,in_union|
           unions << [] if in_union
           match = match.is_a?(Symbol) ? { match => [] } : match
@@ -179,7 +189,9 @@ module Goo
             patterns_for_match(klass, attr, value, graphs, patterns,
                                unions,internal_variables,
                                subject=:id,in_union=in_union,
-                               in_aggregate=in_aggregate,query_options=query_options)
+                               in_aggregate=in_aggregate,
+                               query_options=query_options,
+                               collection)
           end
         end
       end
@@ -192,7 +204,7 @@ module Goo
 
       def self.patterns_for_match(klass,attr,value,graphs,patterns,unions,
                                   internal_variables,subject=:id,in_union=false,
-                                  in_aggregate=false,query_options={})
+                                  in_aggregate=false,query_options={},collection=nil)
         if value.respond_to?(:each) || value.instance_of?(Symbol)
           next_pattern = value.instance_of?(Array) ? value.first : value
 
@@ -206,7 +218,8 @@ module Goo
           internal_variables << value
         end
         add_rules(attr,klass,query_options)
-        graph, pattern = query_pattern(klass,attr,value,subject)
+        graph, pattern = 
+          query_pattern(klass,attr,value: value,subject: subject, collection: collection)
         if pattern
           if !in_union
             patterns << pattern
@@ -220,7 +233,7 @@ module Goo
           next_pattern.each do |next_attr,next_value|
             patterns_for_match(range, next_attr, next_value, graphs,
                   patterns, unions, internal_variables, subject=value,
-                  in_union, in_aggregate)
+                  in_union, in_aggregate, collection=collection)
           end
         end
       end
@@ -329,7 +342,7 @@ module Goo
           end
         end
 
-        graphs = [klass.uri_type]
+        graphs = [klass.uri_type(collection)]
         if collection
           if collection.is_a?Array and collection.length > 0
             graphs = collection.map { |x| x.id }
@@ -358,7 +371,7 @@ module Goo
 
         query_options = {}
         #TODO: breaks the reasoner
-        patterns = [[ :id ,RDF.type, klass.uri_type]]
+        patterns = [[ :id ,RDF.type, klass.uri_type(collection)]]
         unions = []
         optional_patterns = []
         graph_items_collection = nil
@@ -373,10 +386,10 @@ module Goo
             klass_attr = bnode_conf.keys.first
             bnode_extraction=klass_attr
             bnode = RDF::Node.new
-            patterns << [:id, klass.attribute_uri(klass_attr), bnode]
+            patterns << [:id, klass.attribute_uri(klass_attr,collection), bnode]
             bnode_conf[klass_attr].each do |in_bnode_attr|
               variables << in_bnode_attr
-              patterns << [bnode, klass.attribute_uri(in_bnode_attr), in_bnode_attr]
+              patterns << [bnode, klass.attribute_uri(in_bnode_attr,collection), in_bnode_attr]
             end
           elsif incl.first == :unmapped
             #a filter with for ?predicate will be included
@@ -407,7 +420,7 @@ module Goo
               incl.concat(embed_variables)
             end
             incl.each do |attr|
-              graph, pattern = query_pattern(klass,attr)
+              graph, pattern = query_pattern(klass,attr,collection: collection)
               add_rules(attr,klass,query_options)
               optional_patterns << pattern if pattern
               graphs << graph if graph && (!klass.collection_opts || klass.inverse?(attr))
@@ -420,7 +433,7 @@ module Goo
           #make it deterministic - for caching
           graph_match_iteration = Goo::Base::PatternIteration.new(graph_match)
           walk_pattern(klass,graph_match_iteration,graphs,patterns,unions,
-                             internal_variables,in_aggregate=false,query_options)
+                             internal_variables,in_aggregate=false,query_options,collection)
           graphs.uniq!
         end
 
@@ -441,7 +454,7 @@ module Goo
             filter_operations = []
             type = query_filter_sparql(klass,query_filter,filter_patterns,filter_graphs,
                                                 filter_operations, internal_variables,
-                                                 inspected_patterns)
+                                                 inspected_patterns,collection)
             query_filter_str << filter_operations.join(" ")
             graphs.concat(filter_graphs) if filter_graphs.length > 0
             if filter_patterns.length > 0
@@ -462,7 +475,7 @@ module Goo
             graph_match_iteration =
               Goo::Base::PatternIteration.new(Goo::Base::Pattern.new(agg.pattern))
             walk_pattern(klass,graph_match_iteration,graphs,agg_patterns,unions,
-                             internal_variables,in_aggregate=agg.aggregate)
+                             internal_variables,in_aggregate=agg.aggregate,collection)
             if agg_patterns.length > 0
               projection = "#{internal_variables.last.to_s}_projection".to_sym
               aggregate_on_attr = internal_variables.last.to_s
@@ -482,7 +495,7 @@ module Goo
           order_by = order_by.first
           #simple ordering ... needs to use pattern inspection
           order_by.each do |attr,direction|
-            quad = query_pattern(klass,attr,nil,:id)
+            quad = query_pattern(klass,attr)
             patterns << quad[1]
           end
         end
@@ -564,7 +577,7 @@ module Goo
         expand_equivalent_predicates(select,equivalent_predicates)
 
         select.each_solution do |sol|
-          next if sol[:some_type] && klass.type_uri != sol[:some_type]
+          next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
           if count
             return sol[:count_var].object
           end
@@ -606,10 +619,7 @@ module Goo
                 pred = predicates_map[var] 
                 if models_by_id[id].respond_to?:klass #struct
                   models_by_id[id][:unmapped] ||= {}
-                  (models_by_id[id][:unmapped][pred] ||= []) << sol[:object]
-                  if models_by_id[id][:unmapped][pred].instance_of? array
-                    models_by_id[id][:unmapped][pred].uniq!
-                  end
+                  (models_by_id[id][:unmapped][pred] ||= Set.new) << sol[:object]
                 else
                   models_by_id[id].unmapped_set(pred,sol[:object])
                 end
@@ -740,12 +750,6 @@ module Goo
           end
         end
 
-        if graph_items_collection
-          #here we need a where call using collection
-          #inverse_klass_collection.where
-          #
-        end
-
         #remove from models_by_id elements that were not touched
         models_by_id.select! { |k,m| found.include?(k) }
 
@@ -791,6 +795,11 @@ module Goo
             klass.where.models(models_by_id.select { |x,y| ids.include?(x) }.values)
                           .in(collection)
                           .include(bnode: { attr => bnode_attrs}).all
+          end
+        end
+        if unmapped
+          models_by_id.each do |idm,m|
+            m.unmmaped_to_array
           end
         end
 

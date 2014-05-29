@@ -140,10 +140,15 @@ module Goo
 
       def unmapped_set(attribute,value)
         @unmapped ||= {}
-        (@unmapped[attribute] ||= []) << value
-        if @unmapped[attribute].length > 1
-          @unmapped[attribute].uniq!
+        (@unmapped[attribute] ||= Set.new) << value
+      end
+
+      def unmmaped_to_array
+        cpy = {}
+        @unmapped.each do |attr,v|
+          cpy[attr] = v.to_a
         end
+        @unmapped = cpy
       end
 
       def delete(*args)
@@ -238,7 +243,7 @@ module Goo
         klass.attributes.each do |attr|
           next if inst.class.collection?(attr) #collection is already there
           next unless inst.respond_to?(attr)
-          attr_uri = klass.attribute_uri(attr).to_s
+          attr_uri = klass.attribute_uri(attr,inst.collection).to_s
           if unmapped_string_keys.include?(attr_uri.to_s) ||
               (equivalent_predicates && equivalent_predicates.include?(attr_uri))
             object = nil
@@ -381,7 +386,11 @@ module Goo
         if @unmapped
           all_attr_uris = Set.new
           self.class.attributes.each do |attr|
-            all_attr_uris << self.class.attribute_uri(attr)
+            if self.class.collection_opts
+              all_attr_uris << self.class.attribute_uri(attr,self.collection)
+            else
+              all_attr_uris << self.class.attribute_uri(attr)
+            end
           end
           @unmapped.each do |attr,values|
             unless all_attr_uris.include?(attr)
