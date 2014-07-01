@@ -253,7 +253,8 @@ module Goo
                 break if object
               end
               if object.nil?
-                inst.send("#{attr}=",list_attrs.include?(attr) ? [] : nil, on_load: true)
+                inst.send("#{attr}=",
+                           list_attrs.include?(attr) ? [] : nil, on_load: true)
                 next
               end
             else
@@ -261,7 +262,8 @@ module Goo
             end
             object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
             if klass.range(attr)
-              object = object.map { |o| o.is_a?(RDF::URI) ? klass.range_object(attr,o) : o }
+              object = object.map { |o|
+                o.is_a?(RDF::URI) ? klass.range_object(attr,o) : o }
             end
             unless list_attrs.include?(attr)
               object = object.first
@@ -270,9 +272,20 @@ module Goo
               inst[attr] = object
             else
               inst.send("#{attr}=",object, on_load: true)
+              if inst.id.to_s == "http://purl.obolibrary.org/obo/IAO_0000415"
+                if attr == :definition
+                #  binding.pry
+                end
+              end
             end
           else
-            inst.send("#{attr}=",list_attrs.include?(attr) ? [] : nil, on_load: true)
+            inst.send("#{attr}=",
+                      list_attrs.include?(attr) ? [] : nil, on_load: true)
+            if inst.id.to_s == "http://purl.obolibrary.org/obo/IAO_0000415"
+              if attr == :definition
+               # binding.pry
+              end
+            end
           end
 
         end
