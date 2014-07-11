@@ -39,7 +39,7 @@ module Goo
         dst_path = File.join(dir,"data.nt")
         dst_path_bnodes_out = File.join(dir,"data_no_bnodes.nt")
         out_format = format == "nquads" ? "nquads" : "ntriples"
-        rapper_command_call = "rapper -i #{format} -o #{out_format} #{file_path} > #{dst_path}" 
+        rapper_command_call = "rapper -i #{format} -o #{out_format} #{file_path} > #{dst_path}"
         stdout,stderr,status = Open3.capture3(rapper_command_call)
         if not status.success?
           raise Exception, "Rapper cannot parse #{format} file at #{file_path}: #{stderr}"
@@ -127,7 +127,7 @@ module Goo
         params = {
           method: :delete,
           url: "#{url.to_s}#{graph.to_s}",
-          timeout: -1
+          timeout: nil
         }
         start = Time.now
         attempts = 0
@@ -141,7 +141,7 @@ module Goo
           end
         end
         if @cube
-          @cube.send("sparql_write_data", DateTime.now, 
+          @cube.send("sparql_write_data", DateTime.now,
             duration_ms: ((Time.now - start)*1000).ceil,
             type_write: :delete_rest) rescue nil
         end
@@ -151,7 +151,7 @@ module Goo
         start = Time.new
         slices,dir = slice_file(file_path,mime_type_in)
         if @cube
-          @cube.send("sparql_slice_file", DateTime.now, 
+          @cube.send("sparql_slice_file", DateTime.now,
             duration_ms: ((Time.now - start)*1000).ceil,
             graph: graph,
             file_size: File.new(file_path).size) rescue nil
@@ -174,7 +174,7 @@ module Goo
              "mime-type" => mime_type
             },
             headers: {"mime-type" => mime_type},
-            timeout: -1
+            timeout: nil
           }
           #for some reason \\\\ breaks parsing
           params[:payload][:data] =
@@ -182,7 +182,7 @@ module Goo
           t0 = Time.now
           response = RestClient::Request.execute(params)
           if @cube
-            @cube.send("sparql_write_data", DateTime.now, 
+            @cube.send("sparql_write_data", DateTime.now,
               duration_ms: ((Time.now - start)*1000).ceil,
               triples: num_triples,
               graph: graph.to_s,
@@ -198,7 +198,7 @@ module Goo
           puts e.backtrace
         end
         return response
-       
+
       end
 
       def append_data_triples_slice(graph,data,mime_type)
@@ -221,7 +221,7 @@ module Goo
           url: "#{url.to_s}#{graph.to_s}",
           payload: File.read(file_path),
           headers: {content_type: mime_type},
-          timeout: -1
+          timeout: nil
         }
         result = RestClient::Request.execute(params)
         Goo.sparql_query_client.cache_invalidate_graph(graph)
@@ -243,7 +243,7 @@ module Goo
             "mime-type" => mime_type
           },
           headers: {"mime-type" => mime_type},
-          timeout: -1
+          timeout: nil
         }
         result = RestClient::Request.execute(params)
         Goo.sparql_query_client.cache_invalidate_graph(graph)
@@ -268,7 +268,7 @@ module Goo
            "mime-type" => mime_type
           },
           headers: {"mime-type" => mime_type},
-          timeout: -1
+          timeout: nil
         }
         result = RestClient::Request.execute(params)
         Goo.sparql_query_client.cache_invalidate_graph(graph)
@@ -284,7 +284,7 @@ module Goo
         params = {
           method: :delete,
           url: "#{url.to_s}#{graph.to_s}",
-          timeout: -1
+          timeout: nil
         }
         result = RestClient::Request.execute(params)
         Goo.sparql_query_client.cache_invalidate_graph(graph)
