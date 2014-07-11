@@ -30,7 +30,7 @@ module TestChunkWrite
           params = {
             method: :delete,
             url: "#{url.to_s}#{graph.to_s}",
-            timeout: -1
+            timeout: nil
           }
         RestClient::Request.execute(params)
         end
@@ -89,7 +89,7 @@ module TestChunkWrite
         url: "#{url.to_s}#{ONT_ID}",
         payload: File.read(ntriples_file_path),
         headers: {content_type: "application/x-turtle"},
-        timeout: -1
+        timeout: nil
       }
       RestClient::Request.execute(params)
 
@@ -101,8 +101,8 @@ module TestChunkWrite
       }
       sleep(1.5)
       count_queries = 0
-      tq = Thread.new { 
-       5.times do 
+      tq = Thread.new {
+       5.times do
          oq = "SELECT (count(?s) as ?c) WHERE { ?s a ?o }"
          Goo.sparql_query_client.query(oq).each do |sol|
            assert sol[:c].object > 0
@@ -110,25 +110,25 @@ module TestChunkWrite
          count_queries += 1
        end
       }
- 
+
       tq.join
       assert tput.alive?
       assert count_queries == 5
       tput.join
- 
+
       triples_no_bnodes = 25293
       count = "SELECT (count(?s) as ?c) WHERE { GRAPH <#{ONT_ID_EXTRA}> { ?s ?p ?o }}"
       Goo.sparql_query_client.query(count).each do |sol|
         assert sol[:c].object == triples_no_bnodes
       end
- 
+
       tdelete = Thread.new {
         Goo.sparql_data_client.delete_graph(ONT_ID_EXTRA)
       }
       sleep(1.5)
       count_queries = 0
-      tq = Thread.new { 
-       5.times do 
+      tq = Thread.new {
+       5.times do
          oq = "SELECT (count(?s) as ?c) WHERE { ?s a ?o }"
          Goo.sparql_query_client.query(oq).each do |sol|
            assert sol[:c].object > 0
@@ -155,7 +155,7 @@ module TestChunkWrite
         url: "#{url.to_s}#{ONT_ID}",
         payload: File.read(ntriples_file_path),
         headers: {content_type: "application/x-turtle"},
-        timeout: -1
+        timeout: nil
       }
       RestClient::Request.execute(params)
 
