@@ -559,6 +559,12 @@ module Goo
           select.options[:query_options] = query_options
         end
 
+        if not graphs.nil?
+          if graphs.length > 0
+            graphs.select! { |g| g.to_s["owl#Class"].nil? }
+          end
+        end
+
         unless options[:no_graphs]
           select.from(graphs.uniq)
         else
@@ -575,6 +581,7 @@ module Goo
         end
 
         expand_equivalent_predicates(select,equivalent_predicates)
+
 
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
