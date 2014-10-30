@@ -52,10 +52,20 @@ module Goo
         return [dst_path_bnodes_out],dir
       end
 
+      class DropGraph
+        def initialize(graph)
+          @graph = graph
+        end
+        def options
+          return { :graph => @graph.to_s }
+        end
+        def to_s
+          return "DROP GRAPH <#{@graph.to_s}>"
+        end
+      end
+
       def delete_data_slices(graph)
-        Goo.sparql_update_client.update(
-          "DROP GRAPH <#{graph.to_s}>"
-        )
+        Goo.sparql_update_client.update(DropGraph.new(graph))
       end
 
       def append_triples_slice(graph,file_path,mime_type_in)
