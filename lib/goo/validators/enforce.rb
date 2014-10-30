@@ -89,7 +89,10 @@ module Goo
           when Proc
             # This should return an array like [:name_of_error1, "Error message 1", :name_of_error2, "Error message 2"]
             errors = opt.call(inst, attr)
-            errors.each_slice(2) {|e| add_error(e[0].to_sym, errors_by_opt, e[1])}
+            errors.each_slice(2) do |e|
+              next if e.nil? || e.compact.empty?
+              add_error(e[0].to_sym, errors_by_opt, e[1]) rescue binding.pry
+            end
           else
             model_range = opt.respond_to?(:shape_attribute) ? opt : Goo.model_by_name(opt)
             if model_range and !value.nil?
