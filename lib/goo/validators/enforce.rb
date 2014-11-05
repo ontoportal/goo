@@ -87,8 +87,12 @@ module Goo
           when :date_time, DateTime
             add_error(opt, errors_by_opt, enforce_type(attr,DateTime,value)) unless value.nil?
           when Proc
-            validator_name, error_message = opt.call(inst, attr)
-            add_error(validator_name.to_sym, errors_by_opt, error_message) unless error_message.nil?
+            # This should return an array like [:name_of_error1, "Error message 1", :name_of_error2, "Error message 2"]
+            errors = opt.call(inst, attr)
+            errors.each_slice(2) do |e|
+              next if e.nil? || e.compact.empty?
+              add_error(e[0].to_sym, errors_by_opt, e[1]) rescue binding.pry
+            end
           else
             model_range = opt.respond_to?(:shape_attribute) ? opt : Goo.model_by_name(opt)
             if model_range and !value.nil?
