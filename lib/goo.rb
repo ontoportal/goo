@@ -274,6 +274,7 @@ module Goo
   end
 
   def self.write_in_chunks?
+    return true
     return false
   end
 
