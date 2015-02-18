@@ -58,19 +58,19 @@ module Goo
     @@sparql_backends = @@sparql_backends.dup
     @@sparql_backends[name] = opts
     @@sparql_backends[name][:query]=Goo::SPARQL::Client.new(opts[:query],
-                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded",
                    read_timeout: 10000,
                    validate: false,
                    redis_cache: @@redis_client,
                    cube_options: @@cube_options})
     @@sparql_backends[name][:update]=Goo::SPARQL::Client.new(opts[:update],
-                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded",
                    read_timeout: 10000,
                    validate: false,
                    redis_cache: @@redis_client,
                    cube_options: @@cube_options})
     @@sparql_backends[name][:data]=Goo::SPARQL::Client.new(opts[:data],
-                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded",
                    read_timeout: 10000,
                    validate: false,
                    redis_cache: @@redis_client,
@@ -80,10 +80,10 @@ module Goo
 
   def self.test_reset
     if @@sparql_backends[:main][:query].url.to_s["localhost"].nil?
-      raise Exception, "only for testing" 
+      raise Exception, "only for testing"
     end
     @@sparql_backends[:main][:query]=Goo::SPARQL::Client.new("http://localhost:9000/sparql/",
-                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded", 
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded",
                    read_timeout: 300,
                   redis_cache: @@redis_client })
   end
@@ -274,7 +274,7 @@ module Goo
   end
 
   def self.write_in_chunks?
-    true
+    return false
   end
 
   #A debug middleware for rack applications
