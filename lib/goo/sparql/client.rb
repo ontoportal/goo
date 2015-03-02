@@ -200,17 +200,7 @@ module Goo
       end
 
       def delete_graph(graph)
-        if Goo.write_in_chunks?
-          result = delete_data_slices(graph)
-          Goo.sparql_query_client.cache_invalidate_graph(graph)
-          return result
-        end
-        params = {
-          method: :delete,
-          url: "#{url.to_s}#{graph.to_s}",
-          timeout: nil
-        }
-        result = RestClient::Request.execute(params)
+        result = delete_data_slices(graph)
         Goo.sparql_query_client.cache_invalidate_graph(graph)
         return result
       end
