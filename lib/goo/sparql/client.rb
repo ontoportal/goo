@@ -29,6 +29,21 @@ module Goo
         return 1.2
       end
 
+      class DropGraph
+        def initialize(g)
+          @graph = g
+          @caching_options = { :graph => @graph.to_s }
+        end
+        def to_s
+          return "DROP GRAPH <#{@graph.to_s}>"
+        end
+        def options
+          #Returns the caching option
+          return @caching_options
+        end
+      end
+
+      #This should be remove soon
       def slice_file(file_path,mime_type)
         mime_type = "application/rdf+xml" if mime_type.nil?
         format = MIMETYPE_RAPPER_MAP[mime_type]
@@ -50,18 +65,6 @@ module Goo
           raise Exception, "could not `#{filter_command}`: #{stderr}"
         end
         return [dst_path_bnodes_out],dir
-      end
-
-      class DropGraph
-        def initialize(graph)
-          @graph = graph
-        end
-        def options
-          return { :graph => @graph.to_s }
-        end
-        def to_s
-          return "DROP GRAPH <#{@graph.to_s}>"
-        end
       end
 
       def delete_data_slices(graph)
@@ -197,17 +200,7 @@ module Goo
       end
 
       def delete_graph(graph)
-        if Goo.write_in_chunks?
-          result = delete_data_slices(graph)
-          Goo.sparql_query_client.cache_invalidate_graph(graph)
-          return result
-        end
-        params = {
-          method: :delete,
-          url: "#{url.to_s}#{graph.to_s}",
-          timeout: nil
-        }
-        result = RestClient::Request.execute(params)
+        result = delete_data_slices(graph)
         Goo.sparql_query_client.cache_invalidate_graph(graph)
         return result
       end
