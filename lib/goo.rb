@@ -273,9 +273,8 @@ module Goo
     @@uuid.generate
   end
 
-  def self.write_in_chunks?
+  def self.filter_bnodes?
     return true
-    return false
   end
 
   #A debug middleware for rack applications

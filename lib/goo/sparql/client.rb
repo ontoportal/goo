@@ -43,14 +43,13 @@ module Goo
         end
       end
 
-      #This should be remove soon
-      def slice_file(file_path,mime_type)
+      def bnodes_filter_file(file_path,mime_type)
         mime_type = "application/rdf+xml" if mime_type.nil?
         format = MIMETYPE_RAPPER_MAP[mime_type]
         if format.nil?
           raise Exception, "mime_type #{mime_type} not supported in slicing"
         end
-        dir = Dir.mktmpdir("file_slice")
+        dir = Dir.mktmpdir("file_nobnodes")
         dst_path = File.join(dir,"data.nt")
         dst_path_bnodes_out = File.join(dir,"data_no_bnodes.nt")
         out_format = format == "nquads" ? "nquads" : "ntriples"
@@ -64,56 +63,39 @@ module Goo
         if not status.success?
           raise Exception, "could not `#{filter_command}`: #{stderr}"
         end
-        return [dst_path_bnodes_out],dir
+        return dst_path_bnodes_out,dir
       end
 
-      def delete_data_slices(graph)
+      def delete_data_graph(graph)
         Goo.sparql_update_client.update(DropGraph.new(graph))
       end
 
-      def append_triples_slice(graph,file_path,mime_type_in)
-        start = Time.new
-        slices,dir = slice_file(file_path,mime_type_in)
-        if @cube
-          @cube.send("sparql_slice_file", DateTime.now,
-            duration_ms: ((Time.now - start)*1000).ceil,
-            graph: graph,
-            file_size: File.new(file_path).size) rescue nil
-        end
+      def append_triples_no_bnodes(graph,file_path,mime_type_in)
+        bnodes_filter,dir = bnodes_filter_file(file_path,mime_type_in)
         mime_type = "application/x-turtle"
         if mime_type_in == "text/x-nquads"
           mime_type = "text/x-nquads"
           graph = "http://data.bogus.graph/uri"
         end
-        response = nil
-        slices.each do |slice_path|
-          data_slice = File.read(slice_path)
-          num_triples = data_slice.split("\n").length
-          params = {
-            method: :post,
-            url: "#{url.to_s}",
-            payload: {
-             graph: graph.to_s,
-             data: data_slice,
-             "mime-type" => mime_type
-            },
-            headers: {"mime-type" => mime_type},
-            timeout: nil
-          }
-          #for some reason \\\\ breaks parsing
-          params[:payload][:data] =
-           params[:payload][:data].split("\n").map { |x| x.sub("\\\\","") }.join("\n")
-          response = RestClient::Request.execute(params)
-          if @cube
-            @cube.send("sparql_write_data", DateTime.now,
-              duration_ms: ((Time.now - start)*1000).ceil,
-              triples: num_triples,
-              graph: graph.to_s,
-              type_write: :append_slice) rescue nil
-          end
-          File.delete(slice_path)
-          sleep(status_based_sleep_time(:append))
-        end
+        data_file = File.read(bnodes_filter)
+        params = {
+          method: :post,
+          url: "#{url.to_s}",
+          payload: {
+           graph: graph.to_s,
+           data: data_file,
+           "mime-type" => mime_type
+          },
+          headers: {"mime-type" => mime_type},
+          timeout: nil
+        }
+        #for some reason \\\\ breaks parsing
+        params[:payload][:data] =
+         params[:payload][:data].split("\n").map { |x| x.sub("\\\\","") }.join("\n")
+        response = RestClient::Request.execute(params)
+
+        File.delete(bnodes_filter)
+
         begin
           FileUtils.rm_rf(dir)
         rescue => e
@@ -121,21 +103,20 @@ module Goo
           puts e.backtrace
         end
         return response
-
       end
 
-      def append_data_triples_slice(graph,data,mime_type)
+      def append_data_triples(graph,data,mime_type)
         f = Tempfile.open('data_triple_store')
         f.write(data)
         f.close()
-        res = append_triples_slice(graph,f.path,mime_type)
+        res = append_triples_no_bnodes(graph,f.path,mime_type)
         return res
       end
 
       def put_triples(graph,file_path,mime_type=nil)
-        if Goo.write_in_chunks?
+        if Goo.filter_bnodes?
           delete_graph(graph)
-          result =  append_triples_slice(graph,file_path,mime_type)
+          result =  append_triples_no_bnodes(graph,file_path,mime_type)
           Goo.sparql_query_client.cache_invalidate_graph(graph)
           return result
         end
@@ -153,8 +134,8 @@ module Goo
       end
 
       def append_triples(graph,data,mime_type=nil)
-        if Goo.write_in_chunks?
-          result = append_data_triples_slice(graph,data,mime_type)
+        if Goo.filter_bnodes?
+          result = append_data_triples(graph,data,mime_type)
           Goo.sparql_query_client.cache_invalidate_graph(graph)
           return result
         end
@@ -178,8 +159,8 @@ module Goo
         if mime_type == "text/nquads" && !graph.instance_of?(Array)
           raise Exception, "Nquads need a list of graphs, #{graph} provided"
         end
-        if Goo.write_in_chunks?
-          result = append_triples_slice(graph,file_path,mime_type)
+        if Goo.filter_bnodes?
+          result = append_triples_no_bnodes(graph,file_path,mime_type)
           Goo.sparql_query_client.cache_invalidate_graph(graph)
           return result
         end
@@ -200,7 +181,7 @@ module Goo
       end
 
       def delete_graph(graph)
-        result = delete_data_slices(graph)
+        result = delete_data_graph(graph)
         Goo.sparql_query_client.cache_invalidate_graph(graph)
         return result
       end
