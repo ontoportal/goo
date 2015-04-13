@@ -384,13 +384,4 @@ To trigger the retrieval of read-only objects in Goo we call the `.read_only` wh
 
 ```ruby
 User.where.include(:username, :email).read_only
-```
-
-###Aggregators
-
-documentation TODO just an example ...
-
-
-###Profiler
-
-Implemented … documentation TODO
+``` 
