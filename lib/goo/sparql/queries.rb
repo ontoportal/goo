@@ -30,7 +30,7 @@ module Goo
                   if eq_p.include?(pattern.predicate.to_s)
                     if attribute_mappings.include?(pattern.predicate.to_s)
                       #reuse filter
-                      pattern.predicate = 
+                      pattern.predicate =
                         RDF::Query::Variable.new(attribute_mappings[pattern.predicate.to_s])
                     else
                       query_predicate = pattern.predicate
@@ -114,7 +114,7 @@ module Goo
             patterns_for_match(klass, attr, filter_pattern_match[attr],
                                filter_graphs, filter_patterns,
                                    [],internal_variables,
-                                   subject=:id,in_union=false,in_aggregate=false, 
+                                   subject=:id,in_union=false,in_aggregate=false,
                                    collection=collection)
             inspected_patterns[filter_pattern_match] = internal_variables.last
           end
@@ -218,7 +218,7 @@ module Goo
           internal_variables << value
         end
         add_rules(attr,klass,query_options)
-        graph, pattern = 
+        graph, pattern =
           query_pattern(klass,attr,value: value,subject: subject, collection: collection)
         if pattern
           if !in_union
@@ -335,7 +335,7 @@ module Goo
 
         if models
           models.each do |m|
-            if !m.respond_to?:klass #read only
+            if not m.nil? and !m.respond_to?:klass #read only
               raise ArgumentError,
               "To load attributes the resource must be persistent" unless m.persistent?
             end
@@ -479,7 +479,7 @@ module Goo
             if agg_patterns.length > 0
               projection = "#{internal_variables.last.to_s}_projection".to_sym
               aggregate_on_attr = internal_variables.last.to_s
-              aggregate_on_attr = 
+              aggregate_on_attr =
                 aggregate_on_attr[0..aggregate_on_attr.index("_agg_")-1].to_sym
               (aggregate_projections ||={})[projection] = [agg.aggregate, aggregate_on_attr]
               (aggregate_vars ||= []) << [ internal_variables.last,
@@ -554,7 +554,7 @@ module Goo
         if query_options && !binding_as
           query_options[:rules] = query_options[:rules].map { |x| x.to_s }.join("+")
           select.options[:query_options] = query_options
-        else 
+        else
           query_options = { rules: ["NONE"] }
           select.options[:query_options] = query_options
         end
@@ -613,7 +613,7 @@ module Goo
             models_by_id[id] = klass_model
           end
           if unmapped
-            if predicates_map.nil? 
+            if predicates_map.nil?
               if models_by_id[id].respond_to?:klass #struct
                 models_by_id[id][:unmapped] ||= {}
                 (models_by_id[id][:unmapped][sol[:predicate]] ||= []) << sol[:object]
@@ -623,7 +623,7 @@ module Goo
             else
               var = sol[:bind_as].to_s.to_sym
               if predicates_map.include?(var)
-                pred = predicates_map[var] 
+                pred = predicates_map[var]
                 if models_by_id[id].respond_to?:klass #struct
                   models_by_id[id][:unmapped] ||= {}
                   (models_by_id[id][:unmapped][pred] ||= Set.new) << sol[:object]
@@ -721,7 +721,7 @@ module Goo
                 models_by_id[id][v] = object
               end
             else
-              if not models_by_id[id].class.handler?(v) 
+              if not models_by_id[id].class.handler?(v)
                 unless object.nil? && !models_by_id[id].instance_variable_get("@#{v.to_s}").nil?
                   models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
                 end

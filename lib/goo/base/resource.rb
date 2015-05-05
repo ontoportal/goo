@@ -113,7 +113,7 @@ module Goo
       def exist?(from_valid=false)
         #generate id with proc
         begin
-          id() unless self.class.name_with.kind_of?(Symbol) 
+          id() unless self.class.name_with.kind_of?(Symbol)
         rescue IDGenerationError
         end
 
@@ -272,11 +272,6 @@ module Goo
               inst[attr] = object
             else
               inst.send("#{attr}=",object, on_load: true)
-              if inst.id.to_s == "http://purl.obolibrary.org/obo/IAO_0000415"
-                if attr == :definition
-                #  binding.pry
-                end
-              end
             end
           else
             inst.send("#{attr}=",
