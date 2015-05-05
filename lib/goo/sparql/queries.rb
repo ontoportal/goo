@@ -334,9 +334,8 @@ module Goo
         end
 
         if models
-          models.select! { |x| !x.nil? }
           models.each do |m|
-            if !m.respond_to?:klass #read only
+            if not m.nil? and !m.respond_to?:klass #read only
               raise ArgumentError,
               "To load attributes the resource must be persistent" unless m.persistent?
             end
