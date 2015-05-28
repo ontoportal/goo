@@ -58,7 +58,8 @@ module Goo
         if not status.success?
           raise Exception, "Rapper cannot parse #{format} file at #{file_path}: #{stderr}"
         end
-        filter_command = "LANG=C grep -v '_:genid' #{dst_path} > #{dst_path_bnodes_out}"
+        filter_command =
+          "LANG=C grep -v '_:genid' #{dst_path} > #{dst_path_bnodes_out}"
         stdout,stderr,status = Open3.capture3(filter_command)
         if not status.success?
           raise Exception, "could not `#{filter_command}`: #{stderr}"
@@ -71,7 +72,13 @@ module Goo
       end
 
       def append_triples_no_bnodes(graph,file_path,mime_type_in)
-        bnodes_filter,dir = bnodes_filter_file(file_path,mime_type_in)
+        bnodes_filter = nil
+        dir = nil
+        if file_path.end_with?("ttl")
+          bnodes_filter = file_path
+        else
+	  bnodes_filter,dir = bnodes_filter_file(file_path,mime_type_in)
+        end
         mime_type = "application/x-turtle"
         if mime_type_in == "text/x-nquads"
           mime_type = "text/x-nquads"
@@ -94,13 +101,15 @@ module Goo
          params[:payload][:data].split("\n").map { |x| x.sub("\\\\","") }.join("\n")
         response = RestClient::Request.execute(params)
 
-        File.delete(bnodes_filter)
+        unless  dir.nil?
+		File.delete(bnodes_filter)
 
-        begin
-          FileUtils.rm_rf(dir)
-        rescue => e
-          puts "Error deleting tmp file #{dir}"
-          puts e.backtrace
+		begin
+		  FileUtils.rm_rf(dir)
+		rescue => e
+		  puts "Error deleting tmp file #{dir}"
+		  puts e.backtrace
+		end
         end
         return response
       end
