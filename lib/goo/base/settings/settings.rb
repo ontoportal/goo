@@ -269,7 +269,7 @@ module Goo
             if (not @persistent) or @loaded_attributes.include?(attr)
               return self.instance_variable_get("@#{attr}")
             else
-              raise Goo::Base::AttributeNotLoaded, "Attribute `#{attr}` is not loaded for #{id_prefix}"
+              raise Goo::Base::AttributeNotLoaded, "Attribute `#{attr}` is not loaded for #{Goo.id_prefix}"
             end
           end
         end
