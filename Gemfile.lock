@@ -48,7 +48,7 @@ GEM
     macaddr (1.7.1)
       systemu (~> 2.6.2)
     method_source (0.8.2)
-    mime-types (2.6.2)
+    mime-types (2.99)
     minitest (4.7.5)
     multi_json (1.11.2)
     net-http-persistent (2.9.4)
