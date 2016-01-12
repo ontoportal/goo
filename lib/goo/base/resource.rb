@@ -249,8 +249,15 @@ module Goo
             object = nil
             if !unmapped_string_keys.include?(attr_uri)
               equivalent_predicates[attr_uri].each do |eq_attr|
-                object = unmapped_string_keys[eq_attr]
-                break if object
+                if object.nil? and !unmapped_string_keys[eq_attr].nil?
+                  object = unmapped_string_keys[eq_attr].dup
+                else
+                  if object.is_a?Array
+                    if !unmapped_string_keys[eq_attr].nil?
+                      object.concat(unmapped_string_keys[eq_attr])
+                    end
+                  end
+                end
               end
               if object.nil?
                 inst.send("#{attr}=",
