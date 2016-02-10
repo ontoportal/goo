@@ -37,7 +37,7 @@ GEM
     cube-ruby (0.0.3)
     daemons (1.2.3)
     docile (1.1.5)
-    domain_name (0.5.25)
+    domain_name (0.5.20160128)
       unf (>= 0.0.5, < 1.0.0)
     eventmachine (1.0.9.1)
     http-cookie (1.0.2)
@@ -74,7 +74,7 @@ GEM
       netrc (~> 0.7)
     rsolr (1.0.13)
       builder (>= 2.1.2)
-    simplecov (0.11.1)
+    simplecov (0.11.2)
       docile (~> 1.1.0)
       json (~> 1.8)
       simplecov-html (~> 0.10.0)
@@ -94,7 +94,7 @@ GEM
     tzinfo (0.3.46)
     unf (0.1.4)
       unf_ext
-    unf_ext (0.0.7.1)
+    unf_ext (0.0.7.2)
     uuid (2.3.8)
       macaddr (~> 1.0)
 
