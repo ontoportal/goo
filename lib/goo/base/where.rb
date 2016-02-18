@@ -12,7 +12,7 @@ module Goo
           Thread.current[:ncbo_debug] = {}
         end
         @klass = klass
-        @pattern = match_patterns.first.nil? ? nil : Pattern.new(match_patterns.first) 
+        @pattern = match_patterns.first.nil? ? nil : Pattern.new(match_patterns.first)
         @models = nil
         @include = []
         @include_embed = {}
@@ -30,6 +30,7 @@ module Goo
         @read_only = false
         @rules = true
         @do_count = true
+        @pre_count = nil
         @query_options = nil
         @no_graphs = false
 
@@ -170,7 +171,7 @@ module Goo
             if !@count
               @count = rclient.llen(cache_key)
             end
-            rstart = (@page_i -1) * @page_size 
+            rstart = (@page_i -1) * @page_size
             rstop = (rstart + @page_size) -1
             ids = rclient.lrange(cache_key,rstart,rstop)
           else
@@ -183,22 +184,26 @@ module Goo
           page_options = options_load.dup
           page_options.delete(:include)
           page_options[:include_pagination] = @include
-          if !@count && @do_count
-            page_options[:count] = :count 
-            @count = Goo::SPARQL::Queries.model_load(page_options).to_i
+          if not @pre_count.nil?
+            @count = @pre_count
+          else
+            if !@count && @do_count
+              page_options[:count] = :count
+              @count = Goo::SPARQL::Queries.model_load(page_options).to_i
+            end
           end
           page_options.delete :count
           page_options[:query_options] = @query_options
           page_options[:page] = { page_i: @page_i, page_size: @page_size }
           models_by_id = Goo::SPARQL::Queries.model_load(page_options)
           options_load[:models] = models_by_id.values
-          
+
           #models give the constraint
           options_load.delete :graph_match
         elsif count
           count_options = options_load.dup
           count_options.delete(:include)
-          count_options[:count] = :count 
+          count_options[:count] = :count
           return Goo::SPARQL::Queries.model_load(count_options).to_i
         end
 
@@ -210,7 +215,7 @@ module Goo
 
         options_load[:ids] = ids if ids
         models_by_id = {}
-        if (@page_i && options_load[:models].length > 0) || 
+        if (@page_i && options_load[:models].length > 0) ||
             (!@page_i && (@count.nil? || @count > 0))
           models_by_id = Goo::SPARQL::Queries.model_load(options_load)
           if @aggregate
@@ -250,7 +255,7 @@ module Goo
           raise ArgumentError, "Index is performend on Where objects without attributes included"
         end
         page_i_index = 1
-        page_size_index = 400 
+        page_size_index = 400
         temporal_key = "goo:#{@klass.name}:#{index_key}:tmp"
         final_key = cache_key_for_index(index_key)
         count = 0
@@ -276,7 +281,7 @@ module Goo
 
       def all
         if @result.nil? && @klass.inmutable? && @klass.inm_instances
-          if @pattern.nil? && @filters.nil? 
+          if @pattern.nil? && @filters.nil?
             @result = @klass.inm_instances.values
           end
         end
@@ -325,6 +330,11 @@ module Goo
         @result.last
       end
 
+      def page_count_set(c)
+        @pre_count = c
+        self
+      end
+
       def page(i,size=nil)
         @page_i = i
         if size
@@ -364,7 +374,7 @@ module Goo
         @include = [:unmapped] if @include.include? :unspecified
         self
       end
-      
+
       def models(models)
         @models = models
         self
@@ -416,7 +426,7 @@ module Goo
       end
 
       def aggregate(agg,pattern)
-        (@aggregate ||= []) << AGGREGATE_PATTERN.new(pattern,agg) 
+        (@aggregate ||= []) << AGGREGATE_PATTERN.new(pattern,agg)
         self
       end
 
