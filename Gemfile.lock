@@ -1,7 +1,7 @@
 GIT
   remote: git://github.com/ncbo/sparql-client.git
-  revision: 962e5af6615045a437d79fe27a7301df69d31012
-  branch: master
+  revision: 41dab44973c3f086bf335c2513cc208144e99a74
+  branch: staging
   specs:
     sparql-client (1.0.4.1)
       json_pure (>= 1.4)
@@ -37,9 +37,9 @@ GEM
     cube-ruby (0.0.3)
     daemons (1.2.3)
     docile (1.1.5)
-    domain_name (0.5.20160309)
+    domain_name (0.5.20160310)
       unf (>= 0.0.5, < 1.0.0)
-    eventmachine (1.2.0)
+    eventmachine (1.2.0.1)
     http-cookie (1.0.2)
       domain_name (~> 0.5)
     i18n (0.7.0)
@@ -91,7 +91,7 @@ GEM
       rack (~> 1.0)
     thread_safe (0.3.5)
     tilt (2.0.2)
-    tzinfo (0.3.46)
+    tzinfo (0.3.47)
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.7.2)
