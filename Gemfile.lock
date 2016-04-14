@@ -115,6 +115,3 @@ DEPENDENCIES
   sparql-client!
   thin
   uuid
-
-BUNDLED WITH
-   1.11.2
