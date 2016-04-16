@@ -722,43 +722,24 @@ module Goo
               end
             else
               if not models_by_id[id].class.handler?(v)
-
                 unless object.nil? && !models_by_id[id].instance_variable_get("@#{v.to_s}").nil?
-                  models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
+                  if v != :id
+                    # if multiple language values are included for a given property, set the
+                    # corresponding model attribute to the English language value - NCBO-1662
+                    if sol[v].kind_of?(RDF::Literal)
+                      lang = sol[v].language
+
+                      if lang == :EN || lang == :en
+                        models_by_id[id].send("#{v}=", object, on_load: true)
+                        var_set_hash[v] = true
+                      elsif !var_set_hash[v]
+                        models_by_id[id].send("#{v}=", object, on_load: true)
+                      end
+                    else
+                      models_by_id[id].send("#{v}=", object, on_load: true)
+                    end
+                  end
                 end
-
-
-                # unless object.nil? && !models_by_id[id].instance_variable_get("@#{v.to_s}").nil?
-                #   if v != :id
-                #     # if multiple language values are included for a given property, set the
-                #     # corresponding model attribute to the English language value - NCBO-1662
-                #     if sol[v].kind_of?(RDF::Literal)
-                #       lang = sol[v].language
-                #
-                #
-                #       # binding.pry if v = :created
-                #
-                #
-                #       if lang == :EN || lang == :en || !var_set_hash[v]
-                #         models_by_id[id].send("#{v}=", object, on_load: true)
-                #         var_set_hash[v] = true
-                #
-                #
-                #
-                #
-                #
-                #       end
-                #     else
-                #       models_by_id[id].send("#{v}=", object, on_load: true)
-                #     end
-                #   end
-                # end
-
-
-
-
-
-
               end
             end
           end
