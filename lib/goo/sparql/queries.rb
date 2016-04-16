@@ -581,7 +581,7 @@ module Goo
         end
 
         expand_equivalent_predicates(select,equivalent_predicates)
-
+        var_set_hash = Hash[variables.map {|v| [v, false]}]
 
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
@@ -614,7 +614,7 @@ module Goo
           end
           if unmapped
             if predicates_map.nil?
-              if models_by_id[id].respond_to?:klass #struct
+              if models_by_id[id].respond_to? :klass #struct
                 models_by_id[id][:unmapped] ||= {}
                 (models_by_id[id][:unmapped][sol[:predicate]] ||= []) << sol[:object]
               else
@@ -661,7 +661,7 @@ module Goo
               next
             end
 
-            if object and  !(object.kind_of? RDF::URI)
+            if object and !(object.kind_of? RDF::URI)
               object = object.object
             end
 
@@ -723,7 +723,20 @@ module Goo
             else
               if not models_by_id[id].class.handler?(v)
                 unless object.nil? && !models_by_id[id].instance_variable_get("@#{v.to_s}").nil?
-                  models_by_id[id].send("#{v}=",object, on_load: true) if v != :id
+                  if v != :id
+                    # if multiple language values are included for a given property, set the
+                    # corresponding model attribute to the English language value - NCBO-1662
+                    if sol[v].kind_of?(RDF::Literal)
+                      lang = sol[v].language
+
+                      if lang == :EN || lang == :en || !var_set_hash[v]
+                        models_by_id[id].send("#{v}=", object, on_load: true)
+                        var_set_hash[v] = true
+                      end
+                    else
+                      models_by_id[id].send("#{v}=", object, on_load: true)
+                    end
+                  end
                 end
               end
             end
