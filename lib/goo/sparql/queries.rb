@@ -727,14 +727,9 @@ module Goo
                     # if multiple language values are included for a given property, set the
                     # corresponding model attribute to the English language value - NCBO-1662
                     if sol[v].kind_of?(RDF::Literal)
+                      models_by_id[id].send("#{v}=", object, on_load: true) unless var_set_hash[v]
                       lang = sol[v].language
-
-                      if lang == :EN || lang == :en
-                        models_by_id[id].send("#{v}=", object, on_load: true)
-                        var_set_hash[v] = true
-                      elsif !var_set_hash[v]
-                        models_by_id[id].send("#{v}=", object, on_load: true)
-                      end
+                      var_set_hash[v] = true if lang == :EN || lang == :en
                     else
                       models_by_id[id].send("#{v}=", object, on_load: true)
                     end
