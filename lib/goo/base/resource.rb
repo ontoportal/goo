@@ -204,6 +204,12 @@ module Goo
           end
         end
         query = self.class.where.models([self]).include(*opts)
+
+
+        binding.pry #if k == :parents
+
+
+
         if self.class.collection_opts.instance_of?(Symbol)
           collection_attribute = self.class.collection_opts
           query.in(self.send("#{collection_attribute}"))
