@@ -5,7 +5,7 @@ GIT
   specs:
     sparql-client (1.0.4.1)
       json_pure (>= 1.4)
-      net-http-persistent (>= 1.4)
+      net-http-persistent (= 2.9.4)
       rdf (>= 1.0)
 
 PATH
@@ -40,7 +40,7 @@ GEM
     domain_name (0.5.20160826)
       unf (>= 0.0.5, < 1.0.0)
     eventmachine (1.2.0.1)
-    http-cookie (1.0.2)
+    http-cookie (1.0.3)
       domain_name (~> 0.5)
     i18n (0.7.0)
     json (2.0.2)
