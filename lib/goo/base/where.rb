@@ -132,11 +132,6 @@ module Goo
       end
 
       def process_query_intl(count=false)
-
-        if @order_by && !@indexing
-          raise ArgumentError, "Order by support is restricted to only offline indexing"
-        end
-
         if @models == []
           @result = []
           return @result
@@ -154,7 +149,6 @@ module Goo
                          predicates: @predicates,
                          no_graphs: @no_graphs,
                          equivalent_predicates: @equivalent_predicates }
-
 
         options_load.merge!(@where_options_load) if @where_options_load
         if !@klass.collection_opts.nil? and !options_load.include?(:collection)
