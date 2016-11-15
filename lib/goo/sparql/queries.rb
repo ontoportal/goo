@@ -19,6 +19,19 @@ module Goo
         return op.to_s
       end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
       def self.expand_equivalent_predicates(query,eq_p)
         attribute_mappings = {}
         if eq_p && eq_p.length > 0
@@ -26,20 +39,57 @@ module Goo
           if query.options[:optionals]
             query.options[:optionals].each do |opt|
               opt.each do |pattern|
+
+
+
                 if pattern.predicate && pattern.predicate.is_a?(RDF::URI)
                   if eq_p.include?(pattern.predicate.to_s)
                     if attribute_mappings.include?(pattern.predicate.to_s)
+
+
+
                       #reuse filter
                       pattern.predicate =
                         RDF::Query::Variable.new(attribute_mappings[pattern.predicate.to_s])
+
+
+
+
                     else
                       query_predicate = pattern.predicate
                       var_name = "rewrite#{count_rewrites}"
                       pattern.predicate = RDF::Query::Variable.new(var_name)
+
+
+
                       expansion = eq_p[query_predicate.to_s]
                       expansion = expansion.map { |x| "?#{var_name} = <#{x}>" }
                       expansion = expansion.join " || "
-                      query.filter(expansion)
+
+
+
+
+
+
+
+                      # binding.pry if expansion == "?rewrite0 = <http://data.bioontology.org/metadata/def/prefLabel> || ?rewrite0 = <http://www.w3.org/2004/02/skos/core#prefLabel>"
+
+
+
+
+
+                      # query.filter(expansion)
+
+
+
+                      pattern.options[:filter] = expansion
+
+
+
+
+
+
+
                       count_rewrites += 1
                       attribute_mappings[query_predicate.to_s] = var_name
                     end
@@ -50,6 +100,18 @@ module Goo
           end
         end
       end
+
+
+
+
+
+
+
+
+
+
+
+
 
       def self.duplicate_attribute_value?(model,attr,store=:main)
         value = model.instance_variable_get("@#{attr}")
@@ -518,9 +580,46 @@ module Goo
         variables.delete :some_type
 
         select.where(*patterns)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         optional_patterns.each do |optional|
+
+
+
+
+          # binding.pry if select.to_s == "SELECT DISTINCT ?id ?prefLabel ?synonym WHERE { ?id a <http://www.w3.org/2002/07/owl#Class> . OPTIONAL { ?id <http://www.w3.org/2004/02/skos/core#prefLabel> ?prefLabel . } }"
+
+
+
+
           select.optional(*[optional])
+
+
+
+
         end
+
+
+
+
+
+
+
+
+
+
         select.union(*unions) if unions.length > 0
         if order_by
           order_by_str = order_by.map { |attr,order| "#{order.to_s.upcase}(?#{attr})" }
@@ -540,6 +639,7 @@ module Goo
             select.filter(f)
           end
         end
+
         if aggregate_vars
           select.options[:group_by]=[:id]
           select.options[:count]=aggregate_vars
@@ -581,7 +681,24 @@ module Goo
           select.union_with_bind_as(*binding_as)
         end
 
+
+
+
+
+
+
+
+
         expand_equivalent_predicates(select,equivalent_predicates)
+
+
+
+
+
+
+
+
+
         var_set_hash = {}
 
         select.each_solution do |sol|

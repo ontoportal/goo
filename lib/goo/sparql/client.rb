@@ -145,7 +145,7 @@ module Goo
         data_file = File.read(bnodes_filter)
         params = {
             method: :post,
-            url: "#{url.to_s}?context=#{CGI.escape("\"#{graph.to_s}\"")}",
+            url: "#{url.to_s}?context=#{CGI.escape("<#{graph.to_s}>")}",
             payload: data_file,
             headers: {"content-type" => mime_type, "mime-type" => mime_type},
             timeout: nil
