@@ -25,10 +25,9 @@ module Goo
 
   @@configure_flag = false
   @@sparql_backends = {}
-  @@search_backends = {}
   @@model_by_name = {}
-  @@search_connection = nil
-
+  @@search_backends = {}
+  @@search_connection = {}
   @@default_namespace = nil
   @@id_prefix = nil
   @@redis_client = nil
@@ -116,7 +115,7 @@ module Goo
   def self.add_search_backend(name, *opts)
     opts = opts[0]
     unless opts.include? :service
-      raise ArgumentError, "Search backend configuration must contains a host list."
+      raise ArgumentError, "Search backend configuration must contain a host list."
     end
     @@search_backends = @@search_backends.dup
     @@search_backends[name] = opts
@@ -195,9 +194,11 @@ module Goo
     end
     yield self
     configure_sanity_check()
+
     if @@search_backends.length > 0
-      @@search_connection = RSolr.connect(:url => search_conf(), :read_timeout => 1800, :open_timeout => 1800)
+      @@search_backends.each { |name, val| @@search_connection[name] = RSolr.connect(:url => search_conf(name), :read_timeout => 1800, :open_timeout => 1800) }
     end
+
     @@namespaces.freeze
     @@sparql_backends.freeze
     @@search_backends.freeze
@@ -216,12 +217,12 @@ module Goo
     return @@namespaces
   end
 
-  def self.search_conf
-    return @@search_backends[:main][:service]
+  def self.search_conf(name=:main)
+    return @@search_backends[name][:service]
   end
 
-  def self.search_connection
-    return @@search_connection
+  def self.search_connection(name=:main)
+    return @@search_connection[name]
   end
 
   def self.sparql_query_client(name=:main)
