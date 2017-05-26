@@ -1,7 +1,7 @@
 GIT
   remote: git://github.com/ncbo/sparql-client.git
-  revision: 7a2e3a2844bc9a8984134fa7b2e2ecb9c55856ae
-  branch: staging
+  revision: 94c792d7fb73bec29bb08e92fd91de30591a54a3
+  branch: allegrograph_testing
   specs:
     sparql-client (1.0.4.1)
       json_pure (>= 1.4)
@@ -44,7 +44,7 @@ GEM
       domain_name (~> 0.5)
     i18n (0.7.0)
     json (2.0.2)
-    json_pure (2.0.2)
+    json_pure (2.1.0)
     macaddr (1.7.1)
       systemu (~> 2.6.2)
     method_source (0.8.2)
@@ -119,4 +119,4 @@ DEPENDENCIES
   uuid
 
 BUNDLED WITH
-   1.12.5
+   1.13.7

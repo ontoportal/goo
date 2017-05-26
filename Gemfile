@@ -20,4 +20,4 @@ group :profiling do
 end
 
 # NCBO Dependencies
-gem 'sparql-client', github: 'ncbo/sparql-client', branch: 'staging'
+gem 'sparql-client', github: 'ncbo/sparql-client', branch: 'allegrograph_testing'
