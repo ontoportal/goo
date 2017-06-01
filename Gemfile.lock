@@ -1,6 +1,6 @@
 GIT
   remote: git://github.com/ncbo/sparql-client.git
-  revision: 94c792d7fb73bec29bb08e92fd91de30591a54a3
+  revision: af2ab58f41c70c109f45b376c1a3a6a55b126453
   branch: allegrograph_testing
   specs:
     sparql-client (1.0.4.1)
@@ -44,7 +44,7 @@ GEM
       multipart-post (>= 1.2, < 3)
     http-cookie (1.0.3)
       domain_name (~> 0.5)
-    i18n (0.8.1)
+    i18n (0.8.4)
     json (2.1.0)
     json_pure (2.1.0)
     macaddr (1.7.1)
