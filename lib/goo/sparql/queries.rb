@@ -583,7 +583,6 @@ module Goo
 
         expand_equivalent_predicates(select,equivalent_predicates)
         main_lang_hash = {}
-        accepted_lang_hash = {}
 
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
@@ -736,26 +735,21 @@ module Goo
                       #var_set_hash[key] = true if lang == :EN || lang == :en
 
                       # We add the value only if it's language is in the main languages or if lang is nil
-                      if (Goo.accepted_lang.nil? || Goo.main_lang.nil?)
+                      if Goo.main_lang.nil?
                         models_by_id[id].send("#{v}=", object, on_load: true)
 
                       elsif (v.to_s.eql?("prefLabel"))
-                        # Special treatment for prefLabel where we want to extract the main_lang first, then accepted lang if no main.
-                        # Then anything if no main or accepted found
-                        if lang.to_s.downcase.eql?(Goo.main_lang)
-                          models_by_id[id].send("#{v}=", object, on_load: true)
-                          main_lang_hash[key] = true
-                        end
+                        # Special treatment for prefLabel where we want to extract the main_lang first, or anything else
                         if !main_lang_hash[key]
-                          if Goo.accepted_lang.include?(lang.to_s.downcase)
-                            models_by_id[id].send("#{v}=", object, on_load: true)
-                            accepted_lang_hash[key] = true
-                          elsif !accepted_lang_hash[key]
-                            models_by_id[id].send("#{v}=", object, on_load: true)
+
+                          models_by_id[id].send("#{v}=", object, on_load: true)
+                          if Goo.main_lang.include?(lang.to_s.downcase)
+                            # If prefLabel from the main_lang found we stop looking for prefLabel
+                            main_lang_hash[key] = true
                           end
                         end
 
-                      elsif (lang.nil? || Goo.accepted_lang.include?(lang.to_s.downcase))
+                      elsif (lang.nil? || Goo.main_lang.include?(lang.to_s.downcase))
                         models_by_id[id].send("#{v}=", object, on_load: true)
                       end
                     else
