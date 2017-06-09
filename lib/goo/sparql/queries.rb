@@ -582,7 +582,6 @@ module Goo
         end
 
         expand_equivalent_predicates(select,equivalent_predicates)
-        var_set_hash = {}
 
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
@@ -725,14 +724,21 @@ module Goo
               unless models_by_id[id].class.handler?(v)
                 unless object.nil? && !models_by_id[id].instance_variable_get("@#{v.to_s}").nil?
                   if v != :id
-                    # TODO: handle multilingual values here
                     # if multiple language values are included for a given property, set the
                     # corresponding model attribute to the English language value - NCBO-1662
                     if sol[v].kind_of?(RDF::Literal)
                       key = "#{v}#__#{id.to_s}"
-                      models_by_id[id].send("#{v}=", object, on_load: true) unless var_set_hash[key]
                       lang = sol[v].language
-                      var_set_hash[key] = true if lang == :EN || lang == :en
+
+                      #models_by_id[id].send("#{v}=", object, on_load: true) unless var_set_hash[key]
+                      #var_set_hash[key] = true if lang == :EN || lang == :en
+
+                      # We add the value only if it's language is in the main languages or if lang is nil
+                      if (Goo.main_languages.nil?)
+                        models_by_id[id].send("#{v}=", object, on_load: true)
+                      elsif (lang.nil? || Goo.main_languages.include?(lang.to_s.downcase) || Goo.main_languages.include?(lang.to_s.upcase))
+                        models_by_id[id].send("#{v}=", object, on_load: true)
+                      end
                     else
                       models_by_id[id].send("#{v}=", object, on_load: true)
                     end

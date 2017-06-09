@@ -23,6 +23,7 @@ module Goo
 
   @@resource_options = Set.new([:persistent]).freeze
 
+  # Define the languages from which the properties values will be taken (be careful if prefLabel with different lang, only one will be taken)
   @@main_languages = ["en","eng"]
 
   @@configure_flag = false
