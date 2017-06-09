@@ -23,6 +23,8 @@ module Goo
 
   @@resource_options = Set.new([:persistent]).freeze
 
+  @@main_languages = ["en","eng"]
+
   @@configure_flag = false
   @@sparql_backends = {}
   @@model_by_name = {}
@@ -85,6 +87,14 @@ module Goo
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded",
                    read_timeout: 300,
                   redis_cache: @@redis_client })
+  end
+
+  def self.main_languages
+    @@main_languages
+  end
+
+  def self.main_languages=(value)
+    @@main_languages = value
   end
 
   def self.use_cache=(value)
