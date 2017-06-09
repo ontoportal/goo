@@ -24,7 +24,8 @@ module Goo
   @@resource_options = Set.new([:persistent]).freeze
 
   # Define the languages from which the properties values will be taken (be careful if prefLabel with different lang, only one will be taken)
-  @@main_languages = ["en","eng"]
+  @@main_lang = "en"
+  @@accepted_lang = ["en","eng"]
 
   @@configure_flag = false
   @@sparql_backends = {}
@@ -90,12 +91,20 @@ module Goo
                   redis_cache: @@redis_client })
   end
 
-  def self.main_languages
-    @@main_languages
+  def self.main_lang
+    @@main_lang
   end
 
-  def self.main_languages=(value)
-    @@main_languages = value
+  def self.main_lang=(value)
+    @@main_lang = value
+  end
+
+  def self.accepted_lang
+    @@accepted_lang
+  end
+
+  def self.accepted_lang=(value)
+    @@accepted_lang = value
   end
 
   def self.use_cache=(value)
