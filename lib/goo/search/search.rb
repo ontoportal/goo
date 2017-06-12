@@ -29,6 +29,7 @@ module Goo
         #in solr
         doc[:resource_id] = doc[:id].to_s
         doc[:id] = get_index_id.to_s
+        # id: clsUri_ONTO-ACRO_submissionNumber. i.e.: http://lod.nal.usda.gov/nalt/5260_NALT_4
         doc
       end
 
