@@ -271,8 +271,9 @@ module Goo
 
             #binding.pry if inst.id.to_s.eql?("http://lirmm.fr/2015/resource/AGROOE_c_03") && attr.to_s.eql?("prefLabel")
             # Now include only literal that have language in the main_langs or nil
-            # Old way: object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
+            # Olw way: object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
             prefLabelNilLang = []
+            attrBadLang = []
             object = object.map { |o| if o.is_a?(RDF::URI)
                                         o
                                       else
@@ -289,12 +290,18 @@ module Goo
                                             end
                                           elsif Goo.main_lang.include?(o.language.to_s.downcase)
                                             o.object
+                                          else
+                                            attrBadLang << o.object
                                           end
                                         else
                                           o.object
                                         end
                                       end }
             object = object.compact
+            if object.nil? || object.empty?
+              # If no label have been found in the main_langs, then we take from the not accepted lang
+              object = attrBadLang.compact
+            end
 
             if klass.range(attr)
               object = object.map { |o|
