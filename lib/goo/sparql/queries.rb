@@ -764,9 +764,9 @@ module Goo
             end
           end
           attr_to_load_if_empty.each do |empty_attr|
-            # To avoid bug where the attr is not loaded (because the data model is really bad)
+            # To avoid bug where the attr is not loaded, we return an empty array (because the data model is really bad)
             if !models_by_id[id].loaded_attributes.include?(empty_attr.to_sym)
-              models_by_id[id].send("#{empty_attr}=", nil, on_load: true)
+              models_by_id[id].send("#{empty_attr}=", [], on_load: true)
             end
           end
         end
