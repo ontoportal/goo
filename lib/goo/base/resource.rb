@@ -269,17 +269,24 @@ module Goo
               object = unmapped_string_keys[attr_uri]
             end
 
-            #binding.pry if inst.id.to_s.eql?("http://lirmm.fr/2015/resource/AGROOE_c_03")
+            #binding.pry if inst.id.to_s.eql?("http://lirmm.fr/2015/resource/AGROOE_c_03") && attr.to_s.eql?("prefLabel")
             # Now include only literal that have language in the main_langs or nil
             # Old way: object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
-
+            prefLabelNilLang = []
             object = object.map { |o| if o.is_a?(RDF::URI)
                                         o
                                       else
                                         if o.respond_to?("language")
                                           # Include only literal that have language in the main_langs or nil
                                           if o.language.nil?
-                                            o.object
+                                            if attr.to_s.eql?("prefLabel")
+                                              # For prefLabel we want to take a value with a defined lang in priority
+                                              # And one with nil lang if not available
+                                              prefLabelNilLang << o.object
+                                              nil
+                                            else
+                                              o.object
+                                            end
                                           elsif Goo.main_lang.include?(o.language.to_s.downcase)
                                             o.object
                                           end
@@ -294,7 +301,16 @@ module Goo
                 o.is_a?(RDF::URI) ? klass.range_object(attr,o) : o }
             end
             unless list_attrs.include?(attr)
-              object = object.first
+              if attr.to_s.eql?("prefLabel")
+                if object.empty?
+                  # If no value with a lang within main_lang for prefLabel, we take the nil lang
+                  object = prefLabelNilLang.first
+                else
+                  object = object.first
+                end
+              else
+                object = object.first
+              end
             end
             if inst.respond_to?(:klass)
               inst[attr] = object
@@ -303,7 +319,6 @@ module Goo
             end
           else
             inst.send("#{attr}=", list_attrs.include?(attr) ? [] : nil, on_load: true)
-            #binding.pry if inst.id.to_s.eql?("http://lirmm.fr/2015/resource/AGROOE_c_03")
           end
 
         end
