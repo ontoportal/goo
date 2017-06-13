@@ -273,7 +273,6 @@ module Goo
             # Now include only literal that have language in the main_langs or nil
             # Olw way: object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
             prefLabelNilLang = []
-            attrBadLang = []
             object = object.map { |o| if o.is_a?(RDF::URI)
                                         o
                                       else
@@ -291,7 +290,6 @@ module Goo
                                           elsif Goo.main_lang.include?(o.language.to_s.downcase)
                                             o.object
                                           else
-                                            attrBadLang << o.object
                                             nil
                                           end
                                         else
@@ -310,8 +308,6 @@ module Goo
                   # If no value with a lang within main_lang for prefLabel, we take the nil lang
                   if prefLabelNilLang.length > 0
                     object = prefLabelNilLang.first
-                  else
-                    object = attrBadLang.compact.first
                   end
                 else
                   object = object.first
