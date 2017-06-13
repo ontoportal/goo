@@ -228,6 +228,7 @@ module Goo
         return col ? col.id : nil
       end
 
+      # Retrieve unmapped attribute from an instance (i.e.: a Class)
       def self.map_attributes(inst,equivalent_predicates=nil)
         if (inst.kind_of?(Goo::Base::Resource) && inst.unmapped.nil?) ||
             (!inst.respond_to?(:unmapped) && inst[:unmapped].nil?)
@@ -267,7 +268,27 @@ module Goo
             else
               object = unmapped_string_keys[attr_uri]
             end
-            object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
+
+            #binding.pry if inst.id.to_s.eql?("http://lirmm.fr/2015/resource/AGROOE_c_03")
+            # Now include only literal that have language in the main_langs or nil
+            # Old way: object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
+
+            object = object.map { |o| if o.is_a?(RDF::URI)
+                                        o
+                                      else
+                                        if o.respond_to?("language")
+                                          # Include only literal that have language in the main_langs or nil
+                                          if o.language.nil?
+                                            o.object
+                                          elsif Goo.main_lang.include?(o.language.to_s.downcase)
+                                            o.object
+                                          end
+                                        else
+                                          o.object
+                                        end
+                                      end }
+            object = object.compact
+
             if klass.range(attr)
               object = object.map { |o|
                 o.is_a?(RDF::URI) ? klass.range_object(attr,o) : o }
@@ -281,13 +302,8 @@ module Goo
               inst.send("#{attr}=",object, on_load: true)
             end
           else
-            inst.send("#{attr}=",
-                      list_attrs.include?(attr) ? [] : nil, on_load: true)
-            if inst.id.to_s == "http://purl.obolibrary.org/obo/IAO_0000415"
-              if attr == :definition
-               # binding.pry
-              end
-            end
+            inst.send("#{attr}=", list_attrs.include?(attr) ? [] : nil, on_load: true)
+            #binding.pry if inst.id.to_s.eql?("http://lirmm.fr/2015/resource/AGROOE_c_03")
           end
 
         end
