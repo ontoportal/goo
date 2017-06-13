@@ -584,7 +584,9 @@ module Goo
         expand_equivalent_predicates(select,equivalent_predicates)
         main_lang_hash = {}
 
+
         select.each_solution do |sol|
+          attr_to_load_if_empty = []
           next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
           if count
             return sol[:count_var].object
@@ -748,9 +750,10 @@ module Goo
                             main_lang_hash[key] = true
                           end
                         end
-
                       elsif (lang.nil? || Goo.main_lang.include?(lang.to_s.downcase))
                         models_by_id[id].send("#{v}=", object, on_load: true)
+                      else
+                        attr_to_load_if_empty << v
                       end
                     else
                       models_by_id[id].send("#{v}=", object, on_load: true)
@@ -758,6 +761,12 @@ module Goo
                   end
                 end
               end
+            end
+          end
+          attr_to_load_if_empty.each do |empty_attr|
+            # To avoid bug where the attr is not loaded (because the data model is really bad)
+            if !models_by_id[id].loaded_attributes.include?(empty_attr.to_sym)
+              models_by_id[id].send("#{empty_attr}=", nil, on_load: true)
             end
           end
         end
