@@ -24,9 +24,11 @@ module Goo
         self.class.model_settings[:search_options][:index_id].call(self)
       end
 
+      # Get the doc that will be indexed in solr
       def get_indexable_object()
+        # To make the code less readable the guys that wrote it managed to hide the real function called by this line
+        # It is "get_index_doc" in ontologies_linked_data Class.rb
         doc = self.class.model_settings[:search_options][:document].call(self)
-        #in solr
         doc[:resource_id] = doc[:id].to_s
         doc[:id] = get_index_id.to_s
         # id: clsUri_ONTO-ACRO_submissionNumber. i.e.: http://lod.nal.usda.gov/nalt/5260_NALT_4

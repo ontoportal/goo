@@ -232,15 +232,13 @@ module Goo
               raise ArgumentError, "Method based attributes cannot be set"
             end
             if self.class.inverse?(attr) && !(args && args.last.instance_of?(Hash) && args.last[:on_load])
-              raise ArgumentError,
-                "`#{attr}` is an inverse attribute. Values cannot be assigned."
+              raise ArgumentError, "`#{attr}` is an inverse attribute. Values cannot be assigned."
             end
             @loaded_attributes.add(attr)
             value = args[0]
             unless args.last.instance_of?(Hash) and args.last[:on_load]
               if self.persistent? and self.class.name_with == attr
-                raise ArgumentError, 
-                    "`#{attr}` attribute is used to name this resource and cannot be modified."
+                raise ArgumentError, "`#{attr}` attribute is used to name this resource and cannot be modified."
               end
               prev = self.instance_variable_get("@#{attr}")
               if !prev.nil? and !@modified_attributes.include?(attr)
@@ -266,9 +264,11 @@ module Goo
               @loaded_attributes << attr
               return value
             end
+
             if (not @persistent) or @loaded_attributes.include?(attr)
               return self.instance_variable_get("@#{attr}")
             else
+              # TODO: bug here when no labels from one of the main_lang available... (when it is called by ontologies_linked_data ontologies_submission)
               raise Goo::Base::AttributeNotLoaded, "Attribute `#{attr}` is not loaded for #{self.id}. Loaded attributes: #{@loaded_attributes.inspect}."
             end
           end

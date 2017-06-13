@@ -292,16 +292,13 @@ module Goo
                                             o.object
                                           else
                                             attrBadLang << o.object
+                                            nil
                                           end
                                         else
                                           o.object
                                         end
                                       end }
             object = object.compact
-            if object.nil? || object.empty?
-              # If no label have been found in the main_langs, then we take from the not accepted lang
-              object = attrBadLang.compact
-            end
 
             if klass.range(attr)
               object = object.map { |o|
@@ -311,7 +308,11 @@ module Goo
               if attr.to_s.eql?("prefLabel")
                 if object.empty?
                   # If no value with a lang within main_lang for prefLabel, we take the nil lang
-                  object = prefLabelNilLang.first
+                  if prefLabelNilLang.length > 0
+                    object = prefLabelNilLang.first
+                  else
+                    object = attrBadLang.compact.first
+                  end
                 else
                   object = object.first
                 end
@@ -319,6 +320,7 @@ module Goo
                 object = object.first
               end
             end
+
             if inst.respond_to?(:klass)
               inst[attr] = object
             else
