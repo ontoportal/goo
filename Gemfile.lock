@@ -1,9 +1,9 @@
 GIT
   remote: git://github.com/ncbo/sparql-client.git
-  revision: 135974d6ae369186f1fc9bdeed018e734a6d40b2
-  branch: master
+  revision: 657883c87cb64f4a8ecd04e72f3b1d2a97c92d96
+  branch: staging
   specs:
-    sparql-client (1.0.4.1)
+    sparql-client (1.0.1)
       json_pure (>= 1.4)
       net-http-persistent (= 2.9.4)
       rdf (>= 1.0)
@@ -40,7 +40,7 @@ GEM
     domain_name (0.5.20170404)
       unf (>= 0.0.5, < 1.0.0)
     eventmachine (1.2.5)
-    faraday (0.12.2)
+    faraday (0.13.1)
       multipart-post (>= 1.2, < 3)
     http-cookie (1.0.3)
       domain_name (~> 0.5)
@@ -81,11 +81,11 @@ GEM
     rsolr (2.0.2)
       builder (>= 2.1.2)
       faraday
-    simplecov (0.14.1)
+    simplecov (0.15.0)
       docile (~> 1.1.0)
       json (>= 1.8, < 3)
       simplecov-html (~> 0.10.0)
-    simplecov-html (0.10.1)
+    simplecov-html (0.10.2)
     sinatra (2.0.0)
       mustermann (~> 1.0)
       rack (~> 2.0)
@@ -108,6 +108,7 @@ GEM
 
 PLATFORMS
   ruby
+  x86_64-darwin-16
 
 DEPENDENCIES
   activesupport
@@ -125,4 +126,4 @@ DEPENDENCIES
   uuid
 
 BUNDLED WITH
-   1.13.7
+   1.15.3
