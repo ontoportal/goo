@@ -39,7 +39,19 @@ module Goo
                       expansion = eq_p[query_predicate.to_s]
                       expansion = expansion.map { |x| "?#{var_name} = <#{x}>" }
                       expansion = expansion.join " || "
+
+
+
+
+
+
                       query.filter(expansion)
+                      # pattern.options[:filter] = expansion
+
+
+
+
+
                       count_rewrites += 1
                       attribute_mappings[query_predicate.to_s] = var_name
                     end
