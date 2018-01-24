@@ -366,8 +366,10 @@ module Goo
         if models
           ids = []
           models.each do |m|
-            ids << m.id
-            models_by_id[m.id] = m
+            unless m.nil?
+              ids << m.id
+              models_by_id[m.id] = m
+            end
           end
         elsif ids
           ids.each do |id|
