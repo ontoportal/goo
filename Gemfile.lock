@@ -36,16 +36,16 @@ GEM
     coderay (1.1.2)
     concurrent-ruby (1.0.5)
     cube-ruby (0.0.3)
-    daemons (1.2.5)
+    daemons (1.2.6)
     docile (1.1.5)
     domain_name (0.5.20170404)
       unf (>= 0.0.5, < 1.0.0)
     eventmachine (1.2.5)
-    faraday (0.13.1)
+    faraday (0.14.0)
       multipart-post (>= 1.2, < 3)
     http-cookie (1.0.3)
       domain_name (~> 0.5)
-    i18n (0.9.1)
+    i18n (0.9.3)
       concurrent-ruby (~> 1.0)
     json (2.1.0)
     json_pure (2.1.0)
@@ -56,7 +56,7 @@ GEM
       mime-types-data (~> 3.2015)
     mime-types-data (3.2016.0521)
     minitest (4.7.5)
-    multi_json (1.12.2)
+    multi_json (1.13.1)
     multipart-post (2.0.0)
     mustermann (1.0.1)
     net-http-persistent (2.9.4)
@@ -64,7 +64,7 @@ GEM
     pry (0.11.3)
       coderay (~> 1.1.0)
       method_source (~> 0.9.0)
-    rack (2.0.3)
+    rack (2.0.4)
     rack-accept (0.4.5)
       rack (>= 0.4)
     rack-post-body-to-params (0.1.8)
@@ -102,7 +102,7 @@ GEM
     tzinfo (0.3.53)
     unf (0.1.4)
       unf_ext
-    unf_ext (0.0.7.4)
+    unf_ext (0.0.7.5)
     uuid (2.3.8)
       macaddr (~> 1.0)
 
@@ -126,4 +126,4 @@ DEPENDENCIES
   uuid
 
 BUNDLED WITH
-   1.15.4
+   1.16.0
