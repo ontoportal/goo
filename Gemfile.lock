@@ -45,7 +45,7 @@ GEM
       multipart-post (>= 1.2, < 3)
     http-cookie (1.0.3)
       domain_name (~> 0.5)
-    i18n (0.9.3)
+    i18n (0.9.5)
       concurrent-ruby (~> 1.0)
     json (2.1.0)
     json_pure (2.1.0)
@@ -58,7 +58,7 @@ GEM
     minitest (4.7.5)
     multi_json (1.13.1)
     multipart-post (2.0.0)
-    mustermann (1.0.1)
+    mustermann (1.0.2)
     net-http-persistent (2.9.4)
     netrc (0.11.0)
     pry (0.11.3)
@@ -69,7 +69,7 @@ GEM
       rack (>= 0.4)
     rack-post-body-to-params (0.1.8)
       activesupport (>= 2.3)
-    rack-protection (2.0.0)
+    rack-protection (2.0.1)
       rack
     rake (12.3.0)
     rdf (1.0.8)
@@ -87,10 +87,10 @@ GEM
       json (>= 1.8, < 3)
       simplecov-html (~> 0.10.0)
     simplecov-html (0.10.2)
-    sinatra (2.0.0)
+    sinatra (2.0.1)
       mustermann (~> 1.0)
       rack (~> 2.0)
-      rack-protection (= 2.0.0)
+      rack-protection (= 2.0.1)
       tilt (~> 2.0)
     systemu (2.6.5)
     thin (1.7.2)
@@ -109,6 +109,7 @@ GEM
 PLATFORMS
   ruby
   x86_64-darwin-16
+  x86_64-darwin-17
 
 DEPENDENCIES
   activesupport
@@ -126,4 +127,4 @@ DEPENDENCIES
   uuid
 
 BUNDLED WITH
-   1.16.0
+   1.16.1
