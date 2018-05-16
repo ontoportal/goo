@@ -71,20 +71,8 @@ module Goo
 
 
 
-
-                      # binding.pry if expansion == "?rewrite0 = <http://data.bioontology.org/metadata/def/prefLabel> || ?rewrite0 = <http://www.w3.org/2004/02/skos/core#prefLabel>"
-
-
-
-
-
-                      # query.filter(expansion)
-
-
-
-                      pattern.options[:filter] = expansion
-
-
+                      query.filter(expansion)
+                      # pattern.options[:filter] = expansion
 
 
 
@@ -416,8 +404,10 @@ module Goo
         if models
           ids = []
           models.each do |m|
-            ids << m.id
-            models_by_id[m.id] = m
+            unless m.nil?
+              ids << m.id
+              models_by_id[m.id] = m
+            end
           end
         elsif ids
           ids.each do |id|
