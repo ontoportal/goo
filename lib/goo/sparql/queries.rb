@@ -71,8 +71,8 @@ module Goo
 
 
 
-                      query.filter(expansion)
-                      # pattern.options[:filter] = expansion
+                      # query.filter(expansion)
+                      pattern.options[:filter] = expansion
 
 
 

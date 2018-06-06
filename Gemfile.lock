@@ -1,7 +1,7 @@
 GIT
   remote: git://github.com/ncbo/sparql-client.git
-  revision: f7b6888b923f312a1190957c6f96a2ba0ffd2e1c
-  branch: staging
+  revision: 152799ce615fcc877f42a5b55e9e52c952b28fd3
+  branch: allegrograph_testing
   specs:
     sparql-client (1.0.1)
       json_pure (>= 1.4)
