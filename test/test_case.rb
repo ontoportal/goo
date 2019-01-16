@@ -67,11 +67,11 @@ class GooTest
         conf.add_namespace(:nemo, RDF::Vocabulary.new(
           "http://purl.bioontology.org/NEMO/ontology/NEMO_annotation_properties.owl#"))
 
-        conf.add_sparql_backend(:main, query: "http://localhost:9000/sparql/",
-                                data: "http://localhost:9000/data/",
-                                update: "http://localhost:9000/update/",
+        conf.add_sparql_backend(:main, query: "http://localhost:8080/sparql/",
+                                data: "http://localhost:8080/data/",
+                                update: "http://localhost:8080/update/",
                                 options: { rules: :NONE })
-        conf.add_search_backend(:main, service: "http://ncbo-dev-app-02.stanford.edu:8080/solr/" )
+        conf.add_search_backend(:main, service: "http://localhost:8983/solr/term_search_core1" )
         conf.use_cache=false
       end
     end
