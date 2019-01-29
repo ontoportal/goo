@@ -1,7 +1,7 @@
 GIT
   remote: git://github.com/ncbo/sparql-client.git
-  revision: 83fa816bc2c9408876b79fc3c6f98416e9e30cec
-  branch: master
+  revision: 3b7e2b14c83a6ffde90c6f7e78c3b5767c2e3a4c
+  branch: staging
   specs:
     sparql-client (1.0.1)
       json_pure (>= 1.4)
@@ -108,7 +108,6 @@ GEM
 
 PLATFORMS
   ruby
-  x86_64-darwin-16
 
 DEPENDENCIES
   activesupport
@@ -126,4 +125,4 @@ DEPENDENCIES
   uuid
 
 BUNDLED WITH
-   1.17.3
+   2.0.1
