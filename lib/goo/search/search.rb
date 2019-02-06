@@ -11,8 +11,23 @@ module Goo
     def index(connection_name=:main)
       raise ArgumentError, "ID must be set to be able to index" if @id.nil?
       doc = indexable_object
-      #solr wants resource_id instead of :id
       Goo.search_connection(connection_name).add(doc)
+    end
+
+    def index_update(to_set, connection_name=:main)
+      raise ArgumentError, "ID must be set to be able to index" if @id.nil?
+      raise ArgumentError, "Field names to be updated in index must be provided" if to_set.nil?
+      doc = indexable_object(to_set)
+
+      doc.each { |key, val|
+        next if key === :id
+        doc[key] = {set: val}
+      }
+
+      Goo.search_connection(connection_name).update(
+          data: "[#{doc.to_json}]",
+          headers: { 'Content-Type' => 'application/json' }
+      )
     end
 
     def unindex(connection_name=:main)
@@ -27,13 +42,15 @@ module Goo
     end
 
     # default implementation, should be overridden by child class
-    def index_doc()
+    def index_doc(to_set=nil)
       raise NoMethodError, "You must define method index_doc in your class for it to be indexable"
     end
 
-    def indexable_object()
-      doc = index_doc
-      doc[:resource_id] = doc[:id].to_s
+    def indexable_object(to_set=nil)
+      doc = index_doc(to_set)
+      # use resource_id for the actual term id because :id is a Solr reserved field
+      resource_id = doc[:id].to_s
+      doc[:resource_id] = resource_id unless resource_id.empty?
       doc[:id] = index_id.to_s
       doc
     end
