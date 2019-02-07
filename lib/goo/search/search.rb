@@ -49,8 +49,7 @@ module Goo
     def indexable_object(to_set=nil)
       doc = index_doc(to_set)
       # use resource_id for the actual term id because :id is a Solr reserved field
-      resource_id = doc[:id].to_s
-      doc[:resource_id] = resource_id unless resource_id.empty?
+      doc[:resource_id] = doc[:id].to_s
       doc[:id] = index_id.to_s
       doc
     end
