@@ -5,38 +5,42 @@ GooTest.configure_goo
 module TestSearch
 
 
-class TermSearch < Goo::Base::Resource
-  model :term_search, name_with: :id
-  attribute :prefLabel, enforce: [:existence]
-  attribute :synonym  #array of strings
-  attribute :definition  #array of strings
-  attribute :submissionAcronym, enforce: [:existence]
-  attribute :submissionId, enforce: [:existence, :integer]
+  class TermSearch < Goo::Base::Resource
+    model :term_search, name_with: :id
+    attribute :prefLabel, enforce: [:existence]
+    attribute :synonym  #array of strings
+    attribute :definition  #array of strings
+    attribute :submissionAcronym, enforce: [:existence]
+    attribute :submissionId, enforce: [:existence, :integer]
 
-  # dummy attributes to validate non-searchable fileds
-  attribute :semanticType
-  attribute :umlsCui
+    # dummy attributes to validate non-searchable fileds
+    attribute :semanticType
+    attribute :cui
 
-  search_options :index_id => lambda { |t| "#{t.id}_#{t.submissionAcronym}_#{t.submissionId}" },
-                 :document => lambda { |t| t.to_hash }
+    def index_id()
+      "#{self.id.to_s}_#{self.submissionAcronym}_#{self.submissionId}"
+    end
 
-end
+    def index_doc()
+      self.to_hash
+    end
+  end
 
-class TestModelSearch < MiniTest::Unit::TestCase
+  class TestModelSearch < MiniTest::Unit::TestCase
 
-  def setup
-    @terms = [
-      TermSearch.new(
-        :id => RDF::URI.new("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Melanoma"),
-        :prefLabel => "Melanoma",
-        :synonym => ["Cutaneous Melanoma", "Skin Cancer", "Malignant Melanoma"],
-        :definition => "Melanoma refers to a malignant skin cancer",
-        :submissionAcronym => "NCIT",
-        :submissionId => 2,
-        :semanticType => "Neoplastic Process",
-        :umlsCui => "C0025202"
-      ),
-      TermSearch.new(
+    def setup
+      @terms = [
+        TermSearch.new(
+          :id => RDF::URI.new("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Melanoma"),
+          :prefLabel => "Melanoma",
+          :synonym => ["Cutaneous Melanoma", "Skin Cancer", "Malignant Melanoma"],
+          :definition => "Melanoma refers to a malignant skin cancer",
+          :submissionAcronym => "NCIT",
+          :submissionId => 2,
+          :semanticType => "Neoplastic Process",
+          :cui => "C0025202"
+        ),
+        TermSearch.new(
           :id => RDF::URI.new("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Neoplasm"),
           :prefLabel => "Neoplasm",
           :synonym => ["tumor", "Neoplasms", "NEOPLASMS BENIGN", "MALIGNANT AND UNSPECIFIED (INCL CYSTS AND POLYPS)", "Neoplasia", "Neoplastic Growth"],
@@ -44,92 +48,91 @@ class TestModelSearch < MiniTest::Unit::TestCase
           :submissionAcronym => "NCIT",
           :submissionId => 2,
           :semanticType => "Neoplastic Process",
-          :umlsCui => "C0375111"
-      )
-    ]
+          :cui => "C0375111"
+        )
+      ]
+    end
+
+    def teardown
+    end
+
+    def initialize(*args)
+      super(*args)
+    end
+
+    def test_search
+      TermSearch.indexClear()
+      @terms[1].index()
+      TermSearch.indexCommit()
+      resp = TermSearch.search(@terms[1].prefLabel)
+      assert_equal(1, resp["response"]["docs"].length)
+      assert_equal @terms[1].prefLabel, resp["response"]["docs"][0]["prefLabel"]
+    end
+
+    def test_unindex
+      TermSearch.indexClear()
+      @terms[1].index()
+      TermSearch.indexCommit()
+      resp = TermSearch.search(@terms[1].prefLabel)
+      assert_equal(1, resp["response"]["docs"].length)
+
+      @terms[1].unindex()
+      TermSearch.indexCommit()
+      resp = TermSearch.search(@terms[1].prefLabel)
+      assert_equal(0, resp["response"]["docs"].length)
+    end
+
+    def test_unindexByQuery
+      TermSearch.indexClear()
+      @terms[1].index()
+      TermSearch.indexCommit()
+      resp = TermSearch.search(@terms[1].prefLabel)
+      assert_equal(1, resp["response"]["docs"].length)
+
+      query = "submissionAcronym:" + @terms[1].submissionAcronym
+      TermSearch.unindexByQuery(query)
+      TermSearch.indexCommit()
+
+      resp = TermSearch.search(@terms[1].prefLabel)
+      assert_equal(0, resp["response"]["docs"].length)
+    end
+
+    def test_index
+      TermSearch.indexClear()
+      @terms[0].index()
+      TermSearch.indexCommit()
+      resp = TermSearch.search(@terms[0].prefLabel)
+      assert_equal(1, resp["response"]["docs"].length)
+      assert_equal @terms[0].prefLabel, resp["response"]["docs"][0]["prefLabel"]
+    end
+
+    def test_indexBatch
+      TermSearch.indexClear()
+      TermSearch.indexBatch(@terms)
+      TermSearch.indexCommit()
+      resp = TermSearch.search("*:*")
+      assert_equal(2, resp["response"]["docs"].length)
+    end
+
+    def test_unindexBatch
+      TermSearch.indexClear()
+      TermSearch.indexBatch(@terms)
+      TermSearch.indexCommit()
+      resp = TermSearch.search("*:*")
+      assert_equal(2, resp["response"]["docs"].length)
+
+      TermSearch.unindexBatch(@terms)
+      TermSearch.indexCommit()
+      resp = TermSearch.search("*:*")
+      assert_equal(0, resp["response"]["docs"].length)
+    end
+
+    def test_indexClear
+      TermSearch.indexClear()
+      TermSearch.indexCommit()
+      resp = TermSearch.search("*:*")
+      assert_equal(0, resp["response"]["docs"].length)
+    end
   end
-
-  def teardown
-  end
-
-  def initialize(*args)
-    super(*args)
-  end
-
-  def test_search
-    TermSearch.indexClear()
-    @terms[1].index()
-    TermSearch.indexCommit()
-    resp = TermSearch.search(@terms[1].prefLabel)
-    assert_equal(1, resp["response"]["docs"].length)
-    assert_equal @terms[1].prefLabel, resp["response"]["docs"][0]["prefLabel"]
-  end
-
-  def test_unindex
-    TermSearch.indexClear()
-    @terms[1].index()
-    TermSearch.indexCommit()
-    resp = TermSearch.search(@terms[1].prefLabel)
-    assert_equal(1, resp["response"]["docs"].length)
-
-    @terms[1].unindex()
-    TermSearch.indexCommit()
-    resp = TermSearch.search(@terms[1].prefLabel)
-    assert_equal(0, resp["response"]["docs"].length)
-  end
-
-  def test_unindexByQuery
-    TermSearch.indexClear()
-    @terms[1].index()
-    TermSearch.indexCommit()
-    resp = TermSearch.search(@terms[1].prefLabel)
-    assert_equal(1, resp["response"]["docs"].length)
-
-    query = "submissionAcronym:" + @terms[1].submissionAcronym
-    TermSearch.unindexByQuery(query)
-    TermSearch.indexCommit()
-
-    resp = TermSearch.search(@terms[1].prefLabel)
-    assert_equal(0, resp["response"]["docs"].length)
-  end
-
-  def test_index
-    TermSearch.indexClear()
-    @terms[0].index()
-    TermSearch.indexCommit()
-    resp = TermSearch.search(@terms[0].prefLabel)
-    assert_equal(1, resp["response"]["docs"].length)
-    assert_equal @terms[0].prefLabel, resp["response"]["docs"][0]["prefLabel"]
-  end
-
-  def test_indexBatch
-    TermSearch.indexClear()
-    TermSearch.indexBatch(@terms)
-    TermSearch.indexCommit()
-    resp = TermSearch.search("*:*")
-    assert_equal(2, resp["response"]["docs"].length)
-  end
-
-  def test_unindexBatch
-    TermSearch.indexClear()
-    TermSearch.indexBatch(@terms)
-    TermSearch.indexCommit()
-    resp = TermSearch.search("*:*")
-    assert_equal(2, resp["response"]["docs"].length)
-
-    TermSearch.unindexBatch(@terms)
-    TermSearch.indexCommit()
-    resp = TermSearch.search("*:*")
-    assert_equal(0, resp["response"]["docs"].length)
-  end
-
-  def test_indexClear
-    TermSearch.indexClear()
-    TermSearch.indexCommit()
-    resp = TermSearch.search("*:*")
-    assert_equal(0, resp["response"]["docs"].length)
-  end
-end
-
 
 end #module

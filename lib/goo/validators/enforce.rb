@@ -80,8 +80,8 @@ module Goo
             add_error(opt, errors_by_opt, enforce_type(attr,RDF::URI,value)) unless value.nil?
           when :string, String
             add_error(opt, errors_by_opt, enforce_type(attr,String,value)) unless value.nil?
-          when :integer, Fixnum
-            add_error(opt, errors_by_opt, enforce_type(attr,Fixnum,value)) unless value.nil?
+          when :integer, Integer
+            add_error(opt, errors_by_opt, enforce_type(attr,Integer,value)) unless value.nil?
           when :boolean
             add_error(opt, errors_by_opt, enforce_type(attr,:boolean,value)) unless value.nil?
           when :date_time, DateTime
