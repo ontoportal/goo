@@ -1,5 +1,5 @@
 GIT
-  remote: git://github.com/ncbo/sparql-client.git
+  remote: https://github.com/ncbo/sparql-client.git
   revision: 9e0012652e0b95eae72f13d514cfc2faa702296e
   branch: allegrograph_testing
   specs:
@@ -126,4 +126,4 @@ DEPENDENCIES
   uuid
 
 BUNDLED WITH
-   1.17.3
+   2.0.2
