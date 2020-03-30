@@ -39,7 +39,6 @@ module Goo
                       expansion = eq_p[query_predicate.to_s]
                       expansion = expansion.map { |x| "?#{var_name} = <#{x}>" }
                       expansion = expansion.join " || "
-
                       # Instead of applending the filters to the end of the query, as in query.filter(expansion),
                       # we store them in the options[:filter] attribute. They will be included in the OPTIONAL
                       # sections when the query is constructed. According to AG, this is the CORRECT way of
