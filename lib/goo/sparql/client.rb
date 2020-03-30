@@ -73,116 +73,6 @@ module Goo
         Goo.sparql_update_client.update(DropGraph.new(graph))
       end
 
-
-
-
-
-
-
-
-      # def append_triples_no_bnodes(graph,file_path,mime_type_in)
-      #   bnodes_filter = nil
-      #   dir = nil
-      #
-      #   if file_path.end_with?("ttl")
-      #     bnodes_filter = file_path
-      #   else
-      #    bnodes_filter,dir = bnodes_filter_file(file_path,mime_type_in)
-      #   end
-      #   mime_type = "application/x-turtle"
-      #
-      #   if mime_type_in == "text/x-nquads"
-      #     mime_type = "text/x-nquads"
-      #     graph = "http://data.bogus.graph/uri"
-      #   end
-      #   data_file = File.read(bnodes_filter)
-      #   params = {
-      #     method: :post,
-      #     url: "#{url.to_s}",
-      #     payload: {
-      #      graph: graph.to_s,
-      #      data: data_file,
-      #      "mime-type" => mime_type
-      #     },
-      #     headers: {"mime-type" => mime_type},
-      #     timeout: nil
-      #   }
-      #   #for some reason \\\\ breaks parsing
-      #   params[:payload][:data] =
-      #    params[:payload][:data].split("\n").map { |x| x.sub("\\\\","") }.join("\n")
-      #   response = RestClient::Request.execute(params)
-      #
-      #   unless  dir.nil?
-      #     File.delete(bnodes_filter)
-      #
-      #     begin
-      #       FileUtils.rm_rf(dir)
-      #     rescue => e
-      #       puts "Error deleting tmp file #{dir}"
-      #       puts e.backtrace
-      #     end
-      #   end
-      #   response
-      # end
-
-
-
-
-
-      # def append_triples_no_bnodes(graph,file_path,mime_type_in)
-      #   bnodes_filter = nil
-      #   dir = nil
-      #
-      #   if file_path.end_with?("ttl")
-      #     bnodes_filter = file_path
-      #   else
-      #     bnodes_filter,dir = bnodes_filter_file(file_path,mime_type_in)
-      #   end
-      #   mime_type = "text/turtle"
-      #
-      #   if mime_type_in == "text/x-nquads"
-      #     mime_type = "text/x-nquads"
-      #     graph = "http://data.bogus.graph/uri"
-      #   end
-      #   data_file = File.read(bnodes_filter)
-      #   params = {
-      #       method: :post,
-      #       url: "#{url.to_s}?context=#{CGI.escape("<#{graph.to_s}>")}",
-      #       payload: data_file,
-      #       headers: {"content-type" => mime_type, "mime-type" => mime_type},
-      #       timeout: nil
-      #   }
-      #   #for some reason \\\\ breaks parsing
-      #   # params[:payload][:data] =
-      #   #     params[:payload][:data].split("\n").map { |x| x.sub("\\\\","") }.join("\n")
-      #   response = RestClient::Request.execute(params)
-      #
-      #   unless  dir.nil?
-      #     File.delete(bnodes_filter)
-      #
-      #     begin
-      #       FileUtils.rm_rf(dir)
-      #     rescue => e
-      #       puts "Error deleting tmp file #{dir}"
-      #       puts e.backtrace
-      #     end
-      #   end
-      #   response
-      # end
-
-
-      
-
-
-
-
-
-
-
-
-
-
-
       def append_triples_no_bnodes(graph,file_path,mime_type_in)
         bnodes_filter = nil
         dir = nil
@@ -310,7 +200,6 @@ module Goo
         Goo.sparql_query_client.cache_invalidate_graph(graph)
         return result
       end
-
 
       def extract_number_from(i,text)
         res = []
