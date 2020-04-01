@@ -279,10 +279,6 @@ module Goo
     @@uuid.generate
   end
 
-  def self.filter_bnodes?
-    return true
-  end
-
   #A debug middleware for rack applications
   class Debug
     def initialize(app = nil)

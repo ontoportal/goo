@@ -129,70 +129,25 @@ module Goo
       end
 
       def put_triples(graph,file_path,mime_type=nil)
-        if Goo.filter_bnodes?
-          delete_graph(graph)
-          result =  append_triples_no_bnodes(graph,file_path,mime_type)
-          Goo.sparql_query_client.cache_invalidate_graph(graph)
-          return result
-        end
-
-        params = {
-          method: :put,
-          url: "#{url.to_s}#{graph.to_s}",
-          payload: File.read(file_path),
-          headers: {content_type: mime_type},
-          timeout: nil
-        }
-        result = RestClient::Request.execute(params)
+        delete_graph(graph)
+        result =  append_triples_no_bnodes(graph,file_path,mime_type)
         Goo.sparql_query_client.cache_invalidate_graph(graph)
-        return result
+        result
       end
 
       def append_triples(graph,data,mime_type=nil)
-        if Goo.filter_bnodes?
-          result = append_data_triples(graph,data,mime_type)
-          Goo.sparql_query_client.cache_invalidate_graph(graph)
-          return result
-        end
-        params = {
-          method: :post,
-          url: "#{url.to_s}",
-          payload: {
-            graph: graph.to_s,
-            data: data,
-            "mime-type" => mime_type
-          },
-          headers: {"mime-type" => mime_type},
-          timeout: nil
-        }
-        result = RestClient::Request.execute(params)
+        result = append_data_triples(graph,data,mime_type)
         Goo.sparql_query_client.cache_invalidate_graph(graph)
-        return result
+        result
       end
 
       def append_triples_from_file(graph,file_path,mime_type=nil)
         if mime_type == "text/nquads" && !graph.instance_of?(Array)
           raise Exception, "Nquads need a list of graphs, #{graph} provided"
         end
-        if Goo.filter_bnodes?
-          result = append_triples_no_bnodes(graph,file_path,mime_type)
-          Goo.sparql_query_client.cache_invalidate_graph(graph)
-          return result
-        end
-        params = {
-          method: :post,
-          url: "#{url.to_s}",
-          payload: {
-           graph: graph.to_s,
-           data: File.read(file_path),
-           "mime-type" => mime_type
-          },
-          headers: {"mime-type" => mime_type},
-          timeout: nil
-        }
-        result = RestClient::Request.execute(params)
+        result = append_triples_no_bnodes(graph,file_path,mime_type)
         Goo.sparql_query_client.cache_invalidate_graph(graph)
-        return result
+        result
       end
 
       def delete_graph(graph)
