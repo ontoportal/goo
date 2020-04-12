@@ -74,6 +74,7 @@ module Goo
                    validate: false,
                    redis_cache: @@redis_client,
                    cube_options: @@cube_options})
+    @@sparql_backends[name][:backend_name] = opts[:backend_name]
     @@sparql_backends.freeze
   end
 
@@ -237,6 +238,10 @@ module Goo
     return @@sparql_backends[name][:data]
   end
 
+  def self.sparql_backend_name(name=:main)
+    return @@sparql_backends[name][:backend_name]
+  end
+
   def self.id_prefix
     return @@id_prefix
   end
@@ -272,10 +277,6 @@ module Goo
 
   def self.uuid
     @@uuid.generate
-  end
-
-  def self.filter_bnodes?
-    return true
   end
 
   #A debug middleware for rack applications

@@ -1,7 +1,7 @@
 GIT
   remote: https://github.com/ncbo/sparql-client.git
-  revision: 39cb76898cb6c8896c43aa076e493280d9621998
-  branch: master
+  revision: 2025f80c5520b09215a9ed543ae32b71a98e261d
+  branch: staging
   specs:
     sparql-client (1.0.1)
       json_pure (>= 1.4)
@@ -41,7 +41,7 @@ GEM
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
     eventmachine (1.2.7)
-    faraday (1.0.0)
+    faraday (1.0.1)
       multipart-post (>= 1.2, < 3)
     http-accept (1.7.0)
     http-cookie (1.0.3)
@@ -104,13 +104,13 @@ GEM
     tzinfo (0.3.56)
     unf (0.1.4)
       unf_ext
-    unf_ext (0.0.7.6)
+    unf_ext (0.0.7.7)
     uuid (2.3.9)
       macaddr (~> 1.0)
 
 PLATFORMS
   ruby
-  x86_64-darwin-17
+  x86_64-darwin-16
 
 DEPENDENCIES
   activesupport
