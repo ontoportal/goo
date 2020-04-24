@@ -39,7 +39,18 @@ module Goo
                       expansion = eq_p[query_predicate.to_s]
                       expansion = expansion.map { |x| "?#{var_name} = <#{x}>" }
                       expansion = expansion.join " || "
-                      query.filter(expansion)
+                      # Instead of applending the filters to the end of the query, as in query.filter(expansion),
+                      # we store them in the options[:filter] attribute. They will be included in the OPTIONAL
+                      # sections when the query is constructed. According to AG, this is the CORRECT way of
+                      # constructing the query.
+                      # Because the FILTERs are _outside_ the OPTIONALs, they are applied to _every_
+                      # row returned. i.e., only rows where ?rewrite0 is in its list _and_ ?rewrite1
+                      # is in its list will be returned. I.e., the query will return NO results where
+                      # ?rewrite0 or ?rewrite1 is NULL.
+                      #
+                      # All you need to do is to make sure that the FILTERS are applied only _inside_
+                      # each OPTIONAL.
+                      pattern.options[:filter] = expansion
                       count_rewrites += 1
                       attribute_mappings[query_predicate.to_s] = var_name
                     end
@@ -354,8 +365,10 @@ module Goo
         if models
           ids = []
           models.each do |m|
-            ids << m.id
-            models_by_id[m.id] = m
+            unless m.nil?
+              ids << m.id
+              models_by_id[m.id] = m
+            end
           end
         elsif ids
           ids.each do |id|
