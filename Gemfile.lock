@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/ncbo/sparql-client.git
-  revision: 2025f80c5520b09215a9ed543ae32b71a98e261d
+  revision: 33346e8b7cac07a5cec7866293b0700ce114450d
   branch: staging
   specs:
     sparql-client (1.0.1)
@@ -65,7 +65,7 @@ GEM
     pry (0.13.1)
       coderay (~> 1.1)
       method_source (~> 1.0)
-    rack (2.2.2)
+    rack (2.2.3)
     rack-accept (0.4.5)
       rack (>= 0.4)
     rack-post-body-to-params (0.1.8)
@@ -75,7 +75,7 @@ GEM
     rake (13.0.1)
     rdf (1.0.8)
       addressable (>= 2.2)
-    redis (4.2.0)
+    redis (4.2.1)
     rest-client (2.1.0)
       http-accept (>= 1.7.0, < 2.0)
       http-cookie (>= 1.0.2, < 2.0)
