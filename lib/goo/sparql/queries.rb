@@ -527,7 +527,12 @@ module Goo
           variables << :some_type
         end
 
-        select = client.select(*variables).distinct()
+        # mdorf, 6/03/20 If aggregate projections (sub-SELECT within main SELECT) use an alias, that alias cannot appear in the main SELECT
+        # https://github.com/ncbo/goo/issues/106
+        # See last sentence in https://www.w3.org/TR/sparql11-query/#aggregateExample
+        select_vars = variables.dup
+        select_vars.reject! { |var| aggregate_projections.key?(var) } if aggregate_projections
+        select = client.select(*select_vars).distinct()
         variables.delete :some_type
 
         select.where(*patterns)
