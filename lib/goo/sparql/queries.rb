@@ -39,7 +39,18 @@ module Goo
                       expansion = eq_p[query_predicate.to_s]
                       expansion = expansion.map { |x| "?#{var_name} = <#{x}>" }
                       expansion = expansion.join " || "
-                      query.filter(expansion)
+                      # Instead of applending the filters to the end of the query, as in query.filter(expansion),
+                      # we store them in the options[:filter] attribute. They will be included in the OPTIONAL
+                      # sections when the query is constructed. According to AG, this is the CORRECT way of
+                      # constructing the query.
+                      # Because the FILTERs are _outside_ the OPTIONALs, they are applied to _every_
+                      # row returned. i.e., only rows where ?rewrite0 is in its list _and_ ?rewrite1
+                      # is in its list will be returned. I.e., the query will return NO results where
+                      # ?rewrite0 or ?rewrite1 is NULL.
+                      #
+                      # All you need to do is to make sure that the FILTERS are applied only _inside_
+                      # each OPTIONAL.
+                      pattern.options[:filter] = expansion
                       count_rewrites += 1
                       attribute_mappings[query_predicate.to_s] = var_name
                     end
@@ -354,8 +365,10 @@ module Goo
         if models
           ids = []
           models.each do |m|
-            ids << m.id
-            models_by_id[m.id] = m
+            unless m.nil?
+              ids << m.id
+              models_by_id[m.id] = m
+            end
           end
         elsif ids
           ids.each do |id|
@@ -514,7 +527,12 @@ module Goo
           variables << :some_type
         end
 
-        select = client.select(*variables).distinct()
+        # mdorf, 6/03/20 If aggregate projections (sub-SELECT within main SELECT) use an alias, that alias cannot appear in the main SELECT
+        # https://github.com/ncbo/goo/issues/106
+        # See last sentence in https://www.w3.org/TR/sparql11-query/#aggregateExample
+        select_vars = variables.dup
+        select_vars.reject! { |var| aggregate_projections.key?(var) } if aggregate_projections
+        select = client.select(*select_vars).distinct()
         variables.delete :some_type
 
         select.where(*patterns)
@@ -582,9 +600,11 @@ module Goo
         end
 
         expand_equivalent_predicates(select,equivalent_predicates)
-        var_set_hash = {}
+        main_lang_hash = {}
+
 
         select.each_solution do |sol|
+          attr_to_load_if_empty = []
           next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
           if count
             return sol[:count_var].object
@@ -729,15 +749,42 @@ module Goo
                     # corresponding model attribute to the English language value - NCBO-1662
                     if sol[v].kind_of?(RDF::Literal)
                       key = "#{v}#__#{id.to_s}"
-                      models_by_id[id].send("#{v}=", object, on_load: true) unless var_set_hash[key]
                       lang = sol[v].language
-                      var_set_hash[key] = true if lang == :EN || lang == :en
+
+                      #models_by_id[id].send("#{v}=", object, on_load: true) unless var_set_hash[key]
+                      #var_set_hash[key] = true if lang == :EN || lang == :en
+
+                      # We add the value only if it's language is in the main languages or if lang is nil
+                      if Goo.main_lang.nil?
+                        models_by_id[id].send("#{v}=", object, on_load: true)
+
+                      elsif (v.to_s.eql?("prefLabel"))
+                        # Special treatment for prefLabel where we want to extract the main_lang first, or anything else
+                        if !main_lang_hash[key]
+
+                          models_by_id[id].send("#{v}=", object, on_load: true)
+                          if Goo.main_lang.include?(lang.to_s.downcase)
+                            # If prefLabel from the main_lang found we stop looking for prefLabel
+                            main_lang_hash[key] = true
+                          end
+                        end
+                      elsif (lang.nil? || Goo.main_lang.include?(lang.to_s.downcase))
+                        models_by_id[id].send("#{v}=", object, on_load: true)
+                      else
+                        attr_to_load_if_empty << v
+                      end
                     else
                       models_by_id[id].send("#{v}=", object, on_load: true)
                     end
                   end
                 end
               end
+            end
+          end
+          attr_to_load_if_empty.each do |empty_attr|
+            # To avoid bug where the attr is not loaded, we return an empty array (because the data model is really bad)
+            if !models_by_id[id].loaded_attributes.include?(empty_attr.to_sym)
+              models_by_id[id].send("#{empty_attr}=", [], on_load: true)
             end
           end
         end

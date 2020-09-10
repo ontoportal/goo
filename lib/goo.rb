@@ -23,6 +23,9 @@ module Goo
 
   @@resource_options = Set.new([:persistent]).freeze
 
+  # Define the languages from which the properties values will be taken (be careful if prefLabel with different lang, only one will be taken)
+  @@main_lang = ["en","eng"]
+
   @@configure_flag = false
   @@sparql_backends = {}
   @@model_by_name = {}
@@ -74,6 +77,7 @@ module Goo
                    validate: false,
                    redis_cache: @@redis_client,
                    cube_options: @@cube_options})
+    @@sparql_backends[name][:backend_name] = opts[:backend_name]
     @@sparql_backends.freeze
   end
 
@@ -85,6 +89,14 @@ module Goo
                  {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded",
                    read_timeout: 300,
                   redis_cache: @@redis_client })
+  end
+
+  def self.main_lang
+    @@main_lang
+  end
+
+  def self.main_lang=(value)
+    @@main_lang = value
   end
 
   def self.use_cache=(value)
@@ -237,6 +249,10 @@ module Goo
     return @@sparql_backends[name][:data]
   end
 
+  def self.sparql_backend_name(name=:main)
+    return @@sparql_backends[name][:backend_name]
+  end
+
   def self.id_prefix
     return @@id_prefix
   end
@@ -272,10 +288,6 @@ module Goo
 
   def self.uuid
     @@uuid.generate
-  end
-
-  def self.filter_bnodes?
-    return true
   end
 
   #A debug middleware for rack applications

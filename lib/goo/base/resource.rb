@@ -228,6 +228,7 @@ module Goo
         return col ? col.id : nil
       end
 
+      # Retrieve unmapped attribute from an instance (i.e.: a Class)
       def self.map_attributes(inst,equivalent_predicates=nil)
         if (inst.kind_of?(Goo::Base::Resource) && inst.unmapped.nil?) ||
             (!inst.respond_to?(:unmapped) && inst[:unmapped].nil?)
@@ -267,27 +268,62 @@ module Goo
             else
               object = unmapped_string_keys[attr_uri]
             end
-            object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
+
+            #binding.pry if inst.id.to_s.eql?("http://lirmm.fr/2015/resource/AGROOE_c_03") && attr.to_s.eql?("prefLabel")
+            # Now include only literal that have language in the main_langs or nil
+            # Olw way: object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
+            prefLabelNilLang = []
+            object = object.map { |o| if o.is_a?(RDF::URI)
+                                        o
+                                      else
+                                        if o.respond_to?("language")
+                                          # Include only literal that have language in the main_langs or nil
+                                          if o.language.nil?
+                                            if attr.to_s.eql?("prefLabel")
+                                              # For prefLabel we want to take a value with a defined lang in priority
+                                              # And one with nil lang if not available
+                                              prefLabelNilLang << o.object
+                                              nil
+                                            else
+                                              o.object
+                                            end
+                                          elsif Goo.main_lang.include?(o.language.to_s.downcase)
+                                            o.object
+                                          else
+                                            nil
+                                          end
+                                        else
+                                          o.object
+                                        end
+                                      end }
+            object = object.compact
+
             if klass.range(attr)
               object = object.map { |o|
                 o.is_a?(RDF::URI) ? klass.range_object(attr,o) : o }
             end
             unless list_attrs.include?(attr)
-              object = object.first
+              if attr.to_s.eql?("prefLabel")
+                if object.empty?
+                  # If no value with a lang within main_lang for prefLabel, we take the nil lang
+                  if prefLabelNilLang.length > 0
+                    object = prefLabelNilLang.first
+                  end
+                else
+                  object = object.first
+                end
+              else
+                object = object.first
+              end
             end
+
             if inst.respond_to?(:klass)
               inst[attr] = object
             else
               inst.send("#{attr}=",object, on_load: true)
             end
           else
-            inst.send("#{attr}=",
-                      list_attrs.include?(attr) ? [] : nil, on_load: true)
-            if inst.id.to_s == "http://purl.obolibrary.org/obo/IAO_0000415"
-              if attr == :definition
-               # binding.pry
-              end
-            end
+            inst.send("#{attr}=", list_attrs.include?(attr) ? [] : nil, on_load: true)
           end
 
         end
