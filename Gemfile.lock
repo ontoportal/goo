@@ -75,7 +75,7 @@ GEM
     rake (13.0.1)
     rdf (1.0.8)
       addressable (>= 2.2)
-    redis (4.2.1)
+    redis (4.2.2)
     rest-client (2.1.0)
       http-accept (>= 1.7.0, < 2.0)
       http-cookie (>= 1.0.2, < 2.0)
