@@ -19,12 +19,19 @@ module Goo
       def status_based_sleep_time(operation)
         sleep(0.5)
         st = self.status
+
+        if st[:exception]
+          raise Exception, st[:exception]
+        end
+
         if st[:outstanding] > 50
           raise Exception, "Too many outstanding queries. We cannot write to the backend"
         end
+
         if st[:outstanding] > 0
           return 2.5
         end
+
         if st[:running] < 4
           return 0.8
         end
@@ -174,13 +181,26 @@ module Goo
       end
 
       def status
+        resp = { running: -1, outstanding: -1, exception: nil }
         status_url = (url.to_s.split("/")[0..-2].join "/") + "/status/"
-        resp_text =  Net::HTTP.get(URI(status_url))
-        running = extract_number_from(230,resp_text)
+        resp_text = nil
+
+        begin
+          resp_text =  Net::HTTP.get(URI(status_url))
+        rescue StandardError => e
+          resp[:exception] = "Error connecting to triple store: #{e.class}: #{e.message}\n#{e.backtrace.join("\n\t")}"
+          return resp
+        end
+
+        run_text = "Running queries</th><td>"
+        i_run = resp_text.index(run_text) + run_text.length
+        running = extract_number_from(i_run, resp_text)
         out_text = "Outstanding queries</th><td>"
         i_out = resp_text.index(out_text) + out_text.length
-        outstanding = extract_number_from(i_out,resp_text)
-        return { running: running, outstanding: outstanding }
+        outstanding = extract_number_from(i_out, resp_text)
+        resp[:running] = running
+        resp[:outstanding] = outstanding
+        resp
       end
     end
   end
