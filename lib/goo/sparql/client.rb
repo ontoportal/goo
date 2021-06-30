@@ -90,11 +90,10 @@ module Goo
         end
 
         data_file = File.read(bnodes_filter)
-        params = {method: :post, url: "#{url.to_s}", timeout: nil}
+        params = {method: :post, url: "#{url.to_s}", headers: {"content-type" => mime_type, "mime-type" => mime_type}, timeout: nil}
         backend_name = Goo.sparql_backend_name
 
         if backend_name == BACKEND_4STORE
-          params[:headers] = {"content-type" => mime_type, "mime-type" => mime_type}
           params[:payload] = {
             graph: graph.to_s,
             data: data_file,
@@ -103,16 +102,11 @@ module Goo
           #for some reason \\\\ breaks parsing
           params[:payload][:data] = params[:payload][:data].split("\n").map { |x| x.sub("\\\\","") }.join("\n")
         else
-          params[:headers] = {"content-type" => 'application/n-triples', "mime-type" => 'application/n-triples'}
-          params[:url] << "?context=#{CGI.escape("<#{graph.to_s}>")}&continueOnError=true"
+          params[:url] << "?context=#{CGI.escape("<#{graph.to_s}>")}"
           params[:payload] = data_file
         end
 
-        # begin
         response = RestClient::Request.execute(params)
-        # rescue Exception => e
-        #   binding.pry
-        # end
 
         unless dir.nil?
           File.delete(bnodes_filter)
