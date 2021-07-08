@@ -87,7 +87,7 @@ GEM
       activesupport (>= 2.3)
     rack-protection (2.1.0)
       rack
-    rake (13.0.4)
+    rake (13.0.5)
     rdf (1.0.8)
       addressable (>= 2.2)
     redis (4.3.1)
