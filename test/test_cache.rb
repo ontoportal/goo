@@ -21,7 +21,6 @@ class TestCache < MiniTest::Unit::TestCase
       redis.flushdb
     rescue Exception => e
       puts e.backtrace
-      binding.pry
     end
   end
 
