@@ -7,8 +7,8 @@ module TestSearch
   class TermSearch < Goo::Base::Resource
     model :term_search, name_with: :id
     attribute :prefLabel, enforce: [:existence]
-    attribute :synonym  #array of strings
-    attribute :definition  #array of strings
+    attribute :synonym  # array of strings
+    attribute :definition  # array of strings
     attribute :submissionAcronym, enforce: [:existence]
     attribute :submissionId, enforce: [:existence, :integer]
 
@@ -30,23 +30,23 @@ module TestSearch
     def setup
       @terms = [
         TermSearch.new(
-          :id => RDF::URI.new("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Melanoma"),
-          :prefLabel => "Melanoma",
-          :synonym => [
+          id: RDF::URI.new("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Melanoma"),
+          prefLabel: "Melanoma",
+          synonym: [
             "Cutaneous Melanoma",
             "Skin Cancer",
             "Malignant Melanoma"
           ],
-          :definition => "Melanoma refers to a malignant skin cancer",
-          :submissionAcronym => "NCIT",
-          :submissionId => 2,
-          :semanticType => "Neoplastic Process",
-          :cui => "C0025202"
+          definition: "Melanoma refers to a malignant skin cancer",
+          submissionAcronym: "NCIT",
+          submissionId: 2,
+          semanticType: "Neoplastic Process",
+          cui: "C0025202"
         ),
         TermSearch.new(
-          :id => RDF::URI.new("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Neoplasm"),
-          :prefLabel => "Neoplasm",
-          :synonym => [
+          id: RDF::URI.new("http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#Neoplasm"),
+          prefLabel: "Neoplasm",
+          synonym: [
             "tumor",
             "Neoplasms",
             "NEOPLASMS BENIGN",
@@ -54,15 +54,15 @@ module TestSearch
             "Neoplasia",
             "Neoplastic Growth"
           ],
-          :definition => "A benign or malignant tissue growth resulting from uncontrolled cell proliferation. "\
+          definition: "A benign or malignant tissue growth resulting from uncontrolled cell proliferation. "\
             "Benign neoplastic cells resemble normal cells without exhibiting significant cytologic atypia, while "\
             "malignant cells exhibit overt signs such as dysplastic features, atypical mitotic figures, necrosis, "\
             "nuclear pleomorphism, and anaplasia. Representative examples of benign neoplasms include papillomas, "\
             "cystadenomas, and lipomas; malignant neoplasms include carcinomas, sarcomas, lymphomas, and leukemias.",
-          :submissionAcronym => "NCIT",
-          :submissionId => 2,
-          :semanticType => "Neoplastic Process",
-          :cui => "C0375111"
+          submissionAcronym: "NCIT",
+          submissionId: 2,
+          semanticType: "Neoplastic Process",
+          cui: "C0375111"
         )
       ]
     end
