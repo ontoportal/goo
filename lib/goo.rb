@@ -197,7 +197,7 @@ module Goo
     configure_sanity_check()
 
     if @@search_backends.length > 0
-      @@search_backends.each { |name, val| @@search_connection[name] = RSolr.connect(:url => search_conf(name), :read_timeout => 1800, :open_timeout => 1800) }
+      @@search_backends.each { |name, val| @@search_connection[name] = RSolr.connect(url: search_conf(name), timeout: 1800, open_timeout: 1800) }
     end
 
     @@namespaces.freeze

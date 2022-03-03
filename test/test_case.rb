@@ -17,12 +17,11 @@ require_relative "../lib/goo.rb"
 class GooTest
 
   class Unit < MiniTest::Unit
+
     def before_suites
-      # code to run before the first test (gets inherited in sub-tests)
     end
 
     def after_suites
-      # code to run after the last test (gets inherited in sub-tests)
     end
 
     def _run_suites(suites, type)
@@ -53,7 +52,7 @@ class GooTest
   def self.configure_goo
     if not Goo.configure?
       Goo.configure do |conf|
-        conf.add_redis_backend(:host => "localhost")
+        conf.add_redis_backend(host: "localhost")
         conf.add_namespace(:omv, RDF::Vocabulary.new("http://omv.org/ontology/"))
         conf.add_namespace(:skos, RDF::Vocabulary.new("http://www.w3.org/2004/02/skos/core#"))
         conf.add_namespace(:owl, RDF::Vocabulary.new("http://www.w3.org/2002/07/owl#"))
@@ -64,15 +63,17 @@ class GooTest
         conf.add_namespace(:rdf, RDF::Vocabulary.new("http://www.w3.org/1999/02/22-rdf-syntax-ns#"))
         conf.add_namespace(:tiger, RDF::Vocabulary.new("http://www.census.gov/tiger/2002/vocab#"))
         conf.add_namespace(:bioportal, RDF::Vocabulary.new("http://data.bioontology.org/"))
-        conf.add_namespace(:nemo, RDF::Vocabulary.new(
-          "http://purl.bioontology.org/NEMO/ontology/NEMO_annotation_properties.owl#"))
-
-        conf.add_sparql_backend(:main, query: "http://localhost:8080/sparql/",
-                                data: "http://localhost:8080/data/",
-                                update: "http://localhost:8080/update/",
-                                options: { rules: :NONE })
-        conf.add_search_backend(:main, service: "http://localhost:8983/solr/term_search_core1" )
-        conf.use_cache=false
+        conf.add_namespace(:nemo, RDF::Vocabulary.new("http://purl.bioontology.org/NEMO/ontology/NEMO_annotation_properties.owl#"))
+        conf.add_sparql_backend(
+          :main, 
+          backend_name: "4store",
+          query: "http://localhost:9000/sparql/",
+          data: "http://localhost:9000/data/",
+          update: "http://localhost:9000/update/",
+          options: { rules: :NONE }
+        )
+        conf.add_search_backend(:main, service: "http://localhost:8983/solr/term_search_core1")
+        conf.use_cache = false
       end
     end
   end
