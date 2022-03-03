@@ -44,7 +44,6 @@ module TestReadOnly
                 .include(:name)
                 .include(enrolled: [:name, university: [ :address ]])
                 .read_only.all
-      binding.pry
     end
   end
 end
