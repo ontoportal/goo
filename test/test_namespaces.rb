@@ -2,7 +2,6 @@ require_relative 'test_case'
 
 GooTest.configure_goo
 
-
 class NamespacesModel < Goo::Base::Resource
   model :namespaces, namespace: :rdfs, name_with: :name
   attribute :name, enforce: [ :existence, :string, :unique ], namespace: :skos
@@ -14,9 +13,14 @@ class NamespacesModel < Goo::Base::Resource
   end
 end
 
-class TestNamespaces < GooTest
+class TestNamespaces < MiniTest::Unit::TestCase
   def initialize(*args)
     super(*args)
+  end
+
+  def setup
+    john = NamespacesModel.find("John").first
+    john.delete unless john.nil?
   end
 
   def test_namespaces
@@ -24,21 +28,21 @@ class TestNamespaces < GooTest
     assert ns.class.uri_type.to_s["http://www.w3.org/2000/01/rdf-schema#"] != nil
     assert ns.class.attribute_uri(:name).to_s["http://www.w3.org/2004/02/skos/core#"] != nil
     assert ns.class.attribute_uri(:description).to_s["http://xmlns.com/foaf/0.1/"] != nil
-    assert ns.class.attribute_uri(:location).to_s["http://goo.org/default/"] != nil
+    assert ns.class.attribute_uri(:location).to_s["http://www.w3.org/2000/01/rdf-schema#"] != nil
     assert ns.valid?
     ns.save
 
-    assert_equal(1, count_pattern(" #{ns.id.to_ntriples} a #{ns.class.uri_type.to_ntriples} ."))
-    assert_equal(1, count_pattern(" #{ns.id.to_ntriples} #{ns.class.attribute_uri(:name).to_ntriples} ?x ."))
-    assert_equal(1, count_pattern(" #{ns.id.to_ntriples} #{ns.class.attribute_uri(:description).to_ntriples} ?x ."))
-    assert_equal(1, count_pattern(" #{ns.id.to_ntriples} #{ns.class.attribute_uri(:location).to_ntriples} ?x ."))
+    assert_equal(1, GooTest.count_pattern(" #{ns.id.to_ntriples} a #{ns.class.uri_type.to_ntriples} ."))
+    assert_equal(1, GooTest.count_pattern(" #{ns.id.to_ntriples} #{ns.class.attribute_uri(:name).to_ntriples} ?x ."))
+    assert_equal(1, GooTest.count_pattern(" #{ns.id.to_ntriples} #{ns.class.attribute_uri(:description).to_ntriples} ?x ."))
+    assert_equal(1, GooTest.count_pattern(" #{ns.id.to_ntriples} #{ns.class.attribute_uri(:location).to_ntriples} ?x ."))
 
-    from_backend = NamespacesModel.find(ns.id, include: NamespacesModel.attributes)
+    from_backend = NamespacesModel.find(ns.id, include: NamespacesModel.attributes).first
     NamespacesModel.attributes.each do |attr|
       assert_equal ns.send("#{attr}"), from_backend.send("#{attr}")
     end
     from_backend.delete
     assert !from_backend.exist?
-    assert 0, triples_for_subject(from_backend.id)
+    assert 0, GooTest.triples_for_subject(from_backend.id)
   end
 end
