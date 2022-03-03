@@ -33,7 +33,7 @@ class TestWhere < MiniTest::Unit::TestCase
     st.bring(programs: [:credits])
     assert st.programs.length == 3
     st.programs.each do |p|
-      assert_instance_of Fixnum, p.credits
+      assert_instance_of Integer, p.credits
     end
 
     #nothing is loaded
