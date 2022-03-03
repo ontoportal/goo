@@ -21,7 +21,7 @@ module TestSearch
       "#{self.id.to_s}_#{self.submissionAcronym}_#{self.submissionId}"
     end
 
-    def index_doc()
+    def index_doc(to_set = nil)
       self.to_hash
     end
   end
