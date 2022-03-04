@@ -33,7 +33,7 @@ module TestChunkWrite
     def test_put_data
       graph = ONT_ID
       ntriples_file_path = "./test/data/nemo_ontology.ntriples"
-      triples_no_bnodes = 25293
+      triples_no_bnodes = 25256
 
       Goo.sparql_data_client.put_triples(graph, ntriples_file_path, mime_type="application/x-turtle")
 
@@ -51,7 +51,7 @@ module TestChunkWrite
     def test_put_delete_data
       graph = ONT_ID
       ntriples_file_path = "./test/data/nemo_ontology.ntriples"
-      triples_no_bnodes = 25293
+      triples_no_bnodes = 25256
 
       Goo.sparql_data_client.put_triples(graph, ntriples_file_path, mime_type="application/x-turtle")
 
@@ -103,7 +103,7 @@ module TestChunkWrite
       assert count_queries == 5
       tput.join
 
-      triples_no_bnodes = 25293
+      triples_no_bnodes = 25256
       count = "SELECT (count(?s) as ?c) WHERE { GRAPH <#{ONT_ID_EXTRA}> { ?s ?p ?o }}"
       Goo.sparql_query_client.query(count).each do |sol|
         assert sol[:c].object == triples_no_bnodes
