@@ -39,12 +39,12 @@ module TestChunkWrite
 
       count = "SELECT (count(?s) as ?c) WHERE { GRAPH <#{ONT_ID}> { ?s ?p ?o }}"
       Goo.sparql_query_client.query(count).each do |sol|
-        assert sol[:c].object == triples_no_bnodes
+        assert_equal triples_no_bnodes, sol[:c].object
       end
 
       count = "SELECT (count(?s) as ?c) WHERE { GRAPH <#{ONT_ID}> { ?s ?p ?o . FILTER(isBlank(?s)) }}"
       Goo.sparql_query_client.query(count).each do |sol|
-        assert sol[:c].object == 0
+        assert_equal 0, sol[:c].object
       end
     end
 
@@ -57,7 +57,7 @@ module TestChunkWrite
 
       count = "SELECT (count(?s) as ?c) WHERE { GRAPH <#{ONT_ID}> { ?s ?p ?o }}"
       Goo.sparql_query_client.query(count).each do |sol|
-        assert sol[:c].object == triples_no_bnodes
+        assert_equal triples_no_bnodes, sol[:c].object
       end
 
       puts "Starting deletion"
@@ -66,7 +66,7 @@ module TestChunkWrite
 
       count = "SELECT (count(?s) as ?c) WHERE { GRAPH <#{ONT_ID}> { ?s ?p ?o }}"
       Goo.sparql_query_client.query(count).each do |sol|
-        assert sol[:c].object == 0
+        assert_equal 0, sol[:c].object
       end
     end
 
@@ -101,13 +101,13 @@ module TestChunkWrite
       }
       tq.join
       assert tput.alive?
-      assert count_queries == 5
+      assert_equal 5, count_queries
       tput.join
 
       triples_no_bnodes = 25256
       count = "SELECT (count(?s) as ?c) WHERE { GRAPH <#{ONT_ID_EXTRA}> { ?s ?p ?o }}"
       Goo.sparql_query_client.query(count).each do |sol|
-        assert sol[:c].object == triples_no_bnodes
+        assert_equal triples_no_bnodes, sol[:c].object
       end
 
       tdelete = Thread.new {
@@ -126,12 +126,12 @@ module TestChunkWrite
       }
       tq.join
       assert tdelete.alive?
-      assert count_queries == 5
+      assert_equal 5, count_queries
       tdelete.join
 
       count = "SELECT (count(?s) as ?c) WHERE { GRAPH <#{ONT_ID_EXTRA}> { ?s ?p ?o }}"
       Goo.sparql_query_client.query(count).each do |sol|
-        assert sol[:c].object == 0
+        assert_equal 0, sol[:c].object
       end
     end
 
@@ -179,7 +179,7 @@ module TestChunkWrite
       tput.join
 
       assert log_status.map { |x| x[:outstanding] }.max > 0
-      assert log_status.map { |x| x[:running] }.max == 16
+      assert_equal 16, log_status.map { |x| x[:running] }.max
     end
 
   end
