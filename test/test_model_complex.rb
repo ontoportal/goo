@@ -671,7 +671,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
     terms = Term.in(submission)
     terms.each do |t|
       t.delete
-      assert_equal 0, GooTest.count_pattern("GRAPH #{submission.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }"))
+      assert_equal 0, GooTest.count_pattern("GRAPH #{submission.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }")
     end
 
     terms = []
