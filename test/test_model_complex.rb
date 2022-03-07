@@ -696,7 +696,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
                  .include(Term.attributes)
                  .page(1)
                  .all
-    assert page_terms.length == 0
+    assert_equal 0, page_terms.length
   end
 
   def test_readonly_pages_with_include
