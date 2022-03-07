@@ -342,7 +342,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
     van.synonym = ["cargo", "syn van"]
     van.definition = ["vehicle def 1", "vehicle def 2"]
     van.parents = [vehicle]
-    assert van.valid?
+    assert van.valid?, "Invalid term: [id: #{van.id}, errors: #{van.errors}]"
     van.save
 
     assert_equal 1, GooTest.count_pattern(
@@ -510,7 +510,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
       elsif i > 0
         term.parents = [terms[5]]
       end
-      assert term.valid?
+      assert term.valid?, "Invalid term: [id: #{term.id}, errors: #{term.errors}]"
       term.save
       terms << term
     end
@@ -667,12 +667,13 @@ class TestModelComplex < MiniTest::Unit::TestCase
     else
       submission = Submission.find("submission1").first
     end
+
     terms = Term.in(submission)
     terms.each do |t|
       t.delete
-      assert_equal(0, 
-       GooTest.count_pattern("GRAPH #{submission.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }"))
+      assert_equal 0, GooTest.count_pattern("GRAPH #{submission.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }"))
     end
+
     terms = []
     10.times do |i|
       term = Term.new
@@ -682,7 +683,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
       if i >= 1 && i < 5
         term.parents = [terms[0]]
       end
-      assert term.valid?
+      assert term.valid?, "Invalid term: [id: #{term.id}, errors: #{term.errors}]"
       term.save
       terms << term
     end
@@ -722,7 +723,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
       elsif i >= 2
         term.parents = [terms[1]]
       end
-      assert term.valid?
+      assert term.valid?, "Invalid term: [id: #{term.id}, errors: #{term.errors}]"
       term.save
       terms << term
     end
