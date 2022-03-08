@@ -18,4 +18,4 @@ group :profiling do
   gem 'thin'
 end
 
-gem 'sparql-client', github: 'ncbo/sparql-client', branch: 'master'
+gem 'sparql-client', github: 'ncbo/sparql-client', branch: 'develop'
