@@ -19,6 +19,7 @@ module Goo
         @variables = variables
         @options = options
 
+
       end
 
       def map_each_solutions(select)
@@ -31,9 +32,9 @@ module Goo
 
         found = Set.new
         objects_new = {}
-        var_set_hash = {}
         list_attributes = Set.new(klass.attributes(:list))
         all_attributes = Set.new(klass.attributes(:all))
+        @lang_filter = Goo::SPARQL::Solution::LanguageFilter.new
 
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
@@ -83,11 +84,13 @@ module Goo
 
             object = object_to_array(id, @klass_struct, @models_by_id, object, v) if list_attributes.include?(v)
 
-            model_map_attributes_values(id, var_set_hash, @models_by_id, object, sol, v) unless object.nil?
+            model_map_attributes_values(id, object, sol, v)
           end
         end
+        @lang_filter.fill_models_with_other_languages(@models_by_id, list_attributes)
 
         return @models_by_id if @bnode_extraction
+
         model_set_collection_attributes(collection, klass, @models_by_id, objects_new)
 
         #remove from models_by_id elements that were not touched
@@ -119,7 +122,6 @@ module Goo
         end
       end
 
-
       def create_struct(bnode_extraction, klass, models_by_id, sol, variables)
         list_attributes = Set.new(klass.attributes(:list))
         struct = klass.range(bnode_extraction).new
@@ -144,6 +146,7 @@ module Goo
         klass_model.klass = klass if klass_struct
         klass_model
       end
+
       def models_unmapped_to_array(models_by_id)
         models_by_id.each do |idm, m|
           m.unmmaped_to_array
@@ -215,35 +218,31 @@ module Goo
       def get_collection_value(collection, klass)
         collection_value = nil
         if klass.collection_opts.instance_of?(Symbol)
-          if collection.is_a?(Array) && (collection.length == 1)
-            collection_value = collection.first
-          end
-          if collection.respond_to? :id
-            collection_value = collection
-          end
+          collection_value = collection.first if collection.is_a?(Array) && (collection.length == 1)
+          collection_value = collection if collection.respond_to? :id
         end
         collection_value
       end
 
-      def model_map_attributes_values(id, var_set_hash, models_by_id, object, sol, v)
-        if models_by_id[id].respond_to?(:klass)
-          models_by_id[id][v] = object if models_by_id[id][v].nil?
+      def model_map_attributes_values(id, object, sol, v)
+
+        if @models_by_id[id].respond_to?(:klass)
+          @models_by_id[id][v] = object if @models_by_id[id][v].nil?
         else
-          model_attribute_val = models_by_id[id].instance_variable_get("@#{v.to_s}")
-          if (!models_by_id[id].class.handler?(v) || model_attribute_val.nil?) && v != :id
+          model_attribute_val = @models_by_id[id].instance_variable_get("@#{v.to_s}")
+          if (!@models_by_id[id].class.handler?(v) || model_attribute_val.nil?) && v != :id
             # if multiple language values are included for a given property, set the
             # corresponding model attribute to the English language value - NCBO-1662
             if sol[v].kind_of?(RDF::Literal)
-              key = "#{v}#__#{id.to_s}"
-              models_by_id[id].send("#{v}=", object, on_load: true) unless var_set_hash[key]
-              lang = sol[v].language
-              var_set_hash[key] = true if lang == :EN || lang == :en
-            else
-              models_by_id[id].send("#{v}=", object, on_load: true)
+              index, value = @lang_filter.main_lang_filter id, v, object, sol[v]
+              @models_by_id[id].send("#{v}=", value, on_load: true) if index.eql? :no_lang
+            elsif model_attribute_val.nil?
+              @models_by_id[id].send("#{v}=", object, on_load: true)
             end
           end
         end
       end
+
 
       def object_to_array(id, klass_struct, models_by_id, object, v)
         pre = klass_struct ? models_by_id[id][v] :
@@ -301,11 +300,11 @@ module Goo
         if models_by_id[id] &&
           ((models_by_id[id].respond_to?(:klass) && models_by_id[id]) ||
             models_by_id[id].loaded_attributes.include?(v))
-          if !read_only
-            pre_val = models_by_id[id].instance_variable_get("@#{v}")
+          pre_val = if !read_only
+            models_by_id[id].instance_variable_get("@#{v}")
           else
-            pre_val = models_by_id[id][v]
-          end
+            models_by_id[id][v]
+                    end
 
           pre_val = pre_val.select { |x| x.id == object }.first if pre_val.is_a?(Array)
         end
