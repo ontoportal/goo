@@ -13,7 +13,7 @@ module Goo
         @aggregate = options[:aggregate]
         @collection = options[:collection]
         @model_query_options = options[:query_options]
-
+        @enable_rules = options[:rules]
         @unions = []
       end
 
@@ -28,6 +28,16 @@ module Goo
                                                                                                  @unions, variables)
         filter_id_str, query_filter_str = filter_id_query_strings(@collection, graphs, ids, internal_variables,
                                                                   klass, optional_patterns, patterns, @query_filters)
+
+
+        order_by, variables, patterns = order_by(@count, klass, order_by, patterns, variables)
+
+        query_options[:rules] = [:NONE] unless @enable_rules
+        query_options = nil if query_options.empty?
+
+        variables = [] if @count
+
+        variables, patterns = add_some_type_to_id(patterns, query_options, variables)
 
         select = get_select(aggregate_projections, variables, @store)
         variables.delete :some_type
@@ -66,8 +76,8 @@ module Goo
         end
 
         if @page
-          offset = (page[:page_i] - 1) * page[:page_size]
-          select.slice(offset, page[:page_size])
+          offset = (@page[:page_i] - 1) * @page[:page_size]
+          select.slice(offset, @page[:page_size])
         end
 
         select.distinct(true)
@@ -101,6 +111,20 @@ module Goo
 
       private
 
+      def order_by(count, klass, order_by, patterns, variables)
+      order_by = nil if count
+      if order_by
+        order_by = order_by.first
+        #simple ordering ... needs to use pattern inspection
+        order_by.each do |attr, direction|
+          quad = query_pattern(klass, attr)
+          patterns << quad[1]
+          #mdorf, 9/22/16 If an ORDER BY clause exists, the columns used in the ORDER BY should be present in the SPARQL select
+          variables << attr unless variables.include?(attr)
+        end
+      end
+      [order_by, variables, patterns]
+      end
       def sparql_op_string(op)
         case op
         when :or
@@ -115,6 +139,7 @@ module Goo
 
       def graph_match(collection, graph_match, graphs, klass, patterns, query_options, unions)
         internal_variables = []
+
         if graph_match
           #make it deterministic - for caching
           graph_match_iteration = Goo::Base::PatternIteration.new(graph_match)
@@ -227,7 +252,11 @@ module Goo
       end
 
 
+
       def get_aggregate_vars(aggregate, collection, graphs, internal_variables, klass, optional_patterns, unions, variables)
+        # mdorf, 6/03/20 If aggregate projections (sub-SELECT within main SELECT) use an alias, that alias cannot appear in the main SELECT
+        # https://github.com/ncbo/goo/issues/106
+        # See last sentence in https://www.w3.org/TR/sparql11-query/#aggregateExample
         aggregate_vars = nil
         aggregate_projections = nil
         if aggregate
@@ -295,6 +324,15 @@ module Goo
         client.select(*select_vars).distinct()
       end
 
+
+      def add_some_type_to_id(patterns, query_options, variables)
+        #rdf:type <x> breaks the reasoner
+        if query_options && query_options[:rules] != [:NONE]
+          patterns[0] = [:id, RDF[:type], :some_type]
+          variables << :some_type
+        end
+        [variables, patterns]
+      end
 
     end
   end

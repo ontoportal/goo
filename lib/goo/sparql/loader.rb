@@ -40,7 +40,6 @@ module Goo
         models = options[:models]
         aggregate = options[:aggregate]
         read_only = options[:read_only]
-        enable_rules = options[:rules]
         order_by = options[:order_by]
         collection = options[:collection]
         count = options[:count]
@@ -67,6 +66,7 @@ module Goo
         incl_embed = nil
         unmapped = nil
         bnode_extraction = nil
+
         if incl
           if incl.first && incl.first.is_a?(Hash) && incl.first.include?(:bnode)
             #limitation only one level BNODE
@@ -80,18 +80,9 @@ module Goo
           end
         end
 
-        order_by, variables, patterns = order_by(count, klass, order_by, patterns, variables)
 
-        query_options[:rules] = [:NONE] unless enable_rules
-        query_options = nil if query_options.empty?
 
-        variables = [] if count
 
-        variables, patterns = add_some_type_to_id(patterns, query_options, variables)
-
-        # mdorf, 6/03/20 If aggregate projections (sub-SELECT within main SELECT) use an alias, that alias cannot appear in the main SELECT
-        # https://github.com/ncbo/goo/issues/106
-        # See last sentence in https://www.w3.org/TR/sparql11-query/#aggregateExample
 
         query_builder = Goo::SPARQL::QueryBuilder.new options
         select, aggregate_projections =
@@ -168,29 +159,8 @@ module Goo
         predicates_map
       end
 
-      def self.add_some_type_to_id(patterns, query_options, variables)
-        #rdf:type <x> breaks the reasoner
-        if query_options && query_options[:rules] != [:NONE]
-          patterns[0] = [:id, RDF[:type], :some_type]
-          variables << :some_type
-        end
-        [variables, patterns]
-      end
 
-      def self.order_by(count, klass, order_by, patterns, variables)
-        order_by = nil if count
-        if order_by
-          order_by = order_by.first
-          #simple ordering ... needs to use pattern inspection
-          order_by.each do |attr, direction|
-            quad = query_pattern(klass, attr)
-            patterns << quad[1]
-            #mdorf, 9/22/16 If an ORDER BY clause exists, the columns used in the ORDER BY should be present in the SPARQL select
-            variables << attr unless variables.include?(attr)
-          end
-        end
-        [order_by, variables, patterns]
-      end
+
 
       def self.get_includes(collection, graphs, incl, klass, optional_patterns, query_options, variables)
         incl = incl.to_a
@@ -212,7 +182,7 @@ module Goo
           optional_patterns << pattern if pattern
           graphs << graph if graph && (!klass.collection_opts || klass.inverse?(attr))
         end
-        return incl, incl_embed, variables, graphs, optional_patterns
+        [incl, incl_embed, variables, graphs, optional_patterns]
       end
 
       def self.get_binding_as(patterns, predicates_map)
