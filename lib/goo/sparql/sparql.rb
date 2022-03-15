@@ -1,6 +1,6 @@
 require "sparql/client"
 
-require_relative "query_pattern"
+require_relative "mixins/query_pattern"
 require_relative "query_builder"
 require_relative "solutions_mapper"
 require_relative "client"

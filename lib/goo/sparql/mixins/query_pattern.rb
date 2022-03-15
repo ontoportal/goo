@@ -4,9 +4,7 @@ module Goo
 
 
       def add_rules(attr,klass,query_options)
-        if klass.transitive?(attr)
-          (query_options[:rules] ||=[]) << :SUBC
-        end
+        (query_options[:rules] ||= []) << :SUBC  if klass.transitive?(attr)
       end
 
       def query_pattern(klass,attr,**opts)
