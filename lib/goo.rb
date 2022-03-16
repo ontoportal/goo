@@ -26,7 +26,9 @@ module Goo
   @@resource_options = Set.new([:persistent]).freeze
 
   # Define the languages from which the properties values will be taken
+  # It choose the first language that match otherwise return all the values
   @@main_languages = %w[en]
+
   @@configure_flag = false
   @@sparql_backends = {}
   @@model_by_name = {}
