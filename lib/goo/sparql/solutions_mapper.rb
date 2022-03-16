@@ -6,7 +6,7 @@ module Goo
 
       def initialize(aggregate_projections, bnode_extraction, embed_struct,
                      incl_embed, klass_struct, models_by_id,
-                     predicates_map, unmapped, variables, options)
+                     predicates_map, unmapped, variables, incl, options)
 
         @aggregate_projections = aggregate_projections
         @bnode_extraction = bnode_extraction
@@ -17,6 +17,7 @@ module Goo
         @predicates_map = predicates_map
         @unmapped = unmapped
         @variables = variables
+        @incl = incl
         @options = options
 
 
@@ -28,7 +29,7 @@ module Goo
         klass = @options[:klass]
         read_only = @options[:read_only]
         collection = @options[:collection]
-        incl = @options[:include]
+
 
         found = Set.new
         objects_new = {}
@@ -72,7 +73,7 @@ module Goo
             object = sol[v] || nil
 
             #bnodes
-            if object.kind_of?(RDF::Node) && object.anonymous? && incl.include?(v)
+            if object.kind_of?(RDF::Node) && object.anonymous? && @incl.include?(v)
               initialize_object(id, klass, object, objects_new, v)
               next
             end
@@ -100,6 +101,7 @@ module Goo
 
         #next level of embed attributes
         include_embed_attributes(collection, @incl_embed, klass, objects_new) if @incl_embed && !@incl_embed.empty?
+
 
         #bnodes
         bnodes = objects_new.select { |id, obj| id.is_a?(RDF::Node) && id.anonymous? }
@@ -182,7 +184,7 @@ module Goo
           }.values
           unless range_objs.empty?
             range_objs.uniq!
-            attr_range.where().models(range_objs).in(collection).include(*next_attrs).all
+            attr_range.where.models(range_objs).in(collection).include(*next_attrs).all
           end
         end
       end
@@ -225,7 +227,7 @@ module Goo
       end
 
       def model_map_attributes_values(id, object, sol, v)
-
+        #binding.pry if v.eql? :programs
         if @models_by_id[id].respond_to?(:klass)
           @models_by_id[id][v] = object if @models_by_id[id][v].nil?
         else
@@ -236,7 +238,7 @@ module Goo
             if sol[v].kind_of?(RDF::Literal)
               index, value = @lang_filter.main_lang_filter id, v, object, sol[v]
               @models_by_id[id].send("#{v}=", value, on_load: true) if index.eql? :no_lang
-            elsif model_attribute_val.nil?
+            elsif model_attribute_val.nil? || !object.nil?
               @models_by_id[id].send("#{v}=", object, on_load: true)
             end
           end
