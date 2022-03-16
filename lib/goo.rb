@@ -19,12 +19,15 @@ require_relative "goo/validators/enforce"
 require_relative "goo/utils/utils"
 require_relative "goo/mixins/sparql_client"
 
+
 module Goo
+
 
   @@resource_options = Set.new([:persistent]).freeze
 
-  # Define the languages from which the properties values will be taken (be careful if prefLabel with different lang, only one will be taken)
-  @@main_lang = ["en","eng"]
+  # Define the languages from which the properties values will be taken
+  # It choose the first language that match otherwise return all the values
+  @@main_languages = %w[en]
 
   @@configure_flag = false
   @@sparql_backends = {}
@@ -42,6 +45,19 @@ module Goo
   @@use_cache = false
 
   @@slice_loading_size = 500
+
+
+  def self.main_languages
+    @@main_languages
+  end
+  def self.main_languages=(lang)
+    @@main_languages = lang
+  end
+
+  def self.language_includes(lang)
+    lang_str = lang.to_s
+    main_languages.index { |l| lang_str.downcase.eql?(l) || lang_str.upcase.eql?(l)}
+  end
 
   def self.add_namespace(shortcut, namespace,default=false)
     if !(namespace.instance_of? RDF::Vocabulary)
@@ -238,7 +254,7 @@ module Goo
   end
 
   def self.sparql_query_client(name=:main)
-    return @@sparql_backends[name][:query]
+    @@sparql_backends[name][:query]
   end
 
   def self.sparql_update_client(name=:main)
