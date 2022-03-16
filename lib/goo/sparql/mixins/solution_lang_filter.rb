@@ -38,8 +38,12 @@ module Goo
           matched_lang, not_matched_lang = matched_languages(language_values, no_lang_values)
           if !matched_lang.empty?
             main_lang = Array(matched_lang[:'0']) + Array(matched_lang[:no_lang])
-            secondary_languages = matched_lang.select { |key| key != :'0' && key != :no_lang }.sort.map { |x| x[1] }.flatten
-            values = main_lang + secondary_languages
+            if main_lang.empty?
+              secondary_languages = matched_lang.select { |key| key != :'0' && key != :no_lang }.sort.map { |x| x[1] }
+              values = secondary_languages.first
+            else
+              values = main_lang
+            end
           elsif !not_matched_lang.empty?
             values = not_matched_lang
           end
