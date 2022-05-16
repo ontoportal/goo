@@ -47,7 +47,7 @@ module Goo
           elsif !not_matched_lang.empty?
             values = not_matched_lang
           end
-          values
+          values&.uniq
         end
 
         private
