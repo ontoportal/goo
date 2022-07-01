@@ -196,6 +196,35 @@ module Goo
         resp[:outstanding] = outstanding
         resp
       end
+
+      private
+
+      def execute_append_request(graph, data_file, mime_type_in)
+        mime_type = "text/turtle"
+
+        if mime_type_in == "text/x-nquads"
+          mime_type = "text/x-nquads"
+          graph = "http://data.bogus.graph/uri"
+        end
+
+        params = {method: :post, url: "#{url.to_s}", headers: {"content-type" => mime_type, "mime-type" => mime_type}, timeout: nil}
+        backend_name = Goo.sparql_backend_name
+
+        if backend_name == BACKEND_4STORE
+          params[:payload] = {
+            graph: graph.to_s,
+            data: data_file,
+            'mime-type' => mime_type
+          }
+          #for some reason \\\\ breaks parsing
+          params[:payload][:data] = params[:payload][:data].split("\n").map { |x| x.sub("\\\\","") }.join("\n")
+        else
+          params[:url] << "?context=#{CGI.escape("<#{graph.to_s}>")}"
+          params[:payload] = data_file
+        end
+
+        RestClient::Request.execute(params)
+      end
     end
   end
 end
