@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  4store:
+    image: bde2020/4store
+    ports:
+      - 9000:9000
+    command: >
+      bash -c "4s-backend-setup --segments 4 ontoportal_kb
+      && 4s-backend ontoportal_kb
+      && 4s-httpd -D -s-1 -p 9000 ontoportal_kb"
+
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  solr:
+    image: ontoportal/solr-ut:0.1
+    ports:
+      - 8983:8983
