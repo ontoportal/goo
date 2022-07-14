@@ -97,6 +97,31 @@ module Goo
         solution_mapper.map_each_solutions(select)
       end
 
+      # Expand equivalent predicate for attribute that are retrieved using filter (the new way to retrieve...)
+      # i.e.: prefLabel can also be retrieved using the "http://data.bioontology.org/metadata/def/prefLabel" URI
+      # so we add "http://data.bioontology.org/metadata/def/prefLabel" to the array_includes_filter that will generates a filter on property for meta:prefLabel
+      # and we add the following entry to the uri_properties_hash: "http://data.bioontology.org/metadata/def/prefLabel" => "prefLabel"
+      # So the object of http://data.bioontology.org/metadata/def/prefLabel will be retrieved and added to this attribute
+      def self.expand_equivalent_predicates_filter(eq_p, array_includes_filter, uri_properties_hash)
+        array_includes_filter_out = array_includes_filter.dup
+        if eq_p && eq_p.length > 0
+          if array_includes_filter
+            array_includes_filter.each do |predicate_filter|
+              if predicate_filter && predicate_filter.is_a?(RDF::URI)
+                if eq_p.include?(predicate_filter.to_s)
+                  eq_p[predicate_filter.to_s].each do |predicate_mapping|
+                    pred_map_uri = RDF::URI.new(predicate_mapping)
+                    array_includes_filter_out << pred_map_uri
+                    uri_properties_hash[pred_map_uri] = uri_properties_hash[predicate_filter]
+                  end
+                end
+              end
+            end
+          end
+        end
+        return array_includes_filter_out, uri_properties_hash
+      end
+
       def self.expand_equivalent_predicates(query, eq_p)
         attribute_mappings = {}
         if eq_p && eq_p.length.positive?
