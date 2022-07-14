@@ -61,11 +61,13 @@ module Goo
         query_options = {}
         #TODO: breaks the reasoner
         patterns = [[:id, RDF.type, klass.uri_type(collection)]]
-        optional_patterns = []
 
         incl_embed = nil
         unmapped = nil
         bnode_extraction = nil
+        optional_patterns = []
+        array_includes_filter = []
+        uri_properties_hash = {}  # hash that contains "URI of the property => attribute label"
 
         if incl
           if incl.first && incl.first.is_a?(Hash) && incl.first.include?(:bnode)
@@ -76,10 +78,14 @@ module Goo
             binding_as, unmapped, variables = get_binding_as(patterns, predicates_map)
           else
             #make it deterministic
-            incl, incl_embed, variables, graphs, optional_patterns = get_includes(collection, graphs, incl, klass, optional_patterns, query_options, variables)
+            incl, incl_embed, variables, graphs, optional_patterns, uri_properties_hash, array_includes_filter =
+              get_includes(collection, graphs, incl, klass, query_options, variables)
+            array_includes_filter, uri_properties_hash = expand_equivalent_predicates_filter(equivalent_predicates,
+                                                                                             array_includes_filter,
+                                                                                             uri_properties_hash)
+            array_includes_filter.uniq!
           end
         end
-
 
 
 
