@@ -296,25 +296,6 @@ module Goo
         end
       end
 
-      def self.include_bnodes(bnodes, collection, klass, models_by_id)
-        #group by attribute
-        attrs = bnodes.map { |x, y| y.attribute }.uniq
-        attrs.each do |attr|
-          struct = klass.range(attr)
-
-          #bnodes that are in a range of goo ground models
-          #for example parents and children in LD class models
-          #we skip this cases for the moment
-          next if struct.respond_to?(:model_name)
-
-          bnode_attrs = struct.new.to_h.keys
-          ids = bnodes.select { |x, y| y.attribute == attr }.map { |x, y| y.id }
-          klass.where.models(models_by_id.select { |x, y| ids.include?(x) }.values)
-               .in(collection)
-               .include(bnode: { attr => bnode_attrs }).all
-        end
-      end
-
       def self.include_embed_attributes(collection, incl_embed, klass, objects_new)
         incl_embed.each do |attr, next_attrs|
           #anything to join ?
