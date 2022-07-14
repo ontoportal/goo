@@ -184,30 +184,48 @@ module Goo
         predicates_map
       end
 
-
-
-
-      def self.get_includes(collection, graphs, incl, klass, optional_patterns, query_options, variables)
+      def self.get_includes(collection, graphs, incl, klass, query_options, variables)
         incl = incl.to_a
         incl_direct = incl.select { |a| a.instance_of?(Symbol) }
-        variables.concat(incl_direct)
+        #variables.concat(incl_direct)
         incl_embed = incl.select { |a| a.instance_of?(Hash) }
-        raise ArgumentError, "Not supported case for embed" if incl_embed.length > 1
+        raise ArgumentError, 'Not supported case for embed' if incl_embed.length > 1
+
         incl.delete_if { |a| !a.instance_of?(Symbol) }
 
         if incl_embed.length.positive?
           incl_embed = incl_embed.first
           embed_variables = incl_embed.keys.sort
-          variables.concat(embed_variables)
+          #variables.concat(embed_variables)
           incl.concat(embed_variables)
         end
+
+        variables.concat(%i[attributeProperty attributeObject])
+        optional_patterns = [%i[id attributeProperty attributeObject]]
+        array_includes_filter = []
+        uri_properties_hash = {}  # hash that contains "URI of the property => attribute label"
+        inverted = false
+
         incl.each do |attr|
           graph, pattern = query_pattern(klass, attr, collection: collection)
           add_rules(attr, klass, query_options)
-          optional_patterns << pattern if pattern
+          if klass.attributes(:all).include?(attr) && klass.inverse?(attr) && !inverted
+            # In case we have an inverse attribute to retrieve (i.e.: submissions linked to an ontology)
+            inverted = true
+            variables.concat([:inverseAttributeObject])
+            optional_patterns << %i[inverseAttributeObject attributeProperty id]
+          end
+          # When doing a "bring" the poorly written optional patterns come from here
+          #optional_patterns << pattern if pattern
+          array_includes_filter << pattern[1] # just take the URI of the attribute property
+
+          # The URI of the property is added to an hash (i.e.: "http://data.bioontology.org/metadata/def/prefLabel" => "prefLabel")
+          # so we can retrieve the property linked to this URI when retrieving the results
+          uri_properties_hash[pattern[1]] = attr
+
           graphs << graph if graph && (!klass.collection_opts || klass.inverse?(attr))
         end
-        [incl, incl_embed, variables, graphs, optional_patterns]
+        [incl, incl_embed, variables, graphs, optional_patterns, uri_properties_hash, array_includes_filter]
       end
 
       def self.get_binding_as(patterns, predicates_map)
