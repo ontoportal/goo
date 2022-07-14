@@ -18,8 +18,7 @@ module Goo
       end
 
       def build_select_query(ids, binding_as, klass, graphs, optional_patterns,
-                             order_by, patterns, query_options, variables)
-
+                             order_by, patterns, query_options, variables, array_includes_filter)
 
         internal_variables = graph_match(@collection, @graph_match, graphs, klass, patterns, query_options, @unions)
         aggregate_projections, aggregate_vars, variables, optional_patterns = get_aggregate_vars(@aggregate, @collection,
@@ -51,8 +50,14 @@ module Goo
           order_by_str = order_by.map { |attr, order| "#{order.to_s.upcase}(?#{attr})" }
           select.order_by(*order_by_str)
         end
-
         select.filter(filter_id_str)
+
+        # Add the included attributes properties to the filter (to retrieve all the attributes we ask for)
+        if !array_includes_filter.nil? && array_includes_filter.length > 0
+          filter_predicates = array_includes_filter.map { |p| "?attributeProperty = #{p.to_ntriples}" }
+          filter_predicates = filter_predicates.join " || "
+          select.filter(filter_predicates)
+        end
 
         #if unmapped && predicates && predicates.length > 0
         #  filter_predicates = predicates.map { |p| "?predicate = #{p.to_ntriples}" }
@@ -125,6 +130,8 @@ module Goo
       end
       [order_by, variables, patterns]
       end
+
+
       def sparql_op_string(op)
         case op
         when :or

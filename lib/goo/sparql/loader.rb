@@ -94,7 +94,8 @@ module Goo
         select, aggregate_projections =
           query_builder.build_select_query(ids, binding_as,
                                            klass, graphs, optional_patterns,
-                                           order_by, patterns, query_options, variables)
+                                           order_by, patterns, query_options,
+                                           variables, array_includes_filter)
 
         expand_equivalent_predicates(select, equivalent_predicates)
         solution_mapper = Goo::SPARQL::SolutionMapper.new aggregate_projections, bnode_extraction,
