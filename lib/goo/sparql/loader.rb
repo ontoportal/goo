@@ -8,7 +8,7 @@ module Goo
       def self.model_load(*options)
         options = options.last
         if options[:models] && options[:models].is_a?(Array) && \
-                             (options[:models].length > Goo.slice_loading_size)
+           (options[:models].length > Goo.slice_loading_size)
           options = options.dup
           models = options[:models]
           include_options = options[:include]
@@ -23,9 +23,9 @@ module Goo
               models_by_id[m.id] = m
             end
           end
-          return models_by_id
+           models_by_id
         else
-          return self.model_load_sliced(options)
+          self.model_load_sliced(options)
         end
       end
 
@@ -147,10 +147,10 @@ module Goo
           predicates_map = {}
           uniq_p.each do |p|
             i = 0
-            key = ("var_" + p.last_part + i.to_s).to_sym
+            key = ('var_' + p.last_part + i.to_s).to_sym
             while predicates_map.include?(key)
               i += 1
-              key = ("var_" + p.last_part + i.to_s).to_sym
+              key = ('var_' + p.last_part + i.to_s).to_sym
               break if i > 10
             end
             predicates_map[key] = p
@@ -188,14 +188,14 @@ module Goo
       def self.get_binding_as(patterns, predicates_map)
         binding_as = nil
         if predicates_map
-          variables = [:id, :object, :bind_as]
+          variables = %i[id object bind_as]
           binding_as = []
           predicates_map.each do |var, pre|
             binding_as << [[[:id, pre, :object]], var, :bind_as]
           end
         else
-          patterns << [:id, :predicate, :object]
-          variables = [:id, :predicate, :object]
+          patterns << %i[id predicate object]
+          variables = %i[id predicate object]
         end
         unmapped = true
         return binding_as, unmapped, variables
@@ -268,6 +268,7 @@ module Goo
           if incl_embed
             incl_embed.each do |k, vals|
               next if klass.collection?(k)
+
               attrs_struct = []
               vals.each do |v|
                 attrs_struct << v unless v.kind_of?(Hash)
@@ -278,18 +279,19 @@ module Goo
           end
           direct_incl.each do |attr|
             next if embed_struct.include?(attr)
+
             embed_struct[attr] = klass.range(attr).struct_object([]) if klass.range(attr)
           end
 
         end
-        return embed_struct, klass_struct
+        [embed_struct, klass_struct]
       end
 
       def self.raise_resource_must_persistent_error(models)
         models.each do |m|
           if (not m.nil?) && !m.respond_to?(:klass) #read only
             raise ArgumentError,
-                  "To load attributes the resource must be persistent" unless m.persistent?
+                  'To load attributes the resource must be persistent' unless m.persistent?
           end
         end
       end
@@ -348,7 +350,7 @@ module Goo
               collection_attribute = obj_new[:klass].collection_opts
               obj_new[collection_attribute] = collection_value
             elsif obj_new.class.respond_to?(:collection_opts) &&
-              obj_new.class.collection_opts.instance_of?(Symbol)
+                  obj_new.class.collection_opts.instance_of?(Symbol)
               collection_attribute = obj_new.class.collection_opts
               obj_new.send("#{collection_attribute}=", collection_value)
             end
@@ -399,7 +401,7 @@ module Goo
                 if Goo.main_lang.nil?
                   models_by_id[id].send("#{v}=", object, on_load: true)
 
-                elsif (v.to_s.eql?("prefLabel"))
+                elsif (v.to_s.eql?('prefLabel'))
                   # Special treatment for prefLabel where we want to extract the main_lang first, or anything else
                   unless main_lang_hash[key]
 
