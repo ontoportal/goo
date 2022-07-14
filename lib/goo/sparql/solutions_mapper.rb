@@ -6,7 +6,7 @@ module Goo
 
       def initialize(aggregate_projections, bnode_extraction, embed_struct,
                      incl_embed, klass_struct, models_by_id,
-                     predicates_map, unmapped, variables, options)
+                     predicates_map, unmapped, variables, uri_properties_hash, options)
 
         @aggregate_projections = aggregate_projections
         @bnode_extraction = bnode_extraction
@@ -18,6 +18,7 @@ module Goo
         @unmapped = unmapped
         @variables = variables
         @options = options
+        @uri_properties_hash = uri_properties_hash
 
       end
 
@@ -34,6 +35,7 @@ module Goo
         var_set_hash = {}
         list_attributes = Set.new(klass.attributes(:list))
         all_attributes = Set.new(klass.attributes(:all))
+        id_array = []
 
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
@@ -42,6 +44,7 @@ module Goo
 
           found.add(sol[:id])
           id = sol[:id]
+          id_array << id ## TODO same as "found"
 
           if @bnode_extraction
             struct = create_struct(@bnode_extraction, klass, @models_by_id, sol, @variables)
@@ -60,34 +63,147 @@ module Goo
             next
           end
 
-          @variables.each do |v|
-            next if (v == :id) && @models_by_id.include?(id)
-            if (v != :id) && !all_attributes.include?(v)
-              model_add_aggregation(@aggregate_projections, @models_by_id, sol, v)
-              #TODO otther schemaless things
-              next
+          # Retrieve aggregates count
+          @aggregate_projections&.each do |aggregate_key, aggregate_val|
+            if @models_by_id[id].respond_to?(:add_aggregate)
+              @models_by_id[id].add_aggregate(aggregate_val[1], aggregate_val[0], sol[aggregate_key].object)
+            else
+              (@models_by_id[id].aggregates ||= []) << Goo::Base::AGGREGATE_VALUE.new(aggregate_val[1],
+                                                                                      aggregate_val[0],
+                                                                                      sol[aggregate_key].object)
             end
-            #group for multiple values
-            object = sol[v] || nil
+          end
 
-            #bnodes
-            if object.kind_of?(RDF::Node) && object.anonymous? && incl.include?(v)
-              initialize_object(id, klass, object, objects_new, v)
-              next
+          next if sol[:attributeProperty].nil?
+
+          # Retrieve all included attributes
+          object = if !sol[:attributeObject].nil?
+                     sol[:attributeObject]
+                   elsif !sol[:inverseAttributeObject].nil?
+                     sol[:inverseAttributeObject]
+                   end
+
+          # Get the property label using the hash
+
+          v = @uri_properties_hash[sol[:attributeProperty]]
+
+          next if v.nil? || ((v != :id) && !all_attributes.include?(v))
+
+          #group for multiple values
+          #bnodes
+          if object.kind_of?(RDF::Node) && object.anonymous? && incl.include?(v)
+            range = klass.range(v)
+            if range.respond_to?(:new)
+              objects_new[object] = BNODES_TUPLES.new(id, v)
+            end
+            next
+          end
+
+          if object and !(object.kind_of? RDF::URI)
+            object = object.object
+          end
+
+          #dependent model creation
+          if object.kind_of?(RDF::URI) && v != :id
+            range_for_v = klass.range(v)
+            if range_for_v
+              if objects_new.include?(object)
+                object = objects_new[object]
+              else
+                unless range_for_v.inmutable?
+                  pre_val = nil
+                  if @models_by_id[id] &&
+                    ((@models_by_id[id].respond_to?(:klass) && models_by_id[id]) ||
+                      @models_by_id[id].loaded_attributes.include?(v))
+                    pre_val = if !read_only
+                                @models_by_id[id].instance_variable_get("@#{v}")
+                              else
+                                @models_by_id[id][v]
+                              end
+                    if pre_val.is_a?(Array)
+                      pre_val = pre_val.select { |x| x.id == object }.first
+                    end
+                  end
+                  if !read_only
+                    object = pre_val ? pre_val : klass.range_object(v, object)
+                    objects_new[object.id] = object
+                  else
+                    #depedent read only
+                    struct = pre_val ? pre_val : @embed_struct[v].new
+                    struct.id = object
+                    struct.klass = klass.range(v)
+                    objects_new[struct.id] = struct
+                    object = struct
+                  end
+                else
+                  object = range_for_v.find(object).first
+                end
+              end
+            end
+          end
+
+          if list_attributes.include?(v)
+            # To handle attr that are lists
+            pre = @klass_struct ? @models_by_id[id][v] :
+                    @models_by_id[id].instance_variable_get("@#{v}")
+            if object.nil? && pre.nil?
+              object = []
+            elsif object.nil? && !pre.nil?
+              object = pre
+            elsif object
+              object = !pre ? [object] : (pre.dup << object)
+              object.uniq!
+            end
+          end
+
+          if @models_by_id[id].respond_to?(:klass)
+            unless object.nil? && !@models_by_id[id][v].nil?
+              @models_by_id[id][v] = object
+            end
+          else
+            unless @models_by_id[id].class.handler?(v)
+              unless object.nil? && !@models_by_id[id].instance_variable_get("@#{v.to_s}").nil?
+                if v != :id
+                  # if multiple language values are included for a given property, set the
+                  # corresponding model attribute to the English language value - NCBO-1662
+                  if object.kind_of?(RDF::Literal)
+                    key = "#{v}#__#{id.to_s}"
+                    @models_by_id[id].send("#{v}=", object, on_load: true) unless var_set_hash[key]
+                    lang = object.language
+                    var_set_hash[key] = true if lang == :EN || lang == :en
+                  else
+                    @models_by_id[id].send("#{v}=", object, on_load: true)
+                  end
+                end
+              end
+            end
+          end
+
+        end
+        unless incl.nil?
+          # Here we are setting to nil all attributes that have been included but not found in the triplestore
+          id_array.uniq!
+          incl.each do |attr_to_incl|
+            # Go through all attr we had to include
+            next if attr_to_incl.is_a? Hash
+
+            id_array.each do |model_id|
+              # Go through all models queried
+              if @models_by_id[model_id].respond_to?("loaded_attributes") && !@models_by_id[model_id].loaded_attributes.include?(attr_to_incl) && @models_by_id[model_id].respond_to?(attr_to_incl) && !attr_to_incl.to_s.eql?("unmapped")
+                if list_attributes.include?(attr_to_incl)
+                  # If the asked attr has not been loaded then it is set to nil or to an empty array for list attr
+                  @models_by_id[model_id].send("#{attr_to_incl}=", [], on_load: true)
+                else
+                  @models_by_id[model_id].send("#{attr_to_incl}=", nil, on_load: true)
+                end
+              end
             end
 
-            object = object.object if object && !(object.kind_of? RDF::URI)
-
-            #dependent model creation
-            object = dependent_model_creation(@embed_struct, id, @models_by_id, object, objects_new, v, @options)
-
-            object = object_to_array(id, @klass_struct, @models_by_id, object, v) if list_attributes.include?(v)
-
-            model_map_attributes_values(id, var_set_hash, @models_by_id, object, sol, v) unless object.nil?
           end
         end
 
         return @models_by_id if @bnode_extraction
+
         model_set_collection_attributes(collection, klass, @models_by_id, objects_new)
 
         #remove from models_by_id elements that were not touched

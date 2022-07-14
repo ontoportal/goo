@@ -97,10 +97,13 @@ module Goo
                                            order_by, patterns, query_options,
                                            variables, array_includes_filter)
 
+        # TODO: remove it? expand_equivalent_predicates_filter does the job now
         expand_equivalent_predicates(select, equivalent_predicates)
         solution_mapper = Goo::SPARQL::SolutionMapper.new aggregate_projections, bnode_extraction,
                                                           embed_struct, incl_embed, klass_struct, models_by_id,
-                                                          predicates_map, unmapped, variables, options
+                                                          predicates_map, unmapped,
+                                                          variables, uri_properties_hash, options
+
         solution_mapper.map_each_solutions(select)
       end
 
