@@ -6,7 +6,7 @@ module Goo
 
       def initialize(aggregate_projections, bnode_extraction, embed_struct,
                      incl_embed, klass_struct, models_by_id,
-                     predicates_map, unmapped, variables, uri_properties_hash, options)
+                     properties_to_include, unmapped, variables,ids, options)
 
         @aggregate_projections = aggregate_projections
         @bnode_extraction = bnode_extraction
@@ -14,21 +14,20 @@ module Goo
         @incl_embed = incl_embed
         @klass_struct = klass_struct
         @models_by_id = models_by_id
-        @predicates_map = predicates_map
+        @properties_to_include = properties_to_include
         @unmapped = unmapped
         @variables = variables
-        @options = options
-        @uri_properties_hash = uri_properties_hash
-
+        @ids = ids
+        @klass = options[:klass]
+        @klass = options[:klass]
+        @read_only = options[:read_only]
+        @incl = options[:include]
+        @count = options[:count]
+        @collection = options[:collection]
       end
 
       def map_each_solutions(select)
 
-        count = @options[:count]
-        klass = @options[:klass]
-        read_only = @options[:read_only]
-        collection = @options[:collection]
-        incl = @options[:include]
 
         found = Set.new
         objects_new = {}
