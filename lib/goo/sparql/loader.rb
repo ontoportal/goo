@@ -79,7 +79,7 @@ module Goo
             end
           end
 
-
+          expand_equivalent_predicates(properties_to_include, equivalent_predicates)
 
 
           query_builder = Goo::SPARQL::QueryBuilder.new options
