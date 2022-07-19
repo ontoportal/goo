@@ -252,22 +252,17 @@ module Goo
         end
       end
 
-      def self.include_embed_attributes(collection, incl_embed, klass, objects_new)
-        incl_embed.each do |attr, next_attrs|
-          #anything to join ?
-          attr_range = klass.range(attr)
-          next if attr_range.nil?
-          range_objs = objects_new.select { |id, obj|
-            obj.instance_of?(attr_range) || (obj.respond_to?(:klass) && obj[:klass] == attr_range)
-          }.values
-          unless range_objs.empty?
-            range_objs.uniq!
-            attr_range.where().models(range_objs).in(collection).include(*next_attrs).all
+        def get_embed_includes(incl)
+          incl_embed = incl.select { |a| a.instance_of?(Hash) }
+          raise ArgumentError, 'Not supported case for embed' if incl_embed.length > 1
+          if incl_embed.length.positive?
+            incl_embed = incl_embed.first
+            embed_variables = incl_embed.keys.sort
+            #variables.concat(embed_variables)
+            incl.concat(embed_variables)
           end
+          incl_embed
         end
-      end
-
-            end
       end
 
     end
