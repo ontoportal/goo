@@ -86,12 +86,10 @@ module Goo
                                                                            patterns, query_options,
                                                                            properties_to_include)
 
-        # TODO: remove it? expand_equivalent_predicates_filter does the job now
-        expand_equivalent_predicates(select, equivalent_predicates)
-        solution_mapper = Goo::SPARQL::SolutionMapper.new aggregate_projections, bnode_extraction,
-                                                          embed_struct, incl_embed, klass_struct, models_by_id,
-                                                          predicates_map, unmapped,
-                                                          variables, uri_properties_hash, options
+          solution_mapper = Goo::SPARQL::SolutionMapper.new aggregate_projections, bnode_extraction,
+                                                            embed_struct, incl_embed, klass_struct, models_by_id,
+                                                            properties_to_include, unmapped,
+                                                            variables, ids, options
 
           solution_mapper.map_each_solutions(select)
         end
@@ -107,7 +105,7 @@ module Goo
             property[:equivalents] = eq_p[property_uri.to_s].to_a.map { |p| RDF::URI.new(p) } if eq_p.include?(property_uri.to_s)
           end
 
-      end
+        end
 
         def predicate_map(predicates)
           predicates_map = nil
