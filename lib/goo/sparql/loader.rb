@@ -154,34 +154,21 @@ module Goo
           [graphs, properties_to_include,query_options]
         end
 
-      def self.get_binding_as(patterns, predicates_map)
-        binding_as = nil
-        if predicates_map
-          variables = %i[id object bind_as]
-          binding_as = []
-          predicates_map.each do |var, pre|
-            binding_as << [[[:id, pre, :object]], var, :bind_as]
-          end
-        else
-          patterns << %i[id predicate object]
-          variables = %i[id predicate object]
-        end
-        unmapped = true
-        return binding_as, unmapped, variables
-      end
+        def get_binding_as(patterns, predicates) end
 
-      def self.bnode_extraction(collection, incl, klass, patterns, variables)
-        bnode_conf = incl.first[:bnode]
-        klass_attr = bnode_conf.keys.first
-        bnode_extraction = klass_attr
-        bnode = RDF::Node.new
-        patterns << [:id, klass.attribute_uri(klass_attr, collection), bnode]
-        bnode_conf[klass_attr].each do |in_bnode_attr|
-          variables << in_bnode_attr
-          patterns << [bnode, klass.attribute_uri(in_bnode_attr, collection), in_bnode_attr]
+        def bnode_extraction(collection, incl, klass, patterns)
+          bnode_conf = incl.first[:bnode]
+          klass_attr = bnode_conf.keys.first
+          bnode_extraction = klass_attr
+          bnode = RDF::Node.new
+          variables = [:id]
+          patterns << [:id, klass.attribute_uri(klass_attr, collection), bnode]
+          bnode_conf[klass_attr].each do |in_bnode_attr|
+            variables << in_bnode_attr
+            patterns << [bnode, klass.attribute_uri(in_bnode_attr, collection), in_bnode_attr]
+          end
+          [bnode_extraction, patterns, variables]
         end
-        [bnode_extraction, patterns, variables]
-      end
 
       def self.get_models_by_id_hash(ids, klass, klass_struct, models)
         models_by_id = {}
