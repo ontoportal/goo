@@ -61,23 +61,23 @@ module Goo
           bnode_extraction = nil
           properties_to_include = []
           variables = [:id]
-        if incl
-          if incl.first && incl.first.is_a?(Hash) && incl.first.include?(:bnode)
-            #limitation only one level BNODE
-            bnode_extraction, patterns, variables = bnode_extraction(collection, incl, klass, patterns, variables)
-          elsif incl.first == :unmapped
-            #a filter with for ?predicate will be included
-            binding_as, unmapped, variables = get_binding_as(patterns, predicates_map)
-          else
-            #make it deterministic
-            incl, incl_embed, variables, graphs, optional_patterns, uri_properties_hash, array_includes_filter =
-              get_includes(collection, graphs, incl, klass, query_options, variables)
-            array_includes_filter, uri_properties_hash = expand_equivalent_predicates_filter(equivalent_predicates,
-                                                                                             array_includes_filter,
-                                                                                             uri_properties_hash)
+          if incl
+            if incl.first && incl.first.is_a?(Hash) && incl.first.include?(:bnode)
+              #limitation only one level BNODE
+              bnode_extraction, patterns, variables = get_bnode_extraction(collection, incl, klass, patterns)
+            else
+              variables = %i[id attributeProperty attributeObject]
+              if incl.first == :unmapped
+                unmapped = true
+                properties_to_include = predicate_map(predicates)
+              else
+                #make it deterministic
+                incl_embed = get_embed_includes(incl)
+                graphs, properties_to_include, query_options = get_includes(collection, graphs, incl,
+                                                             klass, query_options)
+              end
+            end
           end
-          end
-        end
 
 
 
@@ -146,9 +146,7 @@ module Goo
           [graphs, properties_to_include,query_options]
         end
 
-        def get_binding_as(patterns, predicates) end
-
-        def bnode_extraction(collection, incl, klass, patterns)
+        def get_bnode_extraction(collection, incl, klass, patterns)
           bnode_conf = incl.first[:bnode]
           klass_attr = bnode_conf.keys.first
           bnode_extraction = klass_attr
