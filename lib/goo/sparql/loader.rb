@@ -120,24 +120,24 @@ module Goo
 
       end
 
-      def self.get_predicate_map(predicates)
-        predicates_map = nil
-        if predicates
-          uniq_p = predicates.uniq
-          predicates_map = {}
-          uniq_p.each do |p|
-            i = 0
-            key = ('var_' + p.last_part + i.to_s).to_sym
-            while predicates_map.include?(key)
-              i += 1
+        def predicate_map(predicates)
+          predicates_map = nil
+          if predicates
+            uniq_p = predicates.uniq
+            predicates_map = {}
+            uniq_p.each do |p|
+              i = 0
               key = ('var_' + p.last_part + i.to_s).to_sym
-              break if i > 10
+              while predicates_map.include?(key)
+                i += 1
+                key = ('var_' + p.last_part + i.to_s).to_sym
+                break if i > 10
+              end
+              predicates_map[key] = { uri: p, is_inverse: false }
             end
-            predicates_map[key] = p
           end
+          predicates_map
         end
-        predicates_map
-      end
 
       def self.get_includes(collection, graphs, incl, klass, query_options, variables)
         incl = incl.to_a
