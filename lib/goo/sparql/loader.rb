@@ -1,70 +1,66 @@
 module Goo
   module SPARQL
-    class Loader
-      extend Goo::SPARQL::QueryPatterns
+    module Loader
+      class << self
+        include Goo::SPARQL::QueryPatterns
 
-
-
-      def self.model_load(*options)
-        options = options.last
-        if options[:models] && options[:models].is_a?(Array) && \
+        def model_load(*options)
+          options = options.last
+          if options[:models] && options[:models].is_a?(Array) && \
            (options[:models].length > Goo.slice_loading_size)
-          options = options.dup
-          models = options[:models]
-          include_options = options[:include]
-          models_by_id = Hash.new
-          models.each_slice(Goo.slice_loading_size) do |model_slice|
-            options[:models] = model_slice
-            unless include_options.nil?
-              options[:include] = include_options.dup
+            options = options.dup
+            models = options[:models]
+            include_options = options[:include]
+            models_by_id = Hash.new
+            models.each_slice(Goo.slice_loading_size) do |model_slice|
+              options[:models] = model_slice
+              unless include_options.nil?
+                options[:include] = include_options.dup
+              end
+              model_load_sliced(options)
+              model_slice.each do |m|
+                models_by_id[m.id] = m
+              end
             end
+            models_by_id
+          else
             model_load_sliced(options)
-            model_slice.each do |m|
-              models_by_id[m.id] = m
-            end
           end
-           models_by_id
-        else
-          self.model_load_sliced(options)
         end
-      end
 
-      ##
-      # always a list of attributes with subject == id
-      ##
-      def self.model_load_sliced(*options)
-        options = options.last
-        ids = options[:ids]
-        klass = options[:klass]
-        incl = options[:include]
-        models = options[:models]
-        aggregate = options[:aggregate]
-        read_only = options[:read_only]
-        order_by = options[:order_by]
-        collection = options[:collection]
-        count = options[:count]
-        include_pagination = options[:include_pagination]
-        equivalent_predicates = options[:equivalent_predicates]
-        predicates = options[:predicates]
-        predicates_map = get_predicate_map predicates
-        binding_as = nil
+        ##
+        # always a list of attributes with subject == id
+        ##
+        def model_load_sliced(*options)
+          options = options.last
+          ids = options[:ids]
+          klass = options[:klass]
+          incl = options[:include]
+          models = options[:models]
+          aggregate = options[:aggregate]
+          read_only = options[:read_only]
+          collection = options[:collection]
+          count = options[:count]
+          include_pagination = options[:include_pagination]
+          equivalent_predicates = options[:equivalent_predicates]
+          predicates = options[:predicates]
 
-        embed_struct, klass_struct = get_structures(aggregate, count, incl, include_pagination, klass, read_only)
+          embed_struct, klass_struct = get_structures(aggregate, count, incl, include_pagination, klass, read_only)
 
-        raise_resource_must_persistent_error(models) if models
+          raise_resource_must_persistent_error(models) if models
 
-        graphs = get_graphs(collection, klass)
-        ids, models_by_id = get_models_by_id_hash(ids, klass, klass_struct, models)
+          graphs = get_graphs(collection, klass)
+          ids, models_by_id = get_models_by_id_hash(ids, klass, klass_struct, models)
 
         variables = [:id]
 
-        query_options = {}
-        #TODO: breaks the reasoner
-        patterns = [[:id, RDF.type, klass.uri_type(collection)]]
+          query_options = {}
+          #TODO: breaks the reasoner
+          patterns = [[:id, RDF.type, klass.uri_type(collection)]]
 
-        incl_embed = nil
-        unmapped = nil
-        bnode_extraction = nil
+          incl_embed = nil
+          unmapped = nil
+          bnode_extraction = nil
         optional_patterns = []
         array_includes_filter = []
         uri_properties_hash = {}  # hash that contains "URI of the property => attribute label"
@@ -90,7 +86,7 @@ module Goo
 
 
 
-        query_builder = Goo::SPARQL::QueryBuilder.new options
+          query_builder = Goo::SPARQL::QueryBuilder.new options
         select, aggregate_projections =
           query_builder.build_select_query(ids, binding_as,
                                            klass, graphs, optional_patterns,
@@ -104,10 +100,10 @@ module Goo
                                                           predicates_map, unmapped,
                                                           variables, uri_properties_hash, options
 
-        solution_mapper.map_each_solutions(select)
-      end
+          solution_mapper.map_each_solutions(select)
+        end
 
-      # Expand equivalent predicate for attribute that are retrieved using filter (the new way to retrieve...)
+        private
 
         def expand_equivalent_predicates(properties_to_include, eq_p)
 
@@ -193,64 +189,64 @@ module Goo
           return ids, models_by_id
         end
 
-      def self.get_graphs(collection, klass)
-        graphs = [klass.uri_type(collection)]
-        if collection
-          if collection.is_a?(Array) && collection.length.positive?
-            graphs = collection.map { |x| x.id }
-          elsif !collection.is_a? Array
-            graphs = [collection.id]
-          end
-        end
-        graphs
-      end
-
-      def self.get_structures(aggregate, count, incl, include_pagination, klass, read_only)
-        embed_struct = nil
-        klass_struct = nil
-
-        if read_only && !count && !aggregate
-          include_for_struct = incl
-          if !incl && include_pagination
-            #read only and pagination we do not know the attributes yet
-            include_for_struct = include_pagination
-          end
-          direct_incl = !include_for_struct ? [] :
-                          include_for_struct.select { |a| a.instance_of?(Symbol) }
-          incl_embed = include_for_struct.select { |a| a.instance_of?(Hash) }.first
-          klass_struct = klass.struct_object(direct_incl + (incl_embed ? incl_embed.keys : []))
-
-          embed_struct = {}
-          if incl_embed
-            incl_embed.each do |k, vals|
-              next if klass.collection?(k)
-
-              attrs_struct = []
-              vals.each do |v|
-                attrs_struct << v unless v.kind_of?(Hash)
-                attrs_struct.concat(v.keys) if v.kind_of?(Hash)
-              end
-              embed_struct[k] = klass.range(k).struct_object(attrs_struct)
+        def get_graphs(collection, klass)
+          graphs = [klass.uri_type(collection)]
+          if collection
+            if collection.is_a?(Array) && collection.length.positive?
+              graphs = collection.map { |x| x.id }
+            elsif !collection.is_a? Array
+              graphs = [collection.id]
             end
           end
-          direct_incl.each do |attr|
-            next if embed_struct.include?(attr)
-
-            embed_struct[attr] = klass.range(attr).struct_object([]) if klass.range(attr)
-          end
-
+          graphs
         end
-        [embed_struct, klass_struct]
-      end
 
-      def self.raise_resource_must_persistent_error(models)
-        models.each do |m|
-          if (not m.nil?) && !m.respond_to?(:klass) #read only
-            raise ArgumentError,
-                  'To load attributes the resource must be persistent' unless m.persistent?
+        def get_structures(aggregate, count, incl, include_pagination, klass, read_only)
+          embed_struct = nil
+          klass_struct = nil
+
+          if read_only && !count && !aggregate
+            include_for_struct = incl
+            if !incl && include_pagination
+              #read only and pagination we do not know the attributes yet
+              include_for_struct = include_pagination
+            end
+            direct_incl = !include_for_struct ? [] :
+                            include_for_struct.select { |a| a.instance_of?(Symbol) }
+            incl_embed = include_for_struct.select { |a| a.instance_of?(Hash) }.first
+            klass_struct = klass.struct_object(direct_incl + (incl_embed ? incl_embed.keys : []))
+
+            embed_struct = {}
+            if incl_embed
+              incl_embed.each do |k, vals|
+                next if klass.collection?(k)
+
+                attrs_struct = []
+                vals.each do |v|
+                  attrs_struct << v unless v.kind_of?(Hash)
+                  attrs_struct.concat(v.keys) if v.kind_of?(Hash)
+                end
+                embed_struct[k] = klass.range(k).struct_object(attrs_struct)
+              end
+            end
+            direct_incl.each do |attr|
+              next if embed_struct.include?(attr)
+
+              embed_struct[attr] = klass.range(attr).struct_object([]) if klass.range(attr)
+            end
+
+          end
+          [embed_struct, klass_struct]
+        end
+
+        def raise_resource_must_persistent_error(models)
+          models.each do |m|
+            if (not m.nil?) && !m.respond_to?(:klass) #read only
+              raise ArgumentError,
+                    'To load attributes the resource must be persistent' unless m.persistent?
+            end
           end
         end
-      end
 
         def get_embed_includes(incl)
           incl_embed = incl.select { |a| a.instance_of?(Hash) }
