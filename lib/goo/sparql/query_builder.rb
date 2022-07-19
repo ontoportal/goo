@@ -6,15 +6,19 @@ module Goo
       def initialize(options)
         @no_graphs = options[:no_graphs]
         @query_filters = options[:filters]
+        @klass = options[:klass]
         @store = options[:store] || :main
         @page = options[:page]
         @count = options[:count]
         @graph_match = options[:graph_match]
+        @unions = options[:unions] || []
         @aggregate = options[:aggregate]
         @collection = options[:collection]
         @model_query_options = options[:query_options]
         @enable_rules = options[:rules]
-        @unions = []
+        @order_by = options[:order_by]
+
+        @query = get_client
       end
 
       def build_select_query(ids, binding_as, klass, graphs, optional_patterns,
@@ -286,8 +290,10 @@ module Goo
               optional_patterns.concat(agg_patterns)
             end
           end
-        end
-        return aggregate_projections, aggregate_vars, variables, optional_patterns
+      def get_client
+        Goo.sparql_query_client(@store)
+      end
+
       end
 
       def filter_id_query_strings(collection, graphs, ids, internal_variables, klass, optional_patterns, patterns, query_filters)
