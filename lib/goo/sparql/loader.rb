@@ -170,28 +170,28 @@ module Goo
           [bnode_extraction, patterns, variables]
         end
 
-      def self.get_models_by_id_hash(ids, klass, klass_struct, models)
-        models_by_id = {}
-        if models
-          ids = []
-          models.each do |m|
-            unless m.nil?
-              ids << m.id
-              models_by_id[m.id] = m
+        def get_models_by_id_hash(ids, klass, klass_struct, models)
+          models_by_id = {}
+          if models
+            ids = []
+            models.each do |m|
+              unless m.nil?
+                ids << m.id
+                models_by_id[m.id] = m
+              end
             end
-          end
-        elsif ids
-          ids.each do |id|
-            models_by_id[id] = klass_struct ? klass_struct.new : klass.new
-            models_by_id[id].klass = klass if klass_struct
-            models_by_id[id].id = id
-          end
-        else
-          #a where without models
+          elsif ids
+            ids.each do |id|
+              models_by_id[id] = klass_struct ? klass_struct.new : klass.new
+              models_by_id[id].klass = klass if klass_struct
+              models_by_id[id].id = id
+            end
+          else
+            #a where without models
 
+          end
+          return ids, models_by_id
         end
-        return ids, models_by_id
-      end
 
       def self.get_graphs(collection, klass)
         graphs = [klass.uri_type(collection)]
