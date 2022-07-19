@@ -52,8 +52,6 @@ module Goo
           graphs = get_graphs(collection, klass)
           ids, models_by_id = get_models_by_id_hash(ids, klass, klass_struct, models)
 
-        variables = [:id]
-
           query_options = {}
           #TODO: breaks the reasoner
           patterns = [[:id, RDF.type, klass.uri_type(collection)]]
@@ -61,10 +59,8 @@ module Goo
           incl_embed = nil
           unmapped = nil
           bnode_extraction = nil
-        optional_patterns = []
-        array_includes_filter = []
-        uri_properties_hash = {}  # hash that contains "URI of the property => attribute label"
-
+          properties_to_include = []
+          variables = [:id]
         if incl
           if incl.first && incl.first.is_a?(Hash) && incl.first.include?(:bnode)
             #limitation only one level BNODE
@@ -79,7 +75,7 @@ module Goo
             array_includes_filter, uri_properties_hash = expand_equivalent_predicates_filter(equivalent_predicates,
                                                                                              array_includes_filter,
                                                                                              uri_properties_hash)
-            array_includes_filter.uniq!
+          end
           end
         end
 
