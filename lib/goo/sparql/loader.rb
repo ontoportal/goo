@@ -81,13 +81,10 @@ module Goo
 
           expand_equivalent_predicates(properties_to_include, equivalent_predicates)
 
-
           query_builder = Goo::SPARQL::QueryBuilder.new options
-        select, aggregate_projections =
-          query_builder.build_select_query(ids, binding_as,
-                                           klass, graphs, optional_patterns,
-                                           order_by, patterns, query_options,
-                                           variables, array_includes_filter)
+          select, aggregate_projections = query_builder.build_select_query(ids, variables, graphs,
+                                                                           patterns, query_options,
+                                                                           properties_to_include)
 
         # TODO: remove it? expand_equivalent_predicates_filter does the job now
         expand_equivalent_predicates(select, equivalent_predicates)
