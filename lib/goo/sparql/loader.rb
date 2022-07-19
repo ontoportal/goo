@@ -108,71 +108,16 @@ module Goo
       end
 
       # Expand equivalent predicate for attribute that are retrieved using filter (the new way to retrieve...)
-      # i.e.: prefLabel can also be retrieved using the "http://data.bioontology.org/metadata/def/prefLabel" URI
-      # so we add "http://data.bioontology.org/metadata/def/prefLabel" to the array_includes_filter that will generates a filter on property for meta:prefLabel
-      # and we add the following entry to the uri_properties_hash: "http://data.bioontology.org/metadata/def/prefLabel" => "prefLabel"
-      # So the object of http://data.bioontology.org/metadata/def/prefLabel will be retrieved and added to this attribute
-      def self.expand_equivalent_predicates_filter(eq_p, array_includes_filter, uri_properties_hash)
-        array_includes_filter_out = array_includes_filter.dup
-        if eq_p && eq_p.length > 0
-          if array_includes_filter
-            array_includes_filter.each do |predicate_filter|
-              if predicate_filter && predicate_filter.is_a?(RDF::URI)
-                if eq_p.include?(predicate_filter.to_s)
-                  eq_p[predicate_filter.to_s].each do |predicate_mapping|
-                    pred_map_uri = RDF::URI.new(predicate_mapping)
-                    array_includes_filter_out << pred_map_uri
-                    uri_properties_hash[pred_map_uri] = uri_properties_hash[predicate_filter]
-                  end
-                end
-              end
-            end
-          end
-        end
-        return array_includes_filter_out, uri_properties_hash
-      end
 
-      def self.expand_equivalent_predicates(query, eq_p)
-        attribute_mappings = {}
-        if eq_p && eq_p.length.positive?
-          count_rewrites = 0
-          if query.options[:optionals]
-            query.options[:optionals].each do |opt|
-              opt.each do |pattern|
-                if pattern.predicate && pattern.predicate.is_a?(RDF::URI)
-                  if eq_p.include?(pattern.predicate.to_s)
-                    if attribute_mappings.include?(pattern.predicate.to_s)
-                      #reuse filter
-                      pattern.predicate =
-                        RDF::Query::Variable.new(attribute_mappings[pattern.predicate.to_s])
-                    else
-                      query_predicate = pattern.predicate
-                      var_name = "rewrite#{count_rewrites}"
-                      pattern.predicate = RDF::Query::Variable.new(var_name)
-                      expansion = eq_p[query_predicate.to_s]
-                      expansion = expansion.map { |x| "?#{var_name} = <#{x}>" }
-                      expansion = expansion.join " || "
-                      # Instead of applending the filters to the end of the query, as in query.filter(expansion),
-                      # we store them in the options[:filter] attribute. They will be included in the OPTIONAL
-                      # sections when the query is constructed. According to AG, this is the CORRECT way of
-                      # constructing the query.
-                      # Because the FILTERs are _outside_ the OPTIONALs, they are applied to _every_
-                      # row returned. i.e., only rows where ?rewrite0 is in its list _and_ ?rewrite1
-                      # is in its list will be returned. I.e., the query will return NO results where
-                      # ?rewrite0 or ?rewrite1 is NULL.
-                      #
-                      # All you need to do is to make sure that the FILTERS are applied only _inside_
-                      # each OPTIONAL.
-                      pattern.options[:filter] = expansion
-                      count_rewrites += 1
-                      attribute_mappings[query_predicate.to_s] = var_name
-                    end
-                  end
-                end
-              end
-            end
+        def expand_equivalent_predicates(properties_to_include, eq_p)
+
+          return unless eq_p && !eq_p.empty?
+
+          properties_to_include&.each do |property_attr, property|
+            property_uri = property[:uri]
+            property[:equivalents] = eq_p[property_uri.to_s].to_a.map { |p| RDF::URI.new(p) } if eq_p.include?(property_uri.to_s)
           end
-        end
+
       end
 
       def self.get_predicate_map(predicates)
