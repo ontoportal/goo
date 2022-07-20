@@ -1,6 +1,6 @@
 GIT
-  remote: https://github.com/ncbo/sparql-client.git
-  revision: fb4a89b420f8eb6dda5190a126b6c62e32c4c0c9
+  remote: https://github.com/ontoportal-lirmm/sparql-client.git
+  revision: aed51baf4106fd0f3d0e3f9238f0aad9406aa3f0
   branch: master
   specs:
     sparql-client (1.0.1)

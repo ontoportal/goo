@@ -6,7 +6,7 @@ module Goo
 
       def initialize(aggregate_projections, bnode_extraction, embed_struct,
                      incl_embed, klass_struct, models_by_id,
-                     properties_to_include, unmapped, variables,ids, options)
+                     properties_to_include, unmapped, variables, ids, options)
 
         @aggregate_projections = aggregate_projections
         @bnode_extraction = bnode_extraction
@@ -72,11 +72,13 @@ module Goo
             next
           end
 
-          object, objects_new = get_value_object(id, objects_new, object, list_attributes, v)
-          add_object_to_model(id, object, v, var_set_hash)
+          # if multiple language values are included for a given property, set the
+          # corresponding model attribute to the English language value - NCBO-1662
+          language, object = get_object_language(id, object, predicate)
+          object, objects_new = get_value_object(id, objects_new, object, list_attributes, predicate)
+          add_object_to_model(id, object, predicate, language)
         end
         @lang_filter.fill_models_with_other_languages(@models_by_id, list_attributes)
-
         init_unloaded_attributes(found, list_attributes)
 
         return @models_by_id if @bnode_extraction
@@ -91,7 +93,6 @@ module Goo
         #next level of embed attributes
         include_embed_attributes(@incl_embed, objects_new) if @incl_embed && !@incl_embed.empty?
 
-
         #bnodes
         blank_nodes = objects_new.select { |id, obj| id.is_a?(RDF::Node) && id.anonymous? }
         include_bnodes(blank_nodes, @models_by_id) unless blank_nodes.empty?
@@ -102,6 +103,10 @@ module Goo
       end
 
       private
+
+      def get_object_language(id, object, predicate)
+        @lang_filter.main_lang_filter id, predicate, object
+      end
 
       def init_unloaded_attributes(found, list_attributes)
         return if @incl.nil?
@@ -167,25 +172,20 @@ module Goo
             object.uniq!
           end
         end
-        [object,objects_new]
+        [object, objects_new]
       end
 
-      def add_object_to_model(id, object, predicate, var_set_hash)
+      def add_object_to_model(id, object, predicate, lang)
         if @models_by_id[id].respond_to?(:klass)
           @models_by_id[id][predicate] = object unless object.nil? && !@models_by_id[id][predicate].nil?
         elsif !@models_by_id[id].class.handler?(predicate) &&
-          !(object.nil? && !@models_by_id[id].instance_variable_get("@#{predicate}").nil?) &&
-          predicate != :id
-          # if multiple language values are included for a given property, set the
-          # corresponding model attribute to the English language value - NCBO-1662
-          if object.is_a?(RDF::Literal)
-            key = "#{predicate}#__#{id}"
-            @models_by_id[id].send("#{predicate}=", object, on_load: true) unless var_set_hash[key]
-            lang = object.language
-            var_set_hash[key] = true if %i[EN en].include?(lang)
-          else
+              !(object.nil? && !@models_by_id[id].instance_variable_get("@#{predicate}").nil?) &&
+              predicate != :id
+
+          if (lang&.eql?(:no_lang)) || !lang
             @models_by_id[id].send("#{predicate}=", object, on_load: true)
           end
+
         end
       end
 

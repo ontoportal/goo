@@ -385,7 +385,7 @@ module Goo
                 o
               else
                 literal = o
-                index, lang_val  = lang_filter.main_lang_filter inst.id.to_s, attr, literal, literal
+                index, lang_val  = lang_filter.main_lang_filter inst.id.to_s, attr, literal
                 lang_val.to_s if index.eql? :no_lang
               end
             end
