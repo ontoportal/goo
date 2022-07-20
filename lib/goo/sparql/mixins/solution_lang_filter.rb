@@ -7,13 +7,11 @@ module Goo
           @other_languages_values = {}
         end
 
-        def other_languages_values
-          @other_languages_values
-        end
+        attr_reader :other_languages_values
 
-        def main_lang_filter(id, attr, old_values, new_value)
-          index, value = lang_index  old_values, new_value
-          save_other_lang_val(id, attr, index, new_value) unless index.eql? :no_lang
+        def main_lang_filter(id, attr, value)
+          index, value = lang_index value
+          save_other_lang_val(id, attr, index, value) unless index.nil? ||index.eql?(:no_lang)
           [index, value]
         end
 
@@ -22,11 +20,22 @@ module Goo
             languages_values.each do |attr, index_values|
               model_attribute_val = models_by_id[id].instance_variable_get("@#{attr.to_s}")
               values = languages_values_to_set(index_values, model_attribute_val)
-
+              m = models_by_id[id]
+              value = nil
+              is_struct = m.respond_to?(:klass)
               if !values.nil? && list_attributes.include?(attr)
-                models_by_id[id].send("#{attr.to_s}=", values || [], on_load: true)
+                value = values || []
+
               elsif !values.nil?
-                models_by_id[id].send("#{attr.to_s}=", values.first || nil, on_load: true)
+                value = values.first || nil
+              end
+
+              if value
+                if is_struct
+                  m[attr] = value
+                else
+                  m.send("#{attr}=", value, on_load: true)
+                end
               end
             end
           end
@@ -52,14 +61,17 @@ module Goo
 
         private
 
-        def lang_index(object, new_value)
-          lang = new_value.language
+        def lang_index(object)
+          return [nil, object] unless  object.is_a?(RDF::Literal)
+
+          lang = object.language
+
           if lang.nil?
             [:no_lang, object]
           else
             index = Goo.language_includes(lang)
             index = index ? index.to_s.to_sym : :not_matched
-            [index, new_value]
+            [index, object]
           end
         end
 
@@ -72,8 +84,6 @@ module Goo
             @other_languages_values[id][attr][index] += Array(value.to_s)
           end
         end
-        
-
 
         def matched_languages(index_values, model_attribute_val)
           not_matched_lang = index_values[:not_matched]
