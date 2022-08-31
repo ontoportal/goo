@@ -83,7 +83,7 @@ module Goo
 
             object = object_to_array(id, @klass_struct, @models_by_id, object, v) if list_attributes.include?(v)
 
-            model_map_attributes_values(id, var_set_hash, @models_by_id, object, sol, v) unless object.nil?
+            model_map_attributes_values(id, var_set_hash, @models_by_id, object, sol, v)
           end
         end
 
@@ -144,6 +144,7 @@ module Goo
         klass_model.klass = klass if klass_struct
         klass_model
       end
+
       def models_unmapped_to_array(models_by_id)
         models_by_id.each do |idm, m|
           m.unmmaped_to_array
@@ -229,17 +230,20 @@ module Goo
         if models_by_id[id].respond_to?(:klass)
           models_by_id[id][v] = object if models_by_id[id][v].nil?
         else
-          model_attribute_val = models_by_id[id].instance_variable_get("@#{v.to_s}")
-          if (!models_by_id[id].class.handler?(v) || model_attribute_val.nil?) && v != :id
-            # if multiple language values are included for a given property, set the
-            # corresponding model attribute to the English language value - NCBO-1662
-            if sol[v].kind_of?(RDF::Literal)
-              key = "#{v}#__#{id.to_s}"
-              models_by_id[id].send("#{v}=", object, on_load: true) unless var_set_hash[key]
-              lang = sol[v].language
-              var_set_hash[key] = true if lang == :EN || lang == :en
-            else
-              models_by_id[id].send("#{v}=", object, on_load: true)
+          unless models_by_id[id].class.handler?(v)
+            unless object.nil? && !models_by_id[id].instance_variable_get("@#{v.to_s}").nil?
+              if v != :id
+                # if multiple language values are included for a given property, set the
+                # corresponding model attribute to the English language value - NCBO-1662
+                if sol[v].kind_of?(RDF::Literal)
+                  key = "#{v}#__#{id.to_s}"
+                  models_by_id[id].send("#{v}=", object, on_load: true) unless var_set_hash[key]
+                  lang = sol[v].language
+                  var_set_hash[key] = true if lang == :EN || lang == :en
+                else
+                  models_by_id[id].send("#{v}=", object, on_load: true)
+                end
+              end
             end
           end
         end
