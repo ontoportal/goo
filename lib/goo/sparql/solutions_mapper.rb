@@ -26,17 +26,16 @@ module Goo
         @collection = options[:collection]
       end
 
+
+
       def map_each_solutions(select)
-
-
 
         found = Set.new
         objects_new = {}
-        var_set_hash = {}
         list_attributes = Set.new(@klass.attributes(:list))
         all_attributes = Set.new(@klass.attributes(:all))
         @lang_filter = Goo::SPARQL::Solution::LanguageFilter.new
-        
+
         select.each_solution do |sol|
           next if sol[:some_type] && @klass.type_uri(@collection) != sol[:some_type]
           return sol[:count_var].object if @count
@@ -302,8 +301,8 @@ module Goo
           bnode_attrs = struct.new.to_h.keys
           ids = bnodes.select { |x, y| y.attribute == attr }.map { |x, y| y.id }
           @klass.where.models(models_by_id.select { |x, y| ids.include?(x) }.values)
-               .in(@collection)
-               .include(bnode: { attr => bnode_attrs }).all
+                .in(@collection)
+                .include(bnode: { attr => bnode_attrs }).all
         end
       end
 
@@ -362,26 +361,6 @@ module Goo
         collection_value
       end
 
-      def model_map_attributes_values(id, object, sol, v)
-        #binding.pry if v.eql? :programs
-        if @models_by_id[id].respond_to?(:klass)
-          @models_by_id[id][v] = object if @models_by_id[id][v].nil?
-        else
-          model_attribute_val = @models_by_id[id].instance_variable_get("@#{v.to_s}")
-          if (!@models_by_id[id].class.handler?(v) || model_attribute_val.nil?) && v != :id
-            # if multiple language values are included for a given property, set the
-            # corresponding model attribute to the English language value - NCBO-1662
-            if sol[v].is_a?(RDF::Literal)
-              key = "#{v}#__#{id.to_s}"
-              models_by_id[id].send("#{v}=", object, on_load: true) unless var_set_hash[key]
-              lang = sol[v].language
-              var_set_hash[key] = true if %i[EN en EN en EN en].include?(lang)
-            else
-              models_by_id[id].send("#{v}=", object, on_load: true)
-            end
-          end
-        end
-      end
 
       def object_to_array(id, klass_struct, models_by_id, object, predicate)
         pre = if klass_struct
@@ -451,7 +430,6 @@ module Goo
         end
         pre_val
       end
-
 
       def add_unmapped_to_model(sol)
         predicate = sol[:attributeProperty].to_s.to_sym
