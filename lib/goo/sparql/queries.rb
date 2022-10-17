@@ -453,7 +453,7 @@ module Goo
         filter_id = []
         if ids
           ids.each do |id|
-            filter_id << "?id = #{id.to_ntriples.to_s}"
+            filter_id << "?id = #{id.to_ntriples.to_s.gsub(' ', '%20')}"
           end
         end
         filter_id_str = filter_id.join " || "
