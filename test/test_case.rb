@@ -34,16 +34,21 @@ class GooTest
     end
 
     def _run_suite(suite, type)
-      [1,5,10,200].each do |slice_size|
+      %[1,5,10,20]
+      ret = []
+      [1,5,10,20].each do |slice_size|
         puts "\nrunning test with slice_loading_size=#{slice_size}"
         Goo.slice_loading_size=slice_size
         begin
           suite.before_suite if suite.respond_to?(:before_suite)
-          super(suite, type)
+          super(suite, type).each do |x|
+            ret.append x
+          end
         ensure
           suite.after_suite if suite.respond_to?(:after_suite)
         end
       end
+      return ret
     end
   end
 
