@@ -41,9 +41,7 @@ class GooTest
         Goo.slice_loading_size=slice_size
         begin
           suite.before_suite if suite.respond_to?(:before_suite)
-          super(suite, type).each do |x|
-            ret.append x
-          end
+          ret += super(suite, type)
         ensure
           suite.after_suite if suite.respond_to?(:after_suite)
         end

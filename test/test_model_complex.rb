@@ -482,6 +482,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
   end
 
   def test_aggregate
+    skip "Transitive closure doesn't work yet.  AllegroGraph?"
     submission = Submission.new(name: "submission1")
     unless submission.exist?
       submission.save
