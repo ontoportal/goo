@@ -78,7 +78,7 @@ module Goo
         def matched_languages(index_values, model_attribute_val)
           not_matched_lang = index_values[:not_matched]
           matched_lang = index_values.reject { |key| key == :not_matched }
-          unless model_attribute_val.nil? || model_attribute_val.empty?
+          unless model_attribute_val.nil? || Array(model_attribute_val).empty?
             matched_lang[:no_lang] = Array(model_attribute_val)
           end
           [matched_lang, not_matched_lang]
