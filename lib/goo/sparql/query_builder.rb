@@ -30,7 +30,7 @@ module Goo
           variables, optional_patterns = get_aggregate_vars(@aggregate, @collection, graphs,
                                                             @klass, @unions, variables, internal_variables)
 
-        @order_by, variables, @unions = init_order_by(@count, @klass, @order_by, @unions, variables)
+        @order_by, variables, optional_patterns = init_order_by(@count, @klass, @order_by, optional_patterns, variables)
         variables, patterns = add_some_type_to_id(patterns, query_options, variables)
 
         query_filter_str, patterns, optional_patterns =
@@ -71,7 +71,6 @@ module Goo
           query_options = { rules: ['NONE'] }
         end
         @query.options[:query_options] = query_options
-
         [@query, aggregate_projections]
       end
 
@@ -258,20 +257,21 @@ module Goo
         Goo.sparql_query_client(@store)
       end
 
-      def init_order_by(count, klass, order_by, unions, variables)
+      def init_order_by(count, klass, order_by, optional_patterns, variables)
         order_by = nil if count
         if order_by
           order_by = order_by.first
           #simple ordering ... needs to use pattern inspection
           order_by.each do |attr, direction|
             quad = query_pattern(klass, attr)
-            unions << [quad[1]]
+            optional_patterns << quad[1]
             #patterns << quad[1]
             #mdorf, 9/22/16 If an ORDER BY clause exists, the columns used in the ORDER BY should be present in the SPARQL select
-            variables << attr unless variables.include?(attr)
+            #variables << attr unless variables.include?(attr)
           end
+          variables = %i[id attributeProperty attributeObject]
         end
-        [order_by, variables, unions]
+        [order_by, variables, optional_patterns]
       end
 
       def sparql_op_string(op)
