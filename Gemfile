@@ -2,20 +2,24 @@ source 'https://rubygems.org'
 
 gemspec
 
-gem 'rake'
-gem 'pry'
-gem 'simplecov'
-gem 'minitest', '< 5.0'
-gem 'activesupport'
+gem "activesupport"
+gem "cube-ruby", require: "cube"
+gem "faraday", '~> 1.9'
+gem "rake"
 gem "uuid"
-gem 'cube-ruby', require: "cube"
-gem 'faraday', '~> 1.9'
+
+group :test do
+  gem "minitest", '< 5.0'
+  gem "pry"
+  gem 'simplecov'
+  gem 'simplecov-cobertura' # for submitting code coverage results to codecov.io
+end
 
 group :profiling do
-  gem 'sinatra'
-  gem 'rack-accept'
-  gem 'rack-post-body-to-params'
-  gem 'thin'
+  gem "rack-accept"
+  gem "rack-post-body-to-params"
+  gem "sinatra"
+  gem "thin"
 end
 
 gem 'sparql-client', github: 'ontoportal-lirmm/sparql-client', branch: 'master'
