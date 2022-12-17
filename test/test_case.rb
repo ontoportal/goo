@@ -1,6 +1,13 @@
-# Start simplecov if this is a coverage task
-if ENV["COVERAGE"].eql?("true")
-  require 'simplecov'
+# Start simplecov if this is a coverage task or if it is run in the CI pipeline
+if ENV["COVERAGE"] == "true" || ENV["CI"] == "true"
+  require "simplecov"
+  require "simplecov-cobertura"
+  # https://github.com/codecov/ruby-standard-2
+  # Generate HTML and Cobertura reports which can be consumed by codecov uploader
+  SimpleCov.formatters = SimpleCov::Formatter::MultiFormatter.new([
+    SimpleCov::Formatter::HTMLFormatter,
+    SimpleCov::Formatter::CoberturaFormatter
+  ])
   SimpleCov.start do
     add_filter "/test/"
     add_filter "app.rb"
@@ -34,16 +41,19 @@ class GooTest
     end
 
     def _run_suite(suite, type)
-      [1,5,10,200].each do |slice_size|
+      %[1,5,10,20]
+      ret = []
+      [1,5,10,20].each do |slice_size|
         puts "\nrunning test with slice_loading_size=#{slice_size}"
         Goo.slice_loading_size=slice_size
         begin
           suite.before_suite if suite.respond_to?(:before_suite)
-          super(suite, type)
+          ret += super(suite, type)
         ensure
           suite.after_suite if suite.respond_to?(:after_suite)
         end
       end
+      return ret
     end
   end
 

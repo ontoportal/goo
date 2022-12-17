@@ -56,6 +56,8 @@ module Goo
         errors_by_opt = {}
         enforce_opts.each do |opt|
           case opt
+          when :class
+            nil
           when :unique
             unless value.nil?
               dup = Goo::SPARQL::Queries.duplicate_attribute_value?(inst,attr)
