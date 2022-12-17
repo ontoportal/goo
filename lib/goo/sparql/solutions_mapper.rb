@@ -316,7 +316,9 @@ module Goo
           }.values
           unless range_objs.empty?
             range_objs.uniq!
-            attr_range.where().models(range_objs).in(@collection).include(*next_attrs).all
+            query = attr_range.where().models(range_objs).in(@collection).include(*next_attrs)
+            query = query.read_only if @read_only
+            query.all
           end
         end
       end
