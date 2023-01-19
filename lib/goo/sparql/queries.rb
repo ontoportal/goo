@@ -141,7 +141,7 @@ module Goo
               return :optional
             when :regex
               if  filter_operation.value.is_a?(String)
-                filter_operations << "REGEX(?#{filter_var.to_s} , \"#{filter_operation.value.to_s}\")"
+                filter_operations << "REGEX(STR(?#{filter_var.to_s}) , \"#{filter_operation.value.to_s}\")"
               end
 
             else
