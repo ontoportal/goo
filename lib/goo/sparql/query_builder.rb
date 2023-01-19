@@ -348,11 +348,11 @@ module Goo
                                query_filters)
         query_filter_str = []
 
-        filter_patterns = []
         filter_graphs = []
         inspected_patterns = {}
         query_filters&.each do |query_filter|
           filter_operations = []
+          filter_patterns = []
           type = query_filter_sparql(klass, query_filter, filter_patterns, filter_graphs,
                                      filter_operations, internal_variables,
                                      inspected_patterns, collection)
