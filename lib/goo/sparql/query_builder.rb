@@ -310,14 +310,20 @@ module Goo
           end
           filter_var = inspected_patterns[filter_pattern_match]
 
-          if !filter_operation.value.instance_of?(Goo::Filter)
-            if filter_operation.operator == :unbound || filter_operation.operator == :bound
-              if filter_operation.operator == :unbound
-                filter_operations << "!BOUND(?#{filter_var.to_s})"
-              else
-                filter_operations << "BOUND(?#{filter_var.to_s})"
-              end
+          unless filter_operation.value.instance_of?(Goo::Filter)
+            case filter_operation.operator
+            when  :unbound
+              filter_operations << "!BOUND(?#{filter_var.to_s})"
               return :optional
+
+            when :bound
+              filter_operations << "BOUND(?#{filter_var.to_s})"
+              return :optional
+            when :regex
+              if  filter_operation.value.is_a?(String)
+                filter_operations << "REGEX(STR(?#{filter_var.to_s}) , \"#{filter_operation.value.to_s}\")"
+              end
+
             else
               value = RDF::Literal.new(filter_operation.value)
               if filter_operation.value.is_a? String
@@ -327,6 +333,7 @@ module Goo
                 "?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
                   " #{value.to_ntriples}")
             end
+
           else
             filter_operations << "#{sparql_op_string(filter_operation.operator)}"
             query_filter_sparql(klass, filter_operation.value, filter_patterns,
