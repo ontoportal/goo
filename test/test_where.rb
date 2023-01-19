@@ -496,6 +496,12 @@ class TestWhere < MiniTest::Unit::TestCase
     f = Goo::Filter.new(enrolled: [ :xxx ]).unbound
     st = Student.where.filter(f).all
     assert st.length == 7
+
+    f = Goo::Filter.new(:name).regex("n") # will find all students that contains "n" in there name
+    st = Student.where.filter(f).include(:name).all # return "John" , "Daniel"  and  "Susan"
+
+    assert_equal 3, st.length
+    assert_equal ["John","Daniel","Susan"].sort, st.map { |x| x.name }.sort
   end
 
   def test_aggregated
