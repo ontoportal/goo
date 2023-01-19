@@ -50,61 +50,7 @@ module Goo
         return so.true?
       end
 
-      def self.query_filter_sparql(klass,filter,filter_patterns,filter_graphs,
-                                   filter_operations,
-                                   internal_variables,
-                                   inspected_patterns,
-                                   collection)
-        #create a object variable to project the value in the filter
-        filter.filter_tree.each do |filter_operation|
-          filter_pattern_match = {}
-          if filter.pattern.instance_of?(Symbol)
-            filter_pattern_match[filter.pattern] = []
-          else
-            filter_pattern_match = filter.pattern
-          end
-          unless inspected_patterns.include?(filter_pattern_match)
-            attr = filter_pattern_match.keys.first
-            patterns_for_match(klass, attr, filter_pattern_match[attr],
-                               filter_graphs, filter_patterns,
-                                   [],internal_variables,
-                                   subject=:id,in_union=false,in_aggregate=false,
-                                   collection=collection)
-            inspected_patterns[filter_pattern_match] = internal_variables.last
-          end
-          filter_var = inspected_patterns[filter_pattern_match]
-          if !filter_operation.value.instance_of?(Goo::Filter)
-            case filter_operation.operator
-            when  :unbound
-              filter_operations << "!BOUND(?#{filter_var.to_s})"
-              return :optional
-
-            when :bound
-              filter_operations << "BOUND(?#{filter_var.to_s})"
-              return :optional
-            when :regex
-              if  filter_operation.value.is_a?(String)
-                filter_operations << "REGEX(?#{filter_var.to_s} , \"#{filter_operation.value.to_s}\")"
-              end
-
-            else
-              value = RDF::Literal.new(filter_operation.value)
-              if filter_operation.value.is_a? String
-                value = RDF::Literal.new(filter_operation.value, :datatype => RDF::XSD.string)
-              end
-              filter_operations << (
-                "?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
-                  " #{value.to_ntriples}")
-            end
-
-          else
-            filter_operations << "#{sparql_op_string(filter_operation.operator)}"
-            query_filter_sparql(klass,filter_operation.value,filter_patterns,
-                                filter_graphs,filter_operations,
-                                internal_variables,inspected_patterns,collection)
-          end
-        end
-      end
+   
 
       def self.model_load(*options)
         Goo::SPARQL::Loader.model_load(*options)
