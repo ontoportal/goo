@@ -50,7 +50,6 @@ module Goo
         return so.true?
       end
 
-   
 
       def self.model_load(*options)
         Goo::SPARQL::Loader.model_load(*options)

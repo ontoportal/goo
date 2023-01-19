@@ -323,11 +323,22 @@ module Goo
               if  filter_operation.value.is_a?(String)
                 filter_operations << "REGEX(STR(?#{filter_var.to_s}) , \"#{filter_operation.value.to_s}\")"
               end
+
             else
-              filter_operations << "#{sparql_op_string(filter_operation.operator)}"
-              query_filter_sparql(klass, filter_operation.value, filter_patterns,
-                                  filter_graphs, filter_operations,
-                                  internal_variables, inspected_patterns, collection)
+              value = RDF::Literal.new(filter_operation.value)
+              if filter_operation.value.is_a? String
+                value = RDF::Literal.new(filter_operation.value, :datatype => RDF::XSD.string)
+              end
+              filter_operations << (
+                "?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
+                  " #{value.to_ntriples}")
+            end
+
+          else
+            filter_operations << "#{sparql_op_string(filter_operation.operator)}"
+            query_filter_sparql(klass, filter_operation.value, filter_patterns,
+                                filter_graphs, filter_operations,
+                                internal_variables, inspected_patterns, collection)
           end
         end
       end
