@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 module Dep
   class Ontology < Goo::Base::Resource
     model :ontology, name_with: :name

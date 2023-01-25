@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 class NamespacesModel < Goo::Base::Resource
   model :namespaces, namespace: :rdfs, name_with: :name
   attribute :name, enforce: [ :existence, :string, :unique ], namespace: :skos

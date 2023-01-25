@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 #collection on attribute
 class Issue < Goo::Base::Resource
   model :issue, collection: :owner, name_with: :description

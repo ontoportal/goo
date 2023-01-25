@@ -4,8 +4,6 @@ require "csv"
 require_relative '../test_case'
 require_relative './query_profiler'
 
-GooTest.configure_goo
-
 module Test
   module BioPortal 
     class Ontology < Goo::Base::Resource

@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 class NameWith < Goo::Base::Resource
   model :name_with, name_with: lambda { |s| id_generator(s) } 
   attribute :name, enforce: [ :existence, :string, :unique ]

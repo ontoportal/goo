@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 module TestChunkWrite
   ONT_ID = "http:://example.org/data/nemo"
   ONT_ID_EXTRA = "http:://example.org/data/nemo/extra"
@@ -23,9 +21,20 @@ module TestChunkWrite
     def self._delete
       graphs = [ONT_ID,ONT_ID_EXTRA]
       url = Goo.sparql_data_client.url
+
+
+      # url = File.join(url, "")
+
+
       graphs.each do |graph|
         # This bypasses the chunks stuff
-        params = { method: :delete, url: "#{url.to_s}#{graph.to_s}", timeout: nil }
+        delete_url = url.to_s + (Goo.sparql_backend_name.downcase === 'ag' ? "?context=#{CGI.escape(graph.to_s)}" : graph.to_s)
+        params = { method: :delete, url: delete_url, timeout: nil }
+
+
+        binding.pry
+
+
         RestClient::Request.execute(params)
       end
     end
