@@ -79,7 +79,7 @@ GEM
     mime-types-data (3.2022.0105)
     minitest (4.7.5)
     multi_json (1.15.0)
-    multipart-post (2.2.3)
+    multipart-post (2.3.0)
     mustermann (3.0.0)
       ruby2_keywords (~> 0.0.1)
     net-http-persistent (2.9.4)
