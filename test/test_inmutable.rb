@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 module TestInmutable
   class Status < Goo::Base::Resource
     model :status, :inmutable, name_with: :code

@@ -1,12 +1,13 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 module TestChunkWrite
-  ONT_ID = "http:://example.org/data/nemo"
-  ONT_ID_EXTRA = "http:://example.org/data/nemo/extra"
+  ONT_ID = "http://example.org/data/nemo"
+  ONT_ID_EXTRA = "http://example.org/data/nemo/extra"
 
   class TestChunkWrite < MiniTest::Unit::TestCase
+
+    BACKEND_4STORE = '4store'
+    BACKEND_AG = 'ag'
 
     def initialize(*args)
       super(*args)
@@ -21,13 +22,13 @@ module TestChunkWrite
     end
 
     def self._delete
-      graphs = [ONT_ID,ONT_ID_EXTRA]
+      graphs = [ONT_ID, ONT_ID_EXTRA]
       url = Goo.sparql_data_client.url
-      graphs.each do |graph|
+      graphs.each { |graph|
         # This bypasses the chunks stuff
-        params = { method: :delete, url: "#{url.to_s}#{graph.to_s}", timeout: nil }
+        params = self.params_for_backend(:delete, graph.to_s)
         RestClient::Request.execute(params)
-      end
+      }
     end
 
     def test_put_data
@@ -75,14 +76,7 @@ module TestChunkWrite
       ntriples_file_path = "./test/data/nemo_ontology.ntriples"
 
       # Bypass in chunks
-      url = Goo.sparql_data_client.url
-      params = {
-        method: :put,
-        url: "#{url.to_s}#{ONT_ID}",
-        payload: File.read(ntriples_file_path),
-        headers: {content_type: "application/x-turtle"},
-        timeout: nil
-      }
+      params = self.class.params_for_backend(:put, ONT_ID, ntriples_file_path)
       RestClient::Request.execute(params)
 
       tput = Thread.new {
@@ -137,16 +131,7 @@ module TestChunkWrite
 
     def test_query_flood
       ntriples_file_path = "./test/data/nemo_ontology.ntriples"
-
-      # Bypass in chunks
-      url = Goo.sparql_data_client.url
-      params = {
-        method: :put,
-        url: "#{url.to_s}#{ONT_ID}",
-        payload: File.read(ntriples_file_path),
-        headers: {content_type: "application/x-turtle"},
-        timeout: nil
-      }
+      params = self.class.params_for_backend(:put, ONT_ID, ntriples_file_path)
       RestClient::Request.execute(params)
 
       tput = Thread.new {
@@ -165,21 +150,37 @@ module TestChunkWrite
         }
       end
 
-      log_status = []
-      Thread.new {
-        10.times do |i|
-          log_status << Goo.sparql_query_client.status
-          sleep(1.2)
+      if Goo.sparql_backend_name.downcase === BACKEND_4STORE
+        log_status = []
+        Thread.new {
+          10.times do |i|
+            log_status << Goo.sparql_query_client.status
+            sleep(1.2)
+          end
+        }
+
+        threads.each do |t|
+          t.join
         end
-      }
+        tput.join
 
-      threads.each do |t|
-        t.join
+        assert log_status.map { |x| x[:outstanding] }.max > 0
+        assert_equal 16, log_status.map { |x| x[:running] }.max
       end
-      tput.join
+    end
 
-      assert log_status.map { |x| x[:outstanding] }.max > 0
-      assert_equal 16, log_status.map { |x| x[:running] }.max
+    def self.params_for_backend(method, graph_name, ntriples_file_path = nil)
+      url = Goo.sparql_data_client.url
+      params = {method: method, headers: {content_type: "application/x-turtle"}, timeout: nil}
+
+      if Goo.sparql_backend_name.downcase === BACKEND_AG
+        params[:url] = "#{url.to_s}?context=%22#{CGI.escape(graph_name)}%22"
+        params[:payload] = File.read(ntriples_file_path) if ntriples_file_path
+      else
+        params[:url] = "#{url.to_s}#{graph_name}"
+        params[:payload] = File.read(ntriples_file_path) if ntriples_file_path
+      end
+      params
     end
 
   end

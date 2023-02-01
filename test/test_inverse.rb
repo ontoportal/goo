@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 class Task < Goo::Base::Resource
   model :task, name_with: :description
   attribute :description, enforce: [ :existence, :unique]

@@ -568,6 +568,10 @@ module Goo
         if page
           offset = (page[:page_i]-1) * page[:page_size]
           select.slice(offset,page[:page_size])
+          # mdorf, 1/12/2023, AllegroGraph returns duplicate results across
+          # different pages unless the order_by clause is explicitly specified
+          # see https://github.com/ncbo/bioportal-project/issues/264
+          select.order(:id)
         end
         select.distinct(true)
         if query_options && !binding_as
@@ -766,7 +770,7 @@ module Goo
           if collection.is_a?Array and collection.length == 1
             collection_value = collection.first
           end
-          if collection.respond_to?:id
+          if collection.respond_to?(:id)
             collection_value = collection
           end
         end

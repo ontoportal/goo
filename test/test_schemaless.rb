@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 module TestSChemaless
 
   ONT_ID = "http:://example.org/data/nemo"
