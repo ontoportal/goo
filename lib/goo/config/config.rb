@@ -16,7 +16,7 @@ module Goo
     # Set defaults
     @settings.goo_backend_name    ||= ENV['GOO_BACKEND_NAME'] || '4store'
     @settings.goo_port            ||= ENV['GOO_PORT'] || 9000
-    @settings.goo_host            ||= ENV['GOO_HOST'] || 'localhost"'
+    @settings.goo_host            ||= ENV['GOO_HOST'] || 'localhost'
     @settings.goo_path_query      ||= ENV['GOO_PATH_QUERY'] || '/sparql/'
     @settings.goo_path_data       ||= ENV['GOO_PATH_DATA'] || '/data/'
     @settings.goo_path_update     ||= ENV['GOO_PATH_UPDATE'] || '/update/'
