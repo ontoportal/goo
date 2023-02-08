@@ -4,14 +4,13 @@ desc 'Run unit tests with docker based backend'
 namespace :test do
   namespace :docker do
     task :up do
-      system("docker compose up -d")
-      system("docker compose ps")
+      system("docker compose up -d") || abort("Unable to start docker containers")
     end
     task :down do
       system("docker compose --profile fs --profile ag stop")
       system("docker compose --profile fs --profile ag kill")
     end
-    desc "run tests agains docker AG backend"
+    desc "run tests with docker AG backend"
     task :ag do
       ENV["GOO_BACKEND_NAME"]="AG"
       ENV["GOO_PORT"]="10035"
@@ -21,11 +20,16 @@ namespace :test do
       ENV["COMPOSE_PROFILES"]="ag"
       Rake::Task["test:docker:up"].invoke
       # AG takes some time to start and create databases/accounts
-      printf("waiting for AG to come up")
       # TODO: replace system curl command with native ruby code
-      until system("curl -sf http://127.0.0.1:10035/repositories/ontoportal_test/status | grep -iqE '(^running|^lingering)' || exit 1")
-        sleep(1)
-        printf(".")
+      unless system("curl -sf http://127.0.0.1:10035/repositories/ontoportal_test/status | grep -iqE '(^running|^lingering)' || exit 1")
+        printf("waiting for AllegroGraph container to initialize")
+        sec = 0
+        until system("curl -sf http://127.0.0.1:10035/repositories/ontoportal_test/status | grep -iqE '(^running|^lingering)' || exit 1") do
+          sleep(1)
+          printf(".")
+          sec += 1
+          abort("  AllegroGraph container hasn't initialized properly") if sec > 30
+        end
       end
       puts
       system("docker compose ps") # TODO: remove after GH actions troubleshooting is complete
@@ -33,7 +37,7 @@ namespace :test do
       Rake::Task["test:docker:down"].invoke
     end
 
-    desc "run tests agains docker 4store backend"
+    desc "run tests with docker 4store backend"
     task :fs do
       ENV["GOO_PORT"]="9000"
       ENV["COMPOSE_PROFILES"]='fs'
