@@ -13,6 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         ruby-version: ['2.7', '3.0']
+        triplestore: ['fs', 'ag']
 
     steps:
     - uses: actions/checkout@v3
@@ -23,10 +24,11 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
-    - name: Start backend services via docker-compose
-      run: docker compose up -d
+    - name: Add config file
+      # tempoaray workaround for the config.rb file requirement
+      run:  echo 'Goo.config do |config| end' > config/config.rb
     - name: Run tests
-      run: bundle exec rake test
+      run: bundle exec rake test:docker:${{ matrix.triplestore }} TESTOPTS="-v"
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
 

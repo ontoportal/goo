@@ -16,7 +16,7 @@ module Goo
     # Set defaults
     @settings.goo_backend_name    ||= ENV['GOO_BACKEND_NAME'] || '4store'
     @settings.goo_port            ||= ENV['GOO_PORT'] || 9000
-    @settings.goo_host            ||= ENV['GOO_HOST'] || 'localhost"'
+    @settings.goo_host            ||= ENV['GOO_HOST'] || 'localhost'
     @settings.goo_path_query      ||= ENV['GOO_PATH_QUERY'] || '/sparql/'
     @settings.goo_path_data       ||= ENV['GOO_PATH_DATA'] || '/data/'
     @settings.goo_path_update     ||= ENV['GOO_PATH_UPDATE'] || '/update/'
@@ -26,7 +26,7 @@ module Goo
     @settings.bioportal_namespace ||= ENV['BIOPORTAL_NAMESPACE'] || 'http://data.bioontology.org/'
     @settings.queries_debug       ||= ENV['QUERIES_DEBUG'] || false
 
-    puts "(GOO) >> Using RDF store #{@settings.goo_host}:#{@settings.goo_port}#{@settings.goo_path_query}"
+    puts "(GOO) >> Using RDF store (#{@settings.goo_backend_name}) #{@settings.goo_host}:#{@settings.goo_port}#{@settings.goo_path_query}"
     puts "(GOO) >> Using term search server at #{@settings.search_server_url}"
     puts "(GOO) >> Using Redis instance at #{@settings.redis_host}:#{@settings.redis_port}"
 
@@ -59,7 +59,7 @@ module Goo
         conf.add_namespace(:bioportal, RDF::Vocabulary.new(@settings.bioportal_namespace))
         conf.use_cache = false
       end
-    rescue Exception => e
+    rescue StandardError => e
       abort("EXITING: Goo cannot connect to triplestore and/or search server:\n  #{e}\n#{e.backtrace.join("\n")}")
     end
   end
