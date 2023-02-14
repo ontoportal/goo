@@ -39,7 +39,7 @@ module Goo
                       expansion = eq_p[query_predicate.to_s]
                       expansion = expansion.map { |x| "?#{var_name} = <#{x}>" }
                       expansion = expansion.join " || "
-                      # Instead of applending the filters to the end of the query, as in query.filter(expansion),
+                      # mdorf, 11/15/2016 Instead of appending the filters to the end of the query, as in query.filter(expansion),
                       # we store them in the options[:filter] attribute. They will be included in the OPTIONAL
                       # sections when the query is constructed. According to AG, this is the CORRECT way of
                       # constructing the query.
@@ -51,6 +51,7 @@ module Goo
                       # All you need to do is to make sure that the FILTERS are applied only _inside_
                       # each OPTIONAL.
                       pattern.options[:filter] = expansion
+                      # query.filter(expansion)
                       count_rewrites += 1
                       attribute_mappings[query_predicate.to_s] = var_name
                     end
@@ -605,6 +606,10 @@ module Goo
 
         expand_equivalent_predicates(select,equivalent_predicates)
         var_set_hash = {}
+
+        # select.prefix('franzOption_logQuery: <franz:onFailure>')
+        # puts select.to_s if select.to_s.include?("SELECT DISTINCT ?id ( COUNT(DISTINCT ?category_agg_count) AS ?category_agg_count_projection )")
+        # binding.pry if select.to_s.include?("SELECT DISTINCT ?id ( COUNT(DISTINCT ?category_agg_count) AS ?category_agg_count_projection )")
 
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
