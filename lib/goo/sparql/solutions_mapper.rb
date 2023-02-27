@@ -178,18 +178,18 @@ module Goo
         new_value.language || :no_lang if new_value.is_a?(RDF::Literal)
       end
 
-      def add_object_to_model(id, object, predicate, language, requested_lang = nil)
+      def add_object_to_model(id, objects, predicate, language, requested_lang = nil)
         if @models_by_id[id].respond_to?(:klass)
-          @models_by_id[id][predicate] = object unless object.nil? && !@models_by_id[id][predicate].nil?
+          @models_by_id[id][predicate] = objects unless objects.nil? && !@models_by_id[id][predicate].nil?
         elsif !@models_by_id[id].class.handler?(predicate) &&
-              !(object.nil? && !@models_by_id[id].instance_variable_get("@#{predicate}").nil?) &&
+              !(objects.nil? && !@models_by_id[id].instance_variable_get("@#{predicate}").nil?) &&
               predicate != :id
 
             if language.nil? 
-              @models_by_id[id].send("#{predicate}=", object, on_load: true)
+              @models_by_id[id].send("#{predicate}=", objects, on_load: true)
             else 
               if language.eql?(requested_lang) || language.eql?(:no_lang) || requested_lang.nil?
-                @models_by_id[id].send("#{predicate}=", object, on_load: true)
+                @models_by_id[id].send("#{predicate}=", objects, on_load: true)
               end
             end
           
