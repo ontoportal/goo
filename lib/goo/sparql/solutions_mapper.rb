@@ -72,13 +72,12 @@ module Goo
             next
           end
 
-          # if multiple language values are included for a given property, set the
-          # corresponding model attribute to the English language value - NCBO-1662
-          language, object = get_object_language(id, object, predicate)
-          object, objects_new = get_value_object(id, objects_new, object, list_attributes, predicate)
-          add_object_to_model(id, object, predicate, language)
+          lang = object_language(object)
+
+          objects, objects_new = get_value_object(id, objects_new, object, list_attributes, predicate)
+          add_object_to_model(id, objects, predicate, lang, :EN)
         end
-        @lang_filter.fill_models_with_other_languages(@models_by_id, list_attributes)
+        # @lang_filter.fill_models_with_other_languages(@models_by_id, list_attributes)
         init_unloaded_attributes(found, list_attributes)
 
         return @models_by_id if @bnode_extraction
@@ -175,17 +174,25 @@ module Goo
         [object, objects_new]
       end
 
-      def add_object_to_model(id, object, predicate, lang)
+      def object_language(new_value)
+        new_value.language || :no_lang if new_value.is_a?(RDF::Literal)
+      end
+
+      def add_object_to_model(id, object, predicate, language, requested_lang = nil)
         if @models_by_id[id].respond_to?(:klass)
           @models_by_id[id][predicate] = object unless object.nil? && !@models_by_id[id][predicate].nil?
         elsif !@models_by_id[id].class.handler?(predicate) &&
               !(object.nil? && !@models_by_id[id].instance_variable_get("@#{predicate}").nil?) &&
               predicate != :id
 
-          if (lang&.eql?(:no_lang)) || !lang
-            @models_by_id[id].send("#{predicate}=", object, on_load: true)
-          end
-
+            if language.nil? 
+              @models_by_id[id].send("#{predicate}=", object, on_load: true)
+            else 
+              if language.eql?(requested_lang) || language.eql?(:no_lang) || requested_lang.nil?
+                @models_by_id[id].send("#{predicate}=", object, on_load: true)
+              end
+            end
+          
         end
       end
 
@@ -215,6 +222,7 @@ module Goo
       def preloaded_value(id, predicate)
         if !@read_only
           @models_by_id[id].instance_variable_get("@#{predicate}")
+          
         else
           @models_by_id[id][predicate]
         end
@@ -458,4 +466,3 @@ module Goo
     end
   end
 end
-
