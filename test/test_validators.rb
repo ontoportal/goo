@@ -32,6 +32,13 @@ class SymmetricTestModel < Goo::Base::Resource
   attribute :friends, enforce: [SymmetricTestModel, :symmetric, :list]
 end
 
+class DistinctOfTestModel < Goo::Base::Resource
+  model :symmetric_test_model, name_with: :name
+  attribute :name, enforce: [:unique, :existence, :string]
+  attribute :last_name, enforce: [:distinct_of_name, :string]
+  attribute :names, enforce: [:list, :string]
+  attribute :last_names, enforce: [:list, :distinct_of_names, :string]
+end
 
 
 class TestValidators < MiniTest::Unit::TestCase
@@ -217,7 +224,7 @@ class TestValidators < MiniTest::Unit::TestCase
     p1.save
 
     assert p2.valid?
-
+    GooTestData.delete_all [SymmetricTestModel]
   end
 
   def test_symmetric_validator_list
@@ -261,6 +268,32 @@ class TestValidators < MiniTest::Unit::TestCase
     p2.save
 
     assert p4.valid?
+    GooTestData.delete_all [SymmetricTestModel]
+  end
 
+  def test_distinct_of_validator
+    p = DistinctOfTestModel.new
+    p.name = "p1"
+    p.last_name = "p1"
+    p.names = ["p1", "p2"]
+    p.last_names = ["p1", "p2"]
+
+
+    refute p.valid?
+
+    p.last_name = "last name"
+    p.last_names = ["last name 1", "last name 2"]
+
+    assert p.valid?
+
+    p.last_name = "last name"
+    p.last_names = ["last name 1", "p2"]
+
+    refute p.valid?
+
+    p.last_name = ""
+    p.last_names = []
+
+    assert p.valid?
   end
 end
