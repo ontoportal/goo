@@ -53,8 +53,11 @@ module Goo
               type = opt.to_s.index("max_") ? :max : :min
               check Goo::Validators::ValueRange, inst, attr, value, type, opt.to_s
             else
-              model_range = object_type(opt)
-              check_object_type inst, attr, value, model_range
+              if object_type?(opt)
+                check_object_type inst, attr, value, opt
+              elsif instance_proc?(inst, opt)
+                call_proc(inst.method(opt), inst, attr)
+              end
             end
           end
 
@@ -67,8 +70,16 @@ module Goo
           opt.respond_to?(:shape_attribute) ? opt : Goo.model_by_name(opt)
         end
 
-        def check_object_type(inst, attr, value, model_range)
+        def object_type?(opt)
+          opt.respond_to?(:shape_attribute) ? opt : Goo.model_by_name(opt)
+        end
 
+        def instance_proc?(inst, opt)
+          inst.respond_to? opt
+        end
+
+        def check_object_type(inst, attr, value, opt)
+          model_range = object_type(opt)
           if model_range && !value.nil?
             check Goo::Validators::ObjectType, inst, attr, value, model_range.model_name, model_range
           end
@@ -81,10 +92,10 @@ module Goo
         def enforce_by_attribute(model, attr)
            model.model_settings[:attributes][attr][:enforce]
         end
-        
-        def call_proc(opt,inst, attr)
+
+        def call_proc(proc,inst, attr)
           # This should return an array like [:name_of_error1, "Error message 1", :name_of_error2, "Error message 2"]
-          errors = opt.call(inst, attr)
+          errors = proc.call(inst, attr) || []
           errors.each_slice(2) do |e|
             next if e.nil? || e.compact.empty?
             add_error(e[0].to_sym, e[1])
