@@ -47,6 +47,15 @@ class SuperiorToTestModel < Goo::Base::Resource
   attribute :death_date, enforce: [:superior_equal_to_birth_date, :date_time]
 end
 
+class InverseOfTestModel < Goo::Base::Resource
+  model :inverse_test_model_one, name_with: :name
+  attribute :name, enforce: [:unique, :existence, :string]
+  attribute :state, enforce: [InverseOfTestModel]
+  attribute :city, enforce: [:inverse_of_state, InverseOfTestModel]
+  attribute :states, enforce: [InverseOfTestModel, :list]
+  attribute :cities, enforce: [:inverse_of_states, InverseOfTestModel, :list]
+end
+
 
 class TestValidators < MiniTest::Unit::TestCase
 
@@ -60,7 +69,7 @@ class TestValidators < MiniTest::Unit::TestCase
 
   def self.after_suite
     GooTestData.delete_test_case_data
-    GooTestData.delete_all [SymmetricTestModel]
+    GooTestData.delete_all [SymmetricTestModel, InverseOfTestModel]
   end
 
 
@@ -320,5 +329,60 @@ class TestValidators < MiniTest::Unit::TestCase
     p.birth_date = nil
 
     assert p.valid?
+  end
+
+  def test_inverse_of_validator_no_list
+    GooTestData.delete_all [InverseOfTestModel]
+    p1 = InverseOfTestModel.new
+    p2 = InverseOfTestModel.new
+
+    p1.name = 'p1'
+    p2.name = 'p2'
+
+
+    p2.save
+
+    p1.city = p2
+
+    refute p1.valid?
+    assert p1.errors[:city][:inverse_of_state]
+
+
+    p2.state = p1
+
+    assert p1.valid?
+
+  end
+
+  def test_inverse_of_validator_list
+    GooTestData.delete_all [InverseOfTestModel]
+    p1 = InverseOfTestModel.new
+    p2 = InverseOfTestModel.new
+    p3 = InverseOfTestModel.new
+    p4 = InverseOfTestModel.new
+
+    p1.name = 'p1'
+    p2.name = 'p2'
+    p3.name = 'p3'
+    p4.name = 'p4'
+
+    p2.save
+    p3.save
+
+    p1.cities = [p2,p3]
+
+    refute p1.valid?
+    assert p1.errors[:cities][:inverse_of_states]
+
+    p2.states = [p1, p4]
+    p3.states = [p2, p4]
+
+    refute p1.valid?
+    assert p1.errors[:cities][:inverse_of_states]
+
+    p3.states = [p2, p4, p1]
+
+    assert p1.valid?
+
   end
 end
