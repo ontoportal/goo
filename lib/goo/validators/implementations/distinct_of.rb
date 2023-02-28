@@ -18,9 +18,7 @@ module Goo
         @property = property(key)
       end
 
-      def property(opt)
-        opt[self.class.ids.size..opt.length].to_sym
-      end
+
 
       def distinct?(inst, property, value)
         target_values = self.class.attr_value(property, inst)
