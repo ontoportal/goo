@@ -61,6 +61,11 @@ module Goo
           key[ids.first.size..key.size].to_sym
         end
 
+        def respond_to?(attr, object)
+          object && object.respond_to?(attr)
+        end
+
+
         def equivalent_value?(object1, object2)
           if object1.respond_to?(:id) && object2.respond_to?(:id)
             object1.id.eql?(object2.id)
