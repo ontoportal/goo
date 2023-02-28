@@ -15,7 +15,7 @@ module Goo
       }
 
       validity_check -> (obj) do
-        self.class.enforce_type(@type, @value)
+        self.enforce_type(@type, @value)
       end
 
       def initialize(inst, attr, value, type)
@@ -25,7 +25,7 @@ module Goo
 
 
 
-      def self.enforce_type(type, value)
+      def enforce_type(type, value)
         return true if value.nil?
 
         if type == :boolean
@@ -44,13 +44,13 @@ module Goo
 
       end
 
-      def self.enforce_type_uri(value)
+      def enforce_type_uri(value)
         return true  if value.nil?
 
         value.is_a?(RDF::URI) && value.valid?
       end
 
-      def self.enforce_type_boolean(value)
+      def enforce_type_boolean(value)
         if value.kind_of? Array
           return value.select { |x| !is_a_boolean?(x) }.empty?
         else
@@ -58,7 +58,7 @@ module Goo
         end
       end
 
-      def self.is_a_boolean?(value)
+      def is_a_boolean?(value)
         return (value.class == TrueClass) || (value.class == FalseClass)
       end
     end

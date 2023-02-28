@@ -16,12 +16,12 @@ module Goo
       validity_check -> (obj) do
         values = Array(@value)
 
-        unless values.select { |v| !self.class.is_a_model?(v, @model_range) }.empty?
+        unless values.select { |v| !self.is_a_model?(v, @model_range) }.empty?
           @error = :no_range
           return false
         end
 
-        unless values.select { |v| !self.class.persistent?(v) }.empty?
+        unless values.select { |v| !self.persistent?(v) }.empty?
           @error = :persistence
           return false
         end
@@ -34,11 +34,11 @@ module Goo
         @model_range = model_range
       end
 
-      def self.is_a_model?(value, model_range)
+      def is_a_model?(value, model_range)
         value.is_a?(model_range) || (value.respond_to?(:klass) && value[:klass] == model_range)
       end
 
-      def self.persistent?(value)
+      def persistent?(value)
         value.respond_to?(:klass) || value.persistent?
       end
     end
