@@ -25,6 +25,36 @@ class RangeTestModel < Goo::Base::Resource
   attribute :weight, enforce: [:float, :min_3, :max_5]
 end
 
+class SymmetricTestModel < Goo::Base::Resource
+  model :symmetric_test_model, name_with: :name
+  attribute :name, enforce: [:unique, :existence]
+  attribute :friend, enforce: [SymmetricTestModel, :symmetric]
+  attribute :friends, enforce: [SymmetricTestModel, :symmetric, :list]
+end
+
+class DistinctOfTestModel < Goo::Base::Resource
+  model :distinct_of_test_model, name_with: :name
+  attribute :name, enforce: [:unique, :existence, :string]
+  attribute :last_name, enforce: [:distinct_of_name, :string]
+  attribute :names, enforce: [:list, :string]
+  attribute :last_names, enforce: [:list, :distinct_of_names, :string]
+end
+
+class SuperiorToTestModel < Goo::Base::Resource
+  model :superior_to_test_model, name_with: :name
+  attribute :name, enforce: [:unique, :existence, :string]
+  attribute :birth_date, enforce: [:date_time]
+  attribute :death_date, enforce: [:superior_equal_to_birth_date, :date_time]
+end
+
+class InverseOfTestModel < Goo::Base::Resource
+  model :inverse_test_model_one, name_with: :name
+  attribute :name, enforce: [:unique, :existence, :string]
+  attribute :state, enforce: [InverseOfTestModel]
+  attribute :city, enforce: [:inverse_of_state, InverseOfTestModel]
+  attribute :states, enforce: [InverseOfTestModel, :list]
+  attribute :cities, enforce: [:inverse_of_states, InverseOfTestModel, :list]
+end
 
 
 class TestValidators < MiniTest::Unit::TestCase
@@ -39,6 +69,7 @@ class TestValidators < MiniTest::Unit::TestCase
 
   def self.after_suite
     GooTestData.delete_test_case_data
+    GooTestData.delete_all [SymmetricTestModel, InverseOfTestModel]
   end
 
 
@@ -181,4 +212,177 @@ class TestValidators < MiniTest::Unit::TestCase
 
   end
 
+  def test_symmetric_validator_no_list
+    p1 = SymmetricTestModel.new
+    p2 = SymmetricTestModel.new
+    p3 = SymmetricTestModel.new
+    p1.name = "p1"
+    p2.name = "p2"
+    p3.name = "p3"
+
+    p2.save
+    p3.save
+
+    p1.friend = p2
+
+    refute p1.valid?
+    assert p1.errors[:friend][:symmetric]
+
+    p3.friend = p1
+
+    refute p1.valid?
+
+    p2.friend = p1
+    p1.friend = p2
+
+    assert p1.valid?
+
+    p1.save
+
+    assert p2.valid?
+    GooTestData.delete_all [SymmetricTestModel]
+  end
+
+  def test_symmetric_validator_list
+    p1 = SymmetricTestModel.new
+    p2 = SymmetricTestModel.new
+    p3 = SymmetricTestModel.new
+    p4 = SymmetricTestModel.new
+    p1.name = "p1"
+    p2.name = "p2"
+    p3.name = "p3"
+    p4.name = "p4"
+
+    p2.save
+    p3.save
+    p4.save
+
+    p1.friends = [p2, p3]
+
+    refute p1.valid?
+    assert p1.errors[:friends][:symmetric]
+
+    p2.friends = [p1, p3, p4]
+    p3.friends = [p2]
+    p4.friends = [p2]
+
+    refute p1.valid?
+    refute p2.valid?
+
+
+    p3.friends = [p2, p1]
+
+    assert p1.valid?
+    p1.save
+
+    assert p3.valid?
+    p3.save
+
+
+    assert p2.valid?
+
+    p2.save
+
+    assert p4.valid?
+    GooTestData.delete_all [SymmetricTestModel]
+  end
+
+  def test_distinct_of_validator
+    p = DistinctOfTestModel.new
+    p.name = "p1"
+    p.last_name = "p1"
+    p.names = ["p1", "p2"]
+    p.last_names = ["p1", "p2"]
+
+
+    refute p.valid?
+
+    p.last_name = "last name"
+    p.last_names = ["last name 1", "last name 2"]
+
+    assert p.valid?
+
+    p.last_name = "last name"
+    p.last_names = ["last name 1", "p2"]
+
+    refute p.valid?
+
+    p.last_name = ""
+    p.last_names = []
+
+    assert p.valid?
+  end
+
+  def test_superior_equal_to_validator
+    p = SuperiorToTestModel.new
+    p.name = "p"
+    p.birth_date = DateTime.parse('1998-12-02')
+    p.death_date = DateTime.parse('1995-12-02')
+
+    refute p.valid?
+    assert p.errors[:death_date][:superior_equal_to_birth_date]
+
+    p.death_date = DateTime.parse('2023-12-02')
+
+    assert p.valid?
+
+    p.birth_date = nil
+
+    assert p.valid?
+  end
+
+  def test_inverse_of_validator_no_list
+    GooTestData.delete_all [InverseOfTestModel]
+    p1 = InverseOfTestModel.new
+    p2 = InverseOfTestModel.new
+
+    p1.name = 'p1'
+    p2.name = 'p2'
+
+
+    p2.save
+
+    p1.city = p2
+
+    refute p1.valid?
+    assert p1.errors[:city][:inverse_of_state]
+
+
+    p2.state = p1
+
+    assert p1.valid?
+
+  end
+
+  def test_inverse_of_validator_list
+    GooTestData.delete_all [InverseOfTestModel]
+    p1 = InverseOfTestModel.new
+    p2 = InverseOfTestModel.new
+    p3 = InverseOfTestModel.new
+    p4 = InverseOfTestModel.new
+
+    p1.name = 'p1'
+    p2.name = 'p2'
+    p3.name = 'p3'
+    p4.name = 'p4'
+
+    p2.save
+    p3.save
+
+    p1.cities = [p2,p3]
+
+    refute p1.valid?
+    assert p1.errors[:cities][:inverse_of_states]
+
+    p2.states = [p1, p4]
+    p3.states = [p2, p4]
+
+    refute p1.valid?
+    assert p1.errors[:cities][:inverse_of_states]
+
+    p3.states = [p2, p4, p1]
+
+    assert p1.valid?
+
+  end
 end

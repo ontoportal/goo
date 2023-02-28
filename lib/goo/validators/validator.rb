@@ -52,7 +52,52 @@ module Goo
         def validator_settings
           @validator_settings ||= {}
         end
+
+        def ids
+          Array(validator_settings[:id])
+        end
+
+        def property(key)
+          key[ids.first.size..key.size].to_sym
+        end
+
+        def respond_to?(attr, object)
+          object && object.respond_to?(attr)
+        end
+
+
+        def equivalent_value?(object1, object2)
+          if object1.respond_to?(:id) && object2.respond_to?(:id)
+            object1.id.eql?(object2.id)
+          else
+            object2 == object1
+          end
+        end
+
+        def attr_value(attr, object)
+          Array(object.send(attr))
+        end
+
+        def empty_value?(value)
+          value.nil? || empty?(value) || empty_array?(value)
+        end
+        def empty?(value)
+          empty_string?(value) || empty_to_s?(value)
+        end
+        def empty_string?(string)
+          string.is_a?(String) && string.strip.empty?
+        end
+
+        def empty_to_s?(object)
+          object && object.to_s&.strip.empty?
+        end
+
+        def empty_array?(array)
+          array.is_a?(Array) && array && array.reject{|x|  x.nil? || empty?(x)}.empty?
+        end
       end
+
+
 
 
 
