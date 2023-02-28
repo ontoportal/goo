@@ -45,6 +45,8 @@ module Goo
               check Goo::Validators::DistinctOf, inst, attr, value, opt, opt
             when /^superior_equal_to_/
               check Goo::Validators::SuperiorEqualTo, inst, attr, value, opt, opt
+            when /^inverse_of_/
+              check Goo::Validators::InverseOf, inst, attr, value, opt, opt
             when Proc
               call_proc(opt, inst, attr)
             when /^max_/, /^min_/
