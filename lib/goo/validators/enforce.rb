@@ -75,7 +75,7 @@ module Goo
         end
 
         def instance_proc?(inst, opt)
-          inst.respond_to? opt
+          opt && (opt.is_a?(Symbol) || opt.is_a?(String)) && inst.respond_to?(opt)
         end
 
         def check_object_type(inst, attr, value, opt)
@@ -95,7 +95,10 @@ module Goo
 
         def call_proc(proc,inst, attr)
           # This should return an array like [:name_of_error1, "Error message 1", :name_of_error2, "Error message 2"]
-          errors = proc.call(inst, attr) || []
+          errors = proc.call(inst, attr)
+
+          return unless !errors.nil? && errors.is_a?(Array)
+
           errors.each_slice(2) do |e|
             next if e.nil? || e.compact.empty?
             add_error(e[0].to_sym, e[1])
