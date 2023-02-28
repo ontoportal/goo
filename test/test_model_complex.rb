@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 module TestComplex
 
 class Submission < Goo::Base::Resource
@@ -185,6 +183,11 @@ class TestModelComplex < MiniTest::Unit::TestCase
 
   def test_collection()
 
+    # This call is not usually necessary as it is usually covered by
+    # the model declaration above.  See the explanation in
+    # https://github.com/ncbo/goo/commit/0e09816b121750b3bb875a5c24cb79865287fcf4#commitcomment-90304626
+    Goo.add_model(:class, Term)
+
     submission = Submission.new(name: "submission1")
     unless submission.exist?
       submission.save
@@ -313,12 +316,18 @@ class TestModelComplex < MiniTest::Unit::TestCase
 
   def test_parents_inverse_children
 
+    # This call is not usually necessary as it is usually covered by
+    # the model declaration above.  See the explanation in
+    # https://github.com/ncbo/goo/commit/0e09816b121750b3bb875a5c24cb79865287fcf4#commitcomment-90304626
+    Goo.add_model(:class, Term)
+   
     submission = Submission.new(name: "submission1")
     unless submission.exist?
       submission.save
     else
       submission = Submission.find("submission1").first
     end
+
 
     terms = Term.in(submission)
     terms.each do |t|
@@ -653,6 +662,11 @@ class TestModelComplex < MiniTest::Unit::TestCase
       assert_equal 0, GooTest.count_pattern("GRAPH #{submission.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }")
     end
 
+    # This call is not usually necessary as it is usually covered by
+    # the model declaration above.  See the explanation in
+    # https://github.com/ncbo/goo/commit/0e09816b121750b3bb875a5c24cb79865287fcf4#commitcomment-90304626
+    Goo.add_model(:class, Term)
+
     terms = []
     10.times do |i|
       term = Term.new
@@ -679,6 +693,12 @@ class TestModelComplex < MiniTest::Unit::TestCase
   end
 
   def test_readonly_pages_with_include
+
+    # This call is not usually necessary as it is usually covered by
+    # the model declaration above.  See the explanation in
+    # https://github.com/ncbo/goo/commit/0e09816b121750b3bb875a5c24cb79865287fcf4#commitcomment-90304626
+    Goo.add_model(:class, Term)
+
     submission = Submission.new(name: "submission1")
     unless submission.exist?
       submission.save
@@ -691,6 +711,7 @@ class TestModelComplex < MiniTest::Unit::TestCase
       assert_equal(0,
        GooTest.count_pattern("GRAPH #{submission.id.to_ntriples} { #{t.id.to_ntriples} ?p ?o . }"))
     end
+
     terms = []
     10.times do |i|
       term = Term.new

@@ -25,3 +25,5 @@ doc/
 
 .idea/*
 projectFilesBackup/*
+
+config/config.rb

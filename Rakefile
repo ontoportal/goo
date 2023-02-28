@@ -107,7 +107,6 @@ end
 desc "Console for working with data"
 task :console do
   require_relative "test/test_case"
-  GooTest.configure_goo
   binding.pry
 end
 

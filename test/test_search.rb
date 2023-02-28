@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 module TestSearch
 
   class TermSearch < Goo::Base::Resource

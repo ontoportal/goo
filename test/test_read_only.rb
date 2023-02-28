@@ -1,8 +1,6 @@
 require_relative 'test_case'
 require_relative 'test_where'
 
-GooTest.configure_goo
-
 module TestReadOnly
 
   class TestReadOnlyWithStruct < TestWhere

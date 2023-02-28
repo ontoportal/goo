@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 class StatusModel < Goo::Base::Resource
   model :status_model, name_with: :name
   attribute :description, enforce: [ :existence, :unique]

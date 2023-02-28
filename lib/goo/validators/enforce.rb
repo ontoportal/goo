@@ -73,7 +73,7 @@ module Goo
         def enforce_by_attribute(model, attr)
            model.model_settings[:attributes][attr][:enforce]
         end
-
+        
         def call_proc(opt,inst, attr)
           # This should return an array like [:name_of_error1, "Error message 1", :name_of_error2, "Error message 2"]
           errors = opt.call(inst, attr)
