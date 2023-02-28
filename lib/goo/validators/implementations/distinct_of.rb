@@ -15,7 +15,7 @@ module Goo
 
       def initialize(inst, attr, value, key)
         super(inst, attr, value)
-        @property = property(key)
+        @property = self.class.property(key)
       end
 
 
