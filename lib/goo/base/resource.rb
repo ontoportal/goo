@@ -96,16 +96,19 @@ module Goo
       end
 
       def exist?(from_valid = false)
-
-        _id = generate_id
-        if _id.nil? && !from_valid && self.class.name_with.is_a?(Symbol)
           begin
-            _id = id_from_attribute()
+          id unless self.class.name_with.kind_of?(Symbol)
           rescue IDGenerationError
+          # Ignored
           end
+
+        _id = @id
+        if from_valid || _id.nil?
+          _id = generate_id rescue _id = nil
         end
+
         return false unless _id
-        return Goo::SPARQL::Queries.model_exist(self, id = _id)
+        Goo::SPARQL::Queries.model_exist(self, id = _id)
       end
 
       def fully_loaded?
