@@ -8,9 +8,12 @@ module Goo
       error_message ->(obj) { "`#{@value}` value cannot be nil"}
 
       validity_check -> (obj) do
-        not (@value.nil? || self.class.empty?(@value) || self.class.empty_array?(@value))
+        not self.class.empty_value?(@value)
       end
 
+      def self.empty_value?(value)
+        value.nil? || self.empty?(value) || self.empty_array?(value)
+      end
       def self.empty?(value)
         empty_string?(value) || empty_to_s?(value)
       end
