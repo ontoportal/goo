@@ -16,6 +16,10 @@ require_relative "goo/sparql/sparql"
 require_relative "goo/search/search"
 require_relative "goo/base/base"
 require_relative "goo/validators/enforce"
+require_relative "goo/validators/validator"
+project_root = File.dirname(File.absolute_path(__FILE__))
+Dir.glob("#{project_root}/goo/validators/implementations/*", &method(:require))
+
 require_relative "goo/utils/utils"
 require_relative "goo/mixins/sparql_client"
 
