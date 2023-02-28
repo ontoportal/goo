@@ -57,6 +57,29 @@ class InverseOfTestModel < Goo::Base::Resource
 end
 
 
+class ProcValidatorsTestModel < Goo::Base::Resource
+  model :proc_validator_test_model, name_with: :name
+  attribute :name, enforce: [:unique, :equal_to_test]
+  attribute :last_name, enforce: [:unique, ->(inst, attr) {  equal_to_test_2(inst, attr)}]
+
+
+  def self.equal_to_test_2(inst, attr)
+    value = inst.send(attr)
+
+    return nil if value && value.eql?('test 2')
+
+    [:equal_to_test_2, "#{attr} need to be equal to `test 2`"]
+  end
+
+  def equal_to_test(inst, attr)
+    value = inst.send(attr)
+
+    return nil if  value && value.eql?('test')
+
+    [:equal_to_test, "#{attr} need to be equal to `test`"]
+  end
+end
+
 class TestValidators < MiniTest::Unit::TestCase
 
   def self.before_suite
@@ -384,5 +407,21 @@ class TestValidators < MiniTest::Unit::TestCase
 
     assert p1.valid?
 
+  end
+
+
+  def test_proc_validators
+    p = ProcValidatorsTestModel.new
+    p.name = "hi"
+    p.last_name = "hi"
+
+    refute p.valid?
+    assert p.errors[:name][:equal_to_test]
+    assert p.errors[:last_name][:equal_to_test_2]
+
+    p.name = "test"
+    p.last_name = "test 2"
+
+    assert p.valid?
   end
 end
