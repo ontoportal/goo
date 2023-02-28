@@ -6,7 +6,7 @@ module Goo
       keys [:min_, :max_]
 
       error_message ->(obj) {
-        value = self.class.value_length(@value)
+        value = self.value_length(@value)
         if @type == :min
           "#{@attr} value has length `#{value}` and the min length is `#{@range}`"
         else
@@ -15,27 +15,27 @@ module Goo
       }
 
       validity_check -> (obj) do
-        self.class.enforce_range_length(@type, @range, @value)
+        self.enforce_range_length(@type, @range, @value)
       end
 
       def initialize(inst, attr, value, type)
         super(inst, attr, value)
         @type = type.index("max_") ? :max : :min
-        @range = self.class.range(type)
+        @range = self.range(type)
       end
 
-      def self.enforce_range_length(type_range, range, value)
+      def enforce_range_length(type_range, range, value)
         return false if value.nil?
         value_length = self.value_length(value)
 
         (type_range.eql?(:min) && (value_length >= range)) || (type_range.eql?(:max) && (value_length <= range))
       end
 
-      def self.range(opt)
+      def range(opt)
         opt[4..opt.length].to_i
       end
 
-      def self.value_length(value)
+      def value_length(value)
         return 0 if value.nil?
 
         if value.is_a?(String) || value.is_a?(Array)

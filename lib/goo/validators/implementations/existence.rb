@@ -11,23 +11,7 @@ module Goo
         not self.class.empty_value?(@value)
       end
 
-      def self.empty_value?(value)
-        value.nil? || self.empty?(value) || self.empty_array?(value)
-      end
-      def self.empty?(value)
-        empty_string?(value) || empty_to_s?(value)
-      end
-      def self.empty_string?(string)
-        string.is_a?(String) && string.strip.empty?
-      end
 
-      def self.empty_to_s?(object)
-        object && object.to_s&.strip.empty?
-      end
-
-      def self.empty_array?(array)
-        array.is_a?(Array) && array && array.reject{|x|  x.nil? || empty?(x)}.empty?
-      end
     end
   end
 end
