@@ -39,6 +39,8 @@ module Goo
               check Goo::Validators::DataType, inst, attr, value, opt, DateTime
             when :float, Float
               check Goo::Validators::DataType, inst, attr, value, opt, Float
+            when :symmetric
+              check Goo::Validators::Symmetric, inst, attr, value, opt
             when Proc
               call_proc(opt, inst, attr)
             when /^max_/, /^min_/
