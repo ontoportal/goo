@@ -54,7 +54,11 @@ module Goo
         end
 
         def ids
-          validator_settings[:id]
+          Array(validator_settings[:id])
+        end
+
+        def property(key)
+          key[ids.first.size..key.size].to_sym
         end
 
         def equivalent_value?(object1, object2)
