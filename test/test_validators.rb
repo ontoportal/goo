@@ -33,11 +33,18 @@ class SymmetricTestModel < Goo::Base::Resource
 end
 
 class DistinctOfTestModel < Goo::Base::Resource
-  model :symmetric_test_model, name_with: :name
+  model :distinct_of_test_model, name_with: :name
   attribute :name, enforce: [:unique, :existence, :string]
   attribute :last_name, enforce: [:distinct_of_name, :string]
   attribute :names, enforce: [:list, :string]
   attribute :last_names, enforce: [:list, :distinct_of_names, :string]
+end
+
+class SuperiorToTestModel < Goo::Base::Resource
+  model :superior_to_test_model, name_with: :name
+  attribute :name, enforce: [:unique, :existence, :string]
+  attribute :birth_date, enforce: [:date_time]
+  attribute :death_date, enforce: [:superior_equal_to_birth_date, :date_time]
 end
 
 
@@ -293,6 +300,24 @@ class TestValidators < MiniTest::Unit::TestCase
 
     p.last_name = ""
     p.last_names = []
+
+    assert p.valid?
+  end
+
+  def test_superior_equal_to_validator
+    p = SuperiorToTestModel.new
+    p.name = "p"
+    p.birth_date = DateTime.parse('1998-12-02')
+    p.death_date = DateTime.parse('1995-12-02')
+
+    refute p.valid?
+    assert p.errors[:death_date][:superior_equal_to_birth_date]
+
+    p.death_date = DateTime.parse('2023-12-02')
+
+    assert p.valid?
+
+    p.birth_date = nil
 
     assert p.valid?
   end
