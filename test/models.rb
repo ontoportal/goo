@@ -101,7 +101,10 @@ module GooTestData
   end
 
   def self.delete_test_case_data
-    objects = [Student, University, Program, Category, Address]
+    delete_all [Student, University, Program, Category, Address]
+  end
+
+  def self.delete_all(objects)
     objects.each do |obj|
       obj.where.include(obj.attributes).each do |i|
         i.delete

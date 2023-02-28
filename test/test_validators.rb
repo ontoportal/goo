@@ -25,6 +25,13 @@ class RangeTestModel < Goo::Base::Resource
   attribute :weight, enforce: [:float, :min_3, :max_5]
 end
 
+class SymmetricTestModel < Goo::Base::Resource
+  model :symmetric_test_model, name_with: :name
+  attribute :name, enforce: [:unique, :existence]
+  attribute :friend, enforce: [SymmetricTestModel, :symmetric]
+  attribute :friends, enforce: [SymmetricTestModel, :symmetric, :list]
+end
+
 
 
 class TestValidators < MiniTest::Unit::TestCase
@@ -39,6 +46,7 @@ class TestValidators < MiniTest::Unit::TestCase
 
   def self.after_suite
     GooTestData.delete_test_case_data
+    GooTestData.delete_all [SymmetricTestModel]
   end
 
 
@@ -181,4 +189,78 @@ class TestValidators < MiniTest::Unit::TestCase
 
   end
 
+  def test_symmetric_validator_no_list
+    p1 = SymmetricTestModel.new
+    p2 = SymmetricTestModel.new
+    p3 = SymmetricTestModel.new
+    p1.name = "p1"
+    p2.name = "p2"
+    p3.name = "p3"
+
+    p2.save
+    p3.save
+
+    p1.friend = p2
+
+    refute p1.valid?
+    assert p1.errors[:friend][:symmetric]
+
+    p3.friend = p1
+
+    refute p1.valid?
+
+    p2.friend = p1
+    p1.friend = p2
+
+    assert p1.valid?
+
+    p1.save
+
+    assert p2.valid?
+
+  end
+
+  def test_symmetric_validator_list
+    p1 = SymmetricTestModel.new
+    p2 = SymmetricTestModel.new
+    p3 = SymmetricTestModel.new
+    p4 = SymmetricTestModel.new
+    p1.name = "p1"
+    p2.name = "p2"
+    p3.name = "p3"
+    p4.name = "p4"
+
+    p2.save
+    p3.save
+    p4.save
+
+    p1.friends = [p2, p3]
+
+    refute p1.valid?
+    assert p1.errors[:friends][:symmetric]
+
+    p2.friends = [p1, p3, p4]
+    p3.friends = [p2]
+    p4.friends = [p2]
+
+    refute p1.valid?
+    refute p2.valid?
+
+
+    p3.friends = [p2, p1]
+
+    assert p1.valid?
+    p1.save
+
+    assert p3.valid?
+    p3.save
+
+
+    assert p2.valid?
+
+    p2.save
+
+    assert p4.valid?
+
+  end
 end
