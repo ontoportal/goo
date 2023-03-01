@@ -15,26 +15,36 @@ module Goo
           [index, value]
         end
 
-        def fill_models_with_other_languages(models_by_id, list_attributes)
-          @other_languages_values.each  do |id, languages_values|
-            languages_values.each do |attr, index_values|
-              model_attribute_val = models_by_id[id].instance_variable_get("@#{attr.to_s}")
-              values = languages_values_to_set(index_values, model_attribute_val)
-              m = models_by_id[id]
-              value = nil
-              is_struct = m.respond_to?(:klass)
-              if !values.nil? && list_attributes.include?(attr)
-                value = values || []
+        def find_model_objects_by_lang(objects_by_lang, lang, model_id, predicate)
+          objects_by_lang[lang]&.find { |obj| obj[:id].eql?(model_id) && obj[:predicate].eql?(predicate) }
+        end
 
-              elsif !values.nil?
-                value = values.first || nil
-              end
+        def fill_models_with_other_languages(models_by_id, objects_by_lang, list_attributes, attributes,klass)
+      
+          other_platform_languages = [:EN, :FR]
 
-              if value
-                if is_struct
-                  m[attr] = value
-                else
-                  m.send("#{attr}=", value, on_load: true)
+          unless other_platform_languages.empty?
+            
+            models_by_id&.each do |id, model|
+              
+              attributes&.each do |attr|
+                
+                other_platform_languages.each do |lang|
+                  
+                  model_attribute_val = model.instance_variable_get("@#{attr}")
+                  model_objects_by_lang = find_model_objects_by_lang(objects_by_lang, lang, id, attr) || []
+
+                  next if model_objects_by_lang.empty?
+
+                  if list_attributes.include?(attr)
+                    model_attribute_val ||= []
+                    if model_attribute_val.empty?
+                      model.send("#{attr}=", model_attribute_val + model_objects_by_lang[:objects], on_load: true)
+                    end
+                  elsif !model_attribute_val
+                    model.send("#{attr}=", model_objects_by_lang[:objects][0] , on_load: true)
+                  end
+                  
                 end
               end
             end

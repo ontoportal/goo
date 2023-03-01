@@ -134,7 +134,8 @@ module Goo
 
       def unmapped_set(attribute,value)
         @unmapped ||= {}
-        (@unmapped[attribute] ||= Set.new) << value
+        @unmapped[attribute] ||= Set.new 
+        @unmapped[attribute] << value unless value.nil?
       end
 
       def unmmaped_to_array
