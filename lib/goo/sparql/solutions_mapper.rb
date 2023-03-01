@@ -274,8 +274,8 @@ module Goo
         @models_by_id[id] = create_class_model(id, @klass, @klass_struct) unless @models_by_id.include?(id)
       end
 
-      def model_set_unmapped(id, predicate, value, _requested_lang = nil)
-        value = nil if value.is_a?(RDF::Literal) && !language_match?(value.language, nil)
+      def model_set_unmapped(id, predicate, value, requested_lang = nil)
+        value = nil if value.is_a?(RDF::Literal) && !language_match?(value.language, requested_lang)
 
         if @models_by_id[id].respond_to? :klass # struct
           @models_by_id[id][:unmapped] ||= {}
@@ -465,7 +465,9 @@ module Goo
         id = sol[:id]
         value = sol[:attributeObject]
 
-        model_set_unmapped(id, @properties_to_include[predicate][:uri], value, :ES)
+        requested_lang = :FR
+
+        model_set_unmapped(id, @properties_to_include[predicate][:uri], value, requested_lang)
       end
 
       def add_aggregations_to_model(sol)
