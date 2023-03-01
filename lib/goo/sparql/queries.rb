@@ -572,7 +572,9 @@ module Goo
           # mdorf, 1/12/2023, AllegroGraph returns duplicate results across
           # different pages unless the order_by clause is explicitly specified
           # see https://github.com/ncbo/bioportal-project/issues/264
-          select.order(:id)
+          # However, using the .order call has added a significant overhead;
+          # therefore, a different solution is now being sought
+          # select.order(:id)
         end
         select.distinct(true)
         if query_options && !binding_as
@@ -607,9 +609,11 @@ module Goo
         expand_equivalent_predicates(select,equivalent_predicates)
         var_set_hash = {}
 
+        # for using prefixes before queries (for troubleshooting)
         # select.prefix('franzOption_logQuery: <franz:onFailure>')
-        # puts select.to_s if select.to_s.include?("SELECT DISTINCT ?id ( COUNT(DISTINCT ?category_agg_count) AS ?category_agg_count_projection )")
-        # binding.pry if select.to_s.include?("SELECT DISTINCT ?id ( COUNT(DISTINCT ?category_agg_count) AS ?category_agg_count_projection )")
+
+        # for troubleshooting specific queries (write 1 of 3)
+        # File.write('./test/ncbo/repository/VTO/14/vto_queries.txt', select.to_s + "\n", mode: 'a') if select.to_s =~ /OFFSET \d+ LIMIT 2500$/
 
         select.each_solution do |sol|
           next if sol[:some_type] && klass.type_uri(collection) != sol[:some_type]
@@ -618,6 +622,10 @@ module Goo
           end
           found.add(sol[:id])
           id = sol[:id]
+
+          # for troubleshooting specific queries (write 2 of 3)
+          # File.write('./test/ncbo/repository/VTO/14/vto_queries.txt', id + "\n", mode: 'a') if select.to_s =~ /OFFSET \d+ LIMIT 2500$/
+
           if bnode_extraction
             struct = klass.range(bnode_extraction).new
             variables.each do |v|
@@ -768,6 +776,10 @@ module Goo
             end
           end
         end
+
+        # for troubleshooting specific queries (write 3 of 3)
+        # File.write('./test/ncbo/repository/VTO/14/vto_queries.txt', "\n\n", mode: 'a') if select.to_s =~ /OFFSET \d+ LIMIT 2500$/
+
         return models_by_id if bnode_extraction
 
         collection_value = nil
