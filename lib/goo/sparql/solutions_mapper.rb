@@ -48,7 +48,7 @@ module Goo
           end
 
           if @unmapped
-            add_unmapped_to_model(sol)
+            add_unmapped_to_model(sol, requested_lang)
             next
           end
 
@@ -74,7 +74,7 @@ module Goo
           requested_lang = nil
 
           if requested_lang.nil?
-            requested_lang = :ES # Goo.main_languages[0] || :EN
+            requested_lang = Goo.main_languages[0] || :EN
             fill_models_with_platform_languages = true
           end
 
@@ -111,10 +111,6 @@ module Goo
 
       private
 
-      def get_object_language(id, new_value, predicate)
-        @lang_filter.main_lang_filter id, predicate, new_value
-      end
-
       def init_unloaded_attributes(found, list_attributes)
         return if @incl.nil?
 
@@ -142,7 +138,7 @@ module Goo
       end
 
       def get_value_object(id, objects_new, object, list_attributes, predicate)
-        object = object.object if object.is_a?(RDF::Literal)
+        object = object.object if object && !(object.is_a? RDF::URI)
         range_for_v = @klass.range(predicate)
         # binding.pry if v.eql?(:enrolled)
         # dependent model creation
@@ -200,20 +196,21 @@ module Goo
             return @models_by_id[id].send("#{predicate}=", objects, on_load: true)
           end
 
+          store_objects_by_lang(id, predicate, current_obj, language)      
+        end
+      end
 
-          # the object is a literal and the language does not match , so we store it in a hash
-          @objects_by_lang[language] ||= []
-          item = @objects_by_lang[language].find { |obj| obj[:id] == id && obj[:predicate] == predicate }
-         
-          if item
-            # If an item with the matching id exists, update its attributes
-            item[:objects] << current_obj.object
-            item[:predicate] = predicate
-          else
-            # If an item with the matching id does not exist, add the new item to the array
-            @objects_by_lang[language] << { id: id, objects: [current_obj.object], predicate: predicate }
-          end
-        
+      def store_objects_by_lang(id, predicate, object, language)
+        @objects_by_lang[language] ||= []
+        item = @objects_by_lang[language].find { |obj| obj[:id] == id && obj[:predicate] == predicate }
+       
+        if item
+          # If an item with the matching id exists, update its attributes
+          item[:objects] << object.object
+          item[:predicate] = predicate
+        else
+          # If an item with the matching id does not exist, add the new item to the array
+          @objects_by_lang[language] << { id: id, objects: [object.object], predicate: predicate }
         end
       end
 
@@ -458,14 +455,12 @@ module Goo
         pre_val
       end
 
-      def add_unmapped_to_model(sol)
+      def add_unmapped_to_model(sol, requested_lang)
         predicate = sol[:attributeProperty].to_s.to_sym
         return unless @properties_to_include[predicate]
 
         id = sol[:id]
         value = sol[:attributeObject]
-
-        requested_lang = :FR
 
         model_set_unmapped(id, @properties_to_include[predicate][:uri], value, requested_lang)
       end

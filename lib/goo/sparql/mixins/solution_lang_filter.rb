@@ -21,7 +21,7 @@ module Goo
 
         def fill_models_with_other_languages(models_by_id, objects_by_lang, list_attributes, attributes,klass)
       
-          other_platform_languages = [:EN, :FR]
+          other_platform_languages = Goo.main_languages[1..-1]
 
           unless other_platform_languages.empty?
             
