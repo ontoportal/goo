@@ -23,16 +23,20 @@ module Goo
         @count = options[:count]
         @collection = options[:collection]
         @objects_by_lang = {}
+        @requested_lang = :EN
+        Goo.main_languages = [:ES, :FR, :EN]
       end
-
+      
       def map_each_solutions(select)
         found = Set.new
-        fill_models_with_platform_languages = false
+        fill_models_with_platform_languages = init_requested_lang
         objects_new = {}
         list_attributes = Set.new(@klass.attributes(:list))
         all_attributes = Set.new(@klass.attributes(:all))
-        @lang_filter = Goo::SPARQL::Solution::LanguageFilter.new
+        @lang_filter = Goo::SPARQL::Solution::LanguageFilter.new(requested_lang: @requested_lang, unmapped: @unmapped,
+           list_attributes: list_attributes)
 
+        
         select.each_solution do |sol|
           next if sol[:some_type] && @klass.type_uri(@collection) != sol[:some_type]
           return sol[:count_var].object if @count
@@ -48,7 +52,7 @@ module Goo
           end
 
           if @unmapped
-            add_unmapped_to_model(sol, requested_lang)
+            add_unmapped_to_model(sol)
             next
           end
 
@@ -69,21 +73,16 @@ module Goo
             next
           end
 
-          lang = object_language(object) # if lang is nil, it means that the object is not a literal
+          lang = @lang_filter.object_language(object) # if lang is nil, it means that the object is not a literal
 
-          requested_lang = nil
-
-          if requested_lang.nil?
-            requested_lang = Goo.main_languages[0] || :EN
-            fill_models_with_platform_languages = true
-          end
 
           objects, objects_new = get_value_object(id, objects_new, object, list_attributes, predicate)
-          add_object_to_model(id, objects, object, predicate, lang, requested_lang)
+          add_object_to_model(id, objects, object, predicate, lang)
         end
-     
+      
+  
         if fill_models_with_platform_languages
-          @lang_filter.fill_models_with_other_languages(@models_by_id, @objects_by_lang, list_attributes, @incl, @klass)
+          @lang_filter.fill_models_with_other_languages(@models_by_id)
         end
 
         init_unloaded_attributes(found, list_attributes)
@@ -110,6 +109,15 @@ module Goo
       end
 
       private
+
+      def init_requested_lang 
+        if @requested_lang.nil?
+          @requested_lang = Goo.main_languages[0] || :EN
+          return true
+        end
+        
+        false
+      end
 
       def init_unloaded_attributes(found, list_attributes)
         return if @incl.nil?
@@ -140,8 +148,7 @@ module Goo
       def get_value_object(id, objects_new, object, list_attributes, predicate)
         object = object.object if object && !(object.is_a? RDF::URI)
         range_for_v = @klass.range(predicate)
-        # binding.pry if v.eql?(:enrolled)
-        # dependent model creation
+       
 
         if object.is_a?(RDF::URI) && (predicate != :id) && !range_for_v.nil?
           if objects_new.include?(object)
@@ -162,34 +169,29 @@ module Goo
         if list_attributes.include?(predicate)
           pre = @klass_struct ? @models_by_id[id][predicate] : @models_by_id[id].instance_variable_get("@#{predicate}")
 
-          object = []  if object.nil? && pre.nil?
-
-          object = pre if object.nil? && !pre.nil?
-
-          object = pre.nil? ? [object] : (pre.dup << object)
-          object.uniq
+          if object.nil?
+            object = pre.nil? ? [] : pre
+          else
+            object = pre.nil? ? [object] : (pre.dup << object)
+            object.uniq!
+          end
 
         end
         [object, objects_new]
       end
 
       def add_object_to_model(id, objects, current_obj, predicate, language) 
-      def add_object_to_model(id, objects, current_obj, predicate, language, requested_lang = nil)
         if @models_by_id[id].respond_to?(:klass)
           @models_by_id[id][predicate] = objects unless objects.nil? && !@models_by_id[id][predicate].nil?
         elsif !@models_by_id[id].class.handler?(predicate) &&
               !(objects.nil? && !@models_by_id[id].instance_variable_get("@#{predicate}").nil?) &&
               predicate != :id
 
-          if language.nil? # the object is a non-literal
+          if language.nil? || @lang_filter.language_match?(language)
             return @models_by_id[id].send("#{predicate}=", objects, on_load: true)
           end
 
-          if language_match?(language, requested_lang) # the object is a literal and the language matches
-            return @models_by_id[id].send("#{predicate}=", objects, on_load: true)
-          end
-
-          store_objects_by_lang(id, predicate, current_obj, language)      
+          @lang_filter.store_objects_by_lang(id, predicate, current_obj, language)
         end
       end
 
@@ -423,14 +425,16 @@ module Goo
         pre_val
       end
 
-      def add_unmapped_to_model(sol, requested_lang)
+      def add_unmapped_to_model(sol)
         predicate = sol[:attributeProperty].to_s.to_sym
         return unless @properties_to_include[predicate]
 
         id = sol[:id]
         value = sol[:attributeObject]
 
-        model_set_unmapped(id, @properties_to_include[predicate][:uri], value, requested_lang)
+        language = @lang_filter.object_language(value)
+
+        @lang_filter.model_set_unmapped(@models_by_id[id], @properties_to_include[predicate][:uri], value, language)
       end
 
       def add_aggregations_to_model(sol)
