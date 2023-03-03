@@ -173,14 +173,7 @@ module Goo
         [object, objects_new]
       end
 
-      def object_language(new_value)
-        new_value.language || :no_lang if new_value.is_a?(RDF::Literal)
-      end
-
-      def language_match?(language, requested_lang = nil)
-        !language.nil? && (language.eql?(requested_lang) || language.eql?(:no_lang) || requested_lang.nil?)
-      end
-
+      def add_object_to_model(id, objects, current_obj, predicate, language) 
       def add_object_to_model(id, objects, current_obj, predicate, language, requested_lang = nil)
         if @models_by_id[id].respond_to?(:klass)
           @models_by_id[id][predicate] = objects unless objects.nil? && !@models_by_id[id][predicate].nil?
@@ -197,20 +190,6 @@ module Goo
           end
 
           store_objects_by_lang(id, predicate, current_obj, language)      
-        end
-      end
-
-      def store_objects_by_lang(id, predicate, object, language)
-        @objects_by_lang[language] ||= []
-        item = @objects_by_lang[language].find { |obj| obj[:id] == id && obj[:predicate] == predicate }
-       
-        if item
-          # If an item with the matching id exists, update its attributes
-          item[:objects] << object.object
-          item[:predicate] = predicate
-        else
-          # If an item with the matching id does not exist, add the new item to the array
-          @objects_by_lang[language] << { id: id, objects: [object.object], predicate: predicate }
         end
       end
 
@@ -271,17 +250,6 @@ module Goo
         @models_by_id[id] = create_class_model(id, @klass, @klass_struct) unless @models_by_id.include?(id)
       end
 
-      def model_set_unmapped(id, predicate, value, requested_lang = nil)
-        value = nil if value.is_a?(RDF::Literal) && !language_match?(value.language, requested_lang)
-
-        if @models_by_id[id].respond_to? :klass # struct
-          @models_by_id[id][:unmapped] ||= {}
-          @models_by_id[id][:unmapped][predicate] ||= []
-          @models_by_id[id][:unmapped][predicate]  << value unless value.nil?
-        else
-          @models_by_id[id].unmapped_set(predicate, value)
-        end
-      end
 
       def create_struct(bnode_extraction, models_by_id, sol, variables)
         list_attributes = Set.new(@klass.attributes(:list))
