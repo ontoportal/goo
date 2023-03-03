@@ -383,25 +383,7 @@ module Goo
               object = unmapped_string_keys[attr_uri]
             end
 
-            lang_filter = Goo::SPARQL::Solution::LanguageFilter.new
-
-            object = object.map do |o|
-              if o.is_a?(RDF::URI)
-                o
-              else
-                literal = o
-                index, lang_val  = lang_filter.main_lang_filter inst.id.to_s, attr, literal
-                lang_val.to_s if index.eql? :no_lang
-              end
-            end
-
-            object = object.compact
-
-            other_languages_values = lang_filter.other_languages_values
-            other_languages_values = other_languages_values[inst.id.to_s][attr] unless other_languages_values.empty?
-            unless other_languages_values.nil?
-              object = lang_filter.languages_values_to_set(other_languages_values, object)
-            end
+            object = object.map {|o| o.is_a?(RDF::URI) ? o : o.object}
 
             if klass.range(attr)
               object = object.map { |o|
