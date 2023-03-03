@@ -137,6 +137,10 @@ module Goo
         @unmapped[attribute] ||= Set.new 
         @unmapped[attribute] << value unless value.nil?
       end
+ 
+      def unmapped_get(attribute)
+        @unmapped[attribute]
+      end
 
       def unmmaped_to_array
         cpy = {}
