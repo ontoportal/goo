@@ -186,7 +186,11 @@ module Goo
               !(objects.nil? && !@models_by_id[id].instance_variable_get("@#{predicate}").nil?) &&
               predicate != :id
 
-          if language.nil? || @lang_filter.language_match?(language)
+          if language.nil?
+            return @models_by_id[id].send("#{predicate}=", objects, on_load: true)
+          elsif @lang_filter.language_match?(language)
+            return if language.eql?(:no_lang) && !@models_by_id[id].instance_variable_get("@#{predicate}").nil? && !objects.is_a?(Array)
+
             return @models_by_id[id].send("#{predicate}=", objects, on_load: true)
           end
 
