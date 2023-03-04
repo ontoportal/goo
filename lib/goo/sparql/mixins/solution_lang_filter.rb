@@ -13,23 +13,6 @@ module Goo
           @fill_other_languages = init_requested_lang
         end
 
-        def object_language(new_value)
-          new_value.language || :no_lang if new_value.is_a?(RDF::Literal)
-        end
-  
-        def language_match?(language)
-          !language.nil? && (language.eql?(requested_lang) || language.eql?(:no_lang) || requested_lang.nil?)
-        end
-
-        def store_objects_by_lang(id, predicate, object, language)
-          # store objects in this format: [id][predicate][language] = [objects]
-
-          objects_by_lang[id] ||= {}
-          objects_by_lang[id][predicate] ||= {}
-          objects_by_lang[id][predicate][language] ||= []
-
-          objects_by_lang[id][predicate][language] << object
-        end
 
         def fill_models_with_other_languages(models_by_id)
 
@@ -83,6 +66,24 @@ module Goo
 
 
         private
+
+        def object_language(new_value)
+          new_value.language || :no_lang if new_value.is_a?(RDF::Literal)
+        end
+        
+        def language_match?(language)
+          !language.nil? && (language.eql?(requested_lang) || language.eql?(:no_lang) || requested_lang.nil?)
+        end
+
+        def store_objects_by_lang(id, predicate, object, language)
+          # store objects in this format: [id][predicate][language] = [objects]
+
+          objects_by_lang[id] ||= {}
+          objects_by_lang[id][predicate] ||= {}
+          objects_by_lang[id][predicate][language] ||= []
+
+          objects_by_lang[id][predicate][language] << object
+        end
 
         def init_requested_lang
           if @requested_lang.nil?
