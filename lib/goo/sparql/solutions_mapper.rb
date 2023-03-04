@@ -22,7 +22,7 @@ module Goo
         @incl = options[:include]
         @count = options[:count]
         @collection = options[:collection]
-        @requested_lang =  Goo.requested_language
+        @requested_lang =  options[:requested_lang]
       end
       
       def map_each_solutions(select)
