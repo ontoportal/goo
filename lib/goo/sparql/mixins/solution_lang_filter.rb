@@ -28,8 +28,7 @@ module Goo
           objects_by_lang[id][predicate] ||= {}
           objects_by_lang[id][predicate][language] ||= []
 
-          objects_by_lang[id][predicate][language] << object.object
-
+          objects_by_lang[id][predicate][language] << object
         end
 
         def fill_models_with_other_languages(models_by_id)
@@ -89,12 +88,13 @@ module Goo
           end
         end
 
-        def save_value_to_model(model, value, predicate, unmapped)
+        def save_value_to_model(model, values, predicate, unmapped)
           if unmapped
-            add_unmapped_to_model(model, predicate, value)
+            add_unmapped_to_model(model, predicate, values)
           else
-            value = Array(value).min unless list_attributes?(predicate)
-            model.send("#{predicate}=", value, on_load: true)
+            values = values.map(&:object)
+            values = Array(values).min unless list_attributes?(predicate)
+            model.send("#{predicate}=", values, on_load: true)
           end
         end
 
