@@ -12,6 +12,7 @@ class Person < Goo::Base::Resource
   attribute :birth_date, enforce: [ :date_time ]
   attribute :male, enforce: [:boolean]
   attribute :social, enforce: [:uri]
+  attribute :socials, enforce: [:uri, :list]
   attribute :weight, enforce: [:float]
   attribute :friends, enforce: [Person, :list]
 end
@@ -143,6 +144,7 @@ class TestValidators < MiniTest::Unit::TestCase
     p.birth_date = 100
     p.male =  "ok"
     p.social =  100
+    p.socials =  [100]
     p.weight =  100
 
 
@@ -161,7 +163,8 @@ class TestValidators < MiniTest::Unit::TestCase
     p.one_number = 12
     p.birth_date = DateTime.parse('1978-01-01')
     p.male =  true
-    p.social =  RDF::URI.new('https://test.com/')
+    p.social = RDF::URI.new('https://test.com/')
+    p.socials = [RDF::URI.new('https://test.com/'), RDF::URI.new('https://test.com/')]
     p.weight =  100.0
     #good types are  valid
     assert p.valid?

@@ -29,16 +29,16 @@ module Goo
         return true if value.nil?
 
         if type == :boolean
-          return self.enforce_type_boolean(value)
+          self.enforce_type_boolean(value)
         elsif type.eql?(:uri) || type.eql?(RDF::URI)
-          return  self.enforce_type_uri(value)
+          self.enforce_type_uri(value)
         elsif type.eql?(:uri) || type.eql?(Array)
-          return value.is_a? Array
+          value.is_a? Array
         else
           if value.is_a? Array
-            return value.select{|x| !x.is_a?(type)}.empty?
+             value.select{|x| !x.is_a?(type)}.empty?
           else
-            return value.is_a? type
+             value.is_a? type
           end
         end
 
@@ -47,19 +47,28 @@ module Goo
       def enforce_type_uri(value)
         return true  if value.nil?
 
-        value.is_a?(RDF::URI) && value.valid?
+        if value.kind_of? Array
+          value.select { |x| !is_a_uri?(x) }.empty?
+        else
+          is_a_uri?(value)
+        end
+
       end
 
       def enforce_type_boolean(value)
         if value.kind_of? Array
-          return value.select { |x| !is_a_boolean?(x) }.empty?
+          value.select { |x| !is_a_boolean?(x) }.empty?
         else
-          return  is_a_boolean?(value)
+          is_a_boolean?(value)
         end
       end
 
       def is_a_boolean?(value)
-        return (value.class == TrueClass) || (value.class == FalseClass)
+         (value.class == TrueClass) || (value.class == FalseClass)
+      end
+
+      def is_a_uri?(value)
+        value.is_a?(RDF::URI) && value.valid?
       end
     end
   end
