@@ -23,8 +23,7 @@ module Goo
         @count = options[:count]
         @collection = options[:collection]
         @objects_by_lang = {}
-        @requested_lang = :EN
-        Goo.main_languages = [:ES, :FR, :EN]
+        @requested_lang =  Goo.requested_language
       end
       
       def map_each_solutions(select)
