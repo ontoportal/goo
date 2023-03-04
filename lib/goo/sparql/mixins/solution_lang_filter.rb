@@ -10,7 +10,7 @@ module Goo
           @objects_by_lang = {}
           @unmapped = unmapped
           @requested_lang = requested_lang
-
+          @fill_other_languages = init_requested_lang
         end
 
         def object_language(new_value)
@@ -32,6 +32,8 @@ module Goo
         end
 
         def fill_models_with_other_languages(models_by_id)
+
+          return unless fill_other_languages?
 
           other_platform_languages = Goo.main_languages[1..] || []
 
@@ -57,8 +59,21 @@ module Goo
         end
         
 
+        def model_set_value(model, predicate, objects, object)
+          language = object_language(object) # if lang is nil, it means that the object is not a literal
+          if language.nil?
+            return model.send("#{predicate}=", objects, on_load: true)
+          elsif language_match?(language)
+            return if language.eql?(:no_lang) && !model.instance_variable_get("@#{predicate}").nil? && !objects.is_a?(Array)
 
-        def model_set_unmapped(model, predicate, value, language)
+            return model.send("#{predicate}=", objects, on_load: true)
+          end
+
+          store_objects_by_lang(model.id, predicate, object, language)
+        end
+
+        def model_set_unmapped(model, predicate, value)
+          language = object_language(value)
           if language.nil? || language_match?(language)
             return add_unmapped_to_model(model, predicate, value)
           end
@@ -68,6 +83,15 @@ module Goo
 
 
         private
+
+        def init_requested_lang
+          if @requested_lang.nil?
+            @requested_lang = Goo.main_languages[0] || :EN
+            return true
+          end
+
+          false
+        end
 
         def get_model_attribute_value(model, predicate)
           if unmapped
@@ -109,6 +133,11 @@ module Goo
 
         def list_attributes?(predicate)
           @list_attributes.include?(predicate)
+        end
+
+
+        def fill_other_languages?
+          @fill_other_languages
         end
 
       end
