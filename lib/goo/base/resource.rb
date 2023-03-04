@@ -383,11 +383,6 @@ module Goo
           else
             inst.send("#{attr}=",
                       list_attrs.include?(attr) ? [] : nil, on_load: true)
-            if inst.id.to_s == "http://purl.obolibrary.org/obo/IAO_0000415"
-              if attr == :definition
-                # binding.pry
-              end
-            end
           end
 
         end
