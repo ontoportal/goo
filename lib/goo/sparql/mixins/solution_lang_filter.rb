@@ -2,97 +2,147 @@ module Goo
   module SPARQL
     module Solution
       class  LanguageFilter
+        
+        attr_reader :requested_lang, :unmapped, :objects_by_lang
 
-        def initialize
-          @other_languages_values = {}
+        def initialize(requested_lang: nil, unmapped: false, list_attributes: [])
+          @list_attributes = list_attributes
+          @objects_by_lang = {}
+          @unmapped = unmapped
+          @requested_lang = requested_lang
+          @fill_other_languages = init_requested_lang
+          @requested_lang = @requested_lang.to_s.upcase.to_sym
         end
 
-        attr_reader :other_languages_values
+        def enrich_models(models_by_id)
 
-        def main_lang_filter(id, attr, value)
-          index, value = lang_index value
-          save_other_lang_val(id, attr, index, value) unless index.nil? ||index.eql?(:no_lang)
-          [index, value]
-        end
+          return unless fill_other_languages?
 
-        def fill_models_with_other_languages(models_by_id, list_attributes)
-          @other_languages_values.each  do |id, languages_values|
-            languages_values.each do |attr, index_values|
-              model_attribute_val = models_by_id[id].instance_variable_get("@#{attr.to_s}")
-              values = languages_values_to_set(index_values, model_attribute_val)
-              m = models_by_id[id]
-              value = nil
-              is_struct = m.respond_to?(:klass)
-              if !values.nil? && list_attributes.include?(attr)
-                value = values || []
+          other_platform_languages = Goo.main_languages[1..] || []
 
-              elsif !values.nil?
-                value = values.first || nil
-              end
+          objects_by_lang.each do |id, predicates|
+            model = models_by_id[id]
+            predicates.each do |predicate, languages|
+              model_attribute_val = get_model_attribute_value(model, predicate)
+              next unless model_attribute_val.nil? || model_attribute_val.empty?
 
-              if value
-                if is_struct
-                  m[attr] = value
-                else
-                  m.send("#{attr}=", value, on_load: true)
+              other_platform_languages.each do |platform_language|
+                if languages[platform_language.to_s.upcase.to_sym]
+                    save_model_values(model, languages[platform_language], predicate, unmapped)
+                  break
                 end
               end
+              model_attribute_val = get_model_attribute_value(model, predicate)
+              if model_attribute_val.nil? || model_attribute_val.empty?
+                save_model_values(model, languages.values.flatten.uniq, predicate, unmapped)
+              end
             end
           end
+        
         end
+        
 
-        def languages_values_to_set(language_values, no_lang_values)
+        def set_model_value(model, predicate, objects)
+          new_value = Array(objects).last
+          language = object_language(new_value) # if lang is nil, it means that the object is not a literal
+          if language.nil?
+            return model.send("#{predicate}=", objects, on_load: true)
+          elsif language_match?(language)
+            return if language.eql?(:no_lang) && !model.instance_variable_get("@#{predicate}").nil? && !objects.is_a?(Array)
 
-          values = nil
-          matched_lang, not_matched_lang = matched_languages(language_values, no_lang_values)
-          if !matched_lang.empty?
-            main_lang = Array(matched_lang[:'0']) + Array(matched_lang[:no_lang])
-            if main_lang.empty?
-              secondary_languages = matched_lang.select { |key| key != :'0' && key != :no_lang }.sort.map { |x| x[1] }
-              values = secondary_languages.first
-            else
-              values = main_lang
-            end
-          elsif !not_matched_lang.empty?
-            values = not_matched_lang
+            return model.send("#{predicate}=", objects, on_load: true)
           end
-          values&.uniq
+
+
+          store_objects_by_lang(model.id, predicate, new_value, language)
         end
+
+        def model_set_unmapped(model, predicate, value)
+          language = object_language(value)
+          if language.nil? || language_match?(language)
+            return add_unmapped_to_model(model, predicate, value)
+          end
+          
+          store_objects_by_lang(model.id, predicate, value, language)
+        end
+
 
         private
 
-        def lang_index(object)
-          return [nil, object] unless  object.is_a?(RDF::Literal)
+        def object_language(new_value)
+          new_value.language || :no_lang if new_value.is_a?(RDF::Literal)
+        end
 
-          lang = object.language
+        def language_match?(language)
+          !language.nil? && (language.eql?(requested_lang) || language.eql?(:no_lang) || requested_lang.nil?)
+        end
 
-          if lang.nil?
-            [:no_lang, object]
+        def store_objects_by_lang(id, predicate, object, language)
+          # store objects in this format: [id][predicate][language] = [objects]
+
+          objects_by_lang[id] ||= {}
+          objects_by_lang[id][predicate] ||= {}
+          objects_by_lang[id][predicate][language] ||= []
+
+          objects_by_lang[id][predicate][language] << object
+        end
+
+        def init_requested_lang
+          if @requested_lang.nil?
+            @requested_lang = Goo.main_languages[0] || :EN
+            return true
+          end
+
+          false
+        end
+
+        def get_model_attribute_value(model, predicate)
+          if unmapped
+            unmapped_get(model, predicate)
           else
-            index = Goo.language_includes(lang)
-            index = index ? index.to_s.to_sym : :not_matched
-            [index, object]
+            model.instance_variable_get("@#{predicate}")
           end
         end
 
-        def save_other_lang_val(id, attr, index, value)
-          @other_languages_values[id] ||= {}
-          @other_languages_values[id][attr] ||= {}
-          @other_languages_values[id][attr][index] ||= []
-          
-          unless @other_languages_values[id][attr][index].include?(value.to_s)
-            @other_languages_values[id][attr][index] += Array(value.to_s)
+
+        def add_unmapped_to_model(model, predicate, value)
+          if model.respond_to? :klass # struct
+            model[:unmapped] ||= {}
+            model[:unmapped][predicate] ||= []
+            model[:unmapped][predicate]  << value unless value.nil?
+          else
+            model.unmapped_set(predicate, value)
           end
         end
 
-        def matched_languages(index_values, model_attribute_val)
-          not_matched_lang = index_values[:not_matched]
-          matched_lang = index_values.reject { |key| key == :not_matched }
-          unless model_attribute_val.nil? || Array(model_attribute_val).empty?
-            matched_lang[:no_lang] = Array(model_attribute_val)
+        def save_model_values(model, values, predicate, unmapped)
+          if unmapped
+            add_unmapped_to_model(model, predicate, values)
+          else
+            values = values.map(&:object)
+            values = Array(values).min unless list_attributes?(predicate)
+            model.send("#{predicate}=", values, on_load: true)
           end
-          [matched_lang, not_matched_lang]
         end
+
+        def unmapped_get(model, predicate)
+          if model && model.respond_to?(:klass) # struct
+            model[:unmapped]&.dig(predicate)
+          else
+            model.unmapped_get(predicate)
+          end
+
+        end
+
+        def list_attributes?(predicate)
+          @list_attributes.include?(predicate)
+        end
+
+
+        def fill_other_languages?
+          @fill_other_languages
+        end
+
       end
     end
   end

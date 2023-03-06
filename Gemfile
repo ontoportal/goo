@@ -7,6 +7,7 @@ gem "cube-ruby", require: "cube"
 gem "faraday", '~> 1.9'
 gem "rake"
 gem "uuid"
+gem "request_store"
 
 group :test do
   gem "minitest", '< 5.0'

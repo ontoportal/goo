@@ -1,3 +1,4 @@
+require 'request_store'
 module Goo
   module SPARQL
     module Loader
@@ -6,8 +7,10 @@ module Goo
 
         def model_load(*options)
           options = options.last
+          set_request_lang(options)
           if options[:models] && options[:models].is_a?(Array) && \
            (options[:models].length > Goo.slice_loading_size)
+
             options = options.dup
             models = options[:models]
             include_options = options[:include]
@@ -96,6 +99,9 @@ module Goo
 
         private
 
+        def set_request_lang(options)
+          options[:requested_lang] = RequestStore.store[:requested_lang]
+        end
         def expand_equivalent_predicates(properties_to_include, eq_p)
 
           return unless eq_p && !eq_p.empty?
