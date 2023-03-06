@@ -11,6 +11,7 @@ module Goo
           @unmapped = unmapped
           @requested_lang = requested_lang
           @fill_other_languages = init_requested_lang
+          @requested_lang = @requested_lang.to_s.upcase.to_sym
         end
 
         def enrich_models(models_by_id)
@@ -26,8 +27,8 @@ module Goo
               next unless model_attribute_val.nil? || model_attribute_val.empty?
 
               other_platform_languages.each do |platform_language|
-                if languages[platform_language]
-                  save_model_values(model, languages[platform_language], predicate, unmapped)
+                if languages[platform_language.to_s.upcase.to_sym]
+                    save_model_values(model, languages[platform_language], predicate, unmapped)
                   break
                 end
               end
@@ -69,7 +70,7 @@ module Goo
         def object_language(new_value)
           new_value.language || :no_lang if new_value.is_a?(RDF::Literal)
         end
-        
+
         def language_match?(language)
           !language.nil? && (language.eql?(requested_lang) || language.eql?(:no_lang) || requested_lang.nil?)
         end
