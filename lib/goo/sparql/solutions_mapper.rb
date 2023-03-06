@@ -75,7 +75,7 @@ module Goo
         end
       
 
-        @lang_filter.fill_models_with_other_languages(@models_by_id)
+        @lang_filter.enrich_models(@models_by_id)
 
         init_unloaded_attributes(found, list_attributes)
 
@@ -170,7 +170,7 @@ module Goo
         elsif !@models_by_id[id].class.handler?(predicate) &&
               !(objects.nil? && !@models_by_id[id].instance_variable_get("@#{predicate}").nil?) &&
               predicate != :id
-          @lang_filter.model_set_value(@models_by_id[id], predicate, objects, current_obj)
+          @lang_filter.set_model_value(@models_by_id[id], predicate, objects, current_obj)
         end
       end
 

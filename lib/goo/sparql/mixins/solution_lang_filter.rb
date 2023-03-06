@@ -13,8 +13,7 @@ module Goo
           @fill_other_languages = init_requested_lang
         end
 
-
-        def fill_models_with_other_languages(models_by_id)
+        def enrich_models(models_by_id)
 
           return unless fill_other_languages?
 
@@ -28,13 +27,13 @@ module Goo
 
               other_platform_languages.each do |platform_language|
                 if languages[platform_language]
-                  save_value_to_model(model, languages[platform_language], predicate, unmapped)
+                  save_model_values(model, languages[platform_language], predicate, unmapped)
                   break
                 end
               end
               model_attribute_val = get_model_attribute_value(model, predicate)
               if model_attribute_val.nil? || model_attribute_val.empty?
-                save_value_to_model(model, languages.values.flatten.uniq, predicate, unmapped)
+                save_model_values(model, languages.values.flatten.uniq, predicate, unmapped)
               end
             end
           end
@@ -42,7 +41,7 @@ module Goo
         end
         
 
-        def model_set_value(model, predicate, objects, object)
+        def set_model_value(model, predicate, objects, object)
           language = object_language(object) # if lang is nil, it means that the object is not a literal
           if language.nil?
             return model.send("#{predicate}=", objects, on_load: true)
@@ -113,7 +112,7 @@ module Goo
           end
         end
 
-        def save_value_to_model(model, values, predicate, unmapped)
+        def save_model_values(model, values, predicate, unmapped)
           if unmapped
             add_unmapped_to_model(model, predicate, values)
           else
