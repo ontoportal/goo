@@ -42,9 +42,8 @@ module Goo
         end
         
 
-        def set_model_value(model, predicate, objects)
-          new_value = Array(objects).last
-          language = object_language(new_value) # if lang is nil, it means that the object is not a literal
+        def set_model_value(model, predicate, objects, object)
+          language = object_language(object) # if lang is nil, it means that the object is not a literal
           if language.nil?
             return model.send("#{predicate}=", objects, on_load: true)
           elsif language_match?(language)
@@ -53,8 +52,7 @@ module Goo
             return model.send("#{predicate}=", objects, on_load: true)
           end
 
-
-          store_objects_by_lang(model.id, predicate, new_value, language)
+          store_objects_by_lang(model.id, predicate, object, language)
         end
 
         def model_set_unmapped(model, predicate, value)
