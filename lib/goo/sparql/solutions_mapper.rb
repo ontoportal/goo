@@ -71,7 +71,7 @@ module Goo
           end
 
           objects, objects_new = get_value_object(id, objects_new, object, list_attributes, predicate)
-          add_object_to_model(id, objects, object, predicate)
+          add_object_to_model(id, objects, predicate)
         end
       
 
@@ -163,14 +163,14 @@ module Goo
         [object, objects_new]
       end
 
-      def add_object_to_model(id, objects, current_obj, predicate)
+      def add_object_to_model(id, objects, predicate)
 
         if @models_by_id[id].respond_to?(:klass)
           @models_by_id[id][predicate] = objects unless objects.nil? && !@models_by_id[id][predicate].nil?
         elsif !@models_by_id[id].class.handler?(predicate) &&
               !(objects.nil? && !@models_by_id[id].instance_variable_get("@#{predicate}").nil?) &&
               predicate != :id
-          @lang_filter.set_model_value(@models_by_id[id], predicate, objects, current_obj)
+          @lang_filter.set_model_value(@models_by_id[id], predicate, objects)
         end
       end
 
