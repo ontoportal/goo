@@ -117,8 +117,8 @@ module Goo
           if unmapped
             add_unmapped_to_model(model, predicate, values)
           else
-            values = values.map(&:object)
-            values = Array(values).min unless list_attributes?(predicate)
+            values = Array(values).map(&:object)
+            values = values.min unless list_attributes?(predicate)
             model.send("#{predicate}=", values, on_load: true)
           end
         end
