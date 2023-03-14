@@ -11,10 +11,10 @@ module Goo
 
       validity_check -> (obj) do
         target_values = self.class.attr_value(@property, @inst)
+        target_value = target_values.first
+        return true if target_value.nil? || @value.nil?
 
-        return true if target_values.empty?
-
-        return @value >= target_values.first
+        return @value >= target_value
       end
 
       def initialize(inst, attr, value, key)
