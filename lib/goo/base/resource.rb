@@ -236,6 +236,17 @@ module Goo
           raise Goo::Base::NotValidException, "Object is not valid. Check errors." unless valid?
         end
 
+        #set default values before saving
+        unless self.persistent?
+          self.class.attributes_with_defaults.each do |attr|
+            value = self.send("#{attr}")
+            if value.nil?
+              value = self.class.default(attr).call(self)
+              self.send("#{attr}=", value)
+            end
+          end
+        end
+
         graph_insert, graph_delete = Goo::SPARQL::Triples.model_update_triples(self)
         graph = self.graph()
         if graph_delete and graph_delete.size > 0
