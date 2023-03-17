@@ -75,6 +75,8 @@ module Goo
         end
 
         def attr_value(attr, object)
+          object.bring attr if object.respond_to?(:bring?) && object.bring?(attr)
+
           Array(object.send(attr))
         end
 
