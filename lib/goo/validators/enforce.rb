@@ -41,6 +41,8 @@ module Goo
               check Goo::Validators::DataType, inst, attr, value, opt, Float
             when :symmetric
               check Goo::Validators::Symmetric, inst, attr, value, opt
+            when :email
+              check Goo::Validators::Email, inst, attr, value, opt
             when /^distinct_of_/
               check Goo::Validators::DistinctOf, inst, attr, value, opt, opt
             when /^superior_equal_to_/

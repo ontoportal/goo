@@ -12,6 +12,7 @@ class Person < Goo::Base::Resource
   attribute :birth_date, enforce: [ :date_time ]
   attribute :male, enforce: [:boolean]
   attribute :social, enforce: [:uri]
+  attribute :email, enforce: [:email]
   attribute :socials, enforce: [:uri, :list]
   attribute :weight, enforce: [:float]
   attribute :friends, enforce: [Person, :list]
@@ -146,8 +147,7 @@ class TestValidators < MiniTest::Unit::TestCase
     p.social =  100
     p.socials =  [100]
     p.weight =  100
-
-
+    p.email = "test@test"
     #wrong types are not valid
     refute p.valid?
     assert p.errors[:last_name][:string]
@@ -157,6 +157,7 @@ class TestValidators < MiniTest::Unit::TestCase
     assert p.errors[:birth_date][:date_time]
     assert p.errors[:male][:boolean]
     assert p.errors[:social][:uri]
+    assert p.errors[:email][:email]
 
     p.last_name =  "hello"
     p.multiple_values = [22,11]
@@ -166,6 +167,7 @@ class TestValidators < MiniTest::Unit::TestCase
     p.social = RDF::URI.new('https://test.com/')
     p.socials = [RDF::URI.new('https://test.com/'), RDF::URI.new('https://test.com/')]
     p.weight =  100.0
+    p.email = "test@test.hi.com"
     #good types are  valid
     assert p.valid?
   end
