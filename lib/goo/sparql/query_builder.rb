@@ -33,13 +33,12 @@ module Goo
         @order_by, variables, optional_patterns = init_order_by(@count, @klass, @order_by, optional_patterns, variables)
         variables, patterns = add_some_type_to_id(patterns, query_options, variables)
 
-        query_filter_str, patterns, optional_patterns =
+        query_filter_str, patterns, optional_patterns, filter_variables =
           filter_query_strings(@collection, graphs, internal_variables, @klass, optional_patterns, patterns, @query_filters)
-
         variables = [] if @count
         variables.delete :some_type
 
-        select_distinct(variables, aggregate_projections)
+        select_distinct(variables, aggregate_projections, filter_variables)
           .from(graphs)
           .where(patterns)
           .union_bind_in_where(properties_to_include)
@@ -135,10 +134,10 @@ module Goo
         self
       end
 
-      def select_distinct(variables, aggregate_projections)
-
+      def select_distinct(variables, aggregate_projections, filter_variables)
         select_vars = variables.dup
         reject_aggregations_from_vars(select_vars, aggregate_projections) if aggregate_projections
+        select_vars = (select_vars + filter_variables).uniq  if @page # Fix for 4store pagination with a filter
         @query = @query.select(*select_vars).distinct(true)
         self
       end
@@ -347,8 +346,8 @@ module Goo
                                optional_patterns, patterns,
                                query_filters)
         query_filter_str = []
-
         filter_graphs = []
+        filter_variables = []
         inspected_patterns = {}
         query_filters&.each do |query_filter|
           filter_operations = []
@@ -365,9 +364,9 @@ module Goo
               patterns.concat(filter_patterns)
             end
           end
+          filter_variables << inspected_patterns.values.last
         end
-
-        [query_filter_str, patterns, optional_patterns, internal_variables]
+        [query_filter_str, patterns, optional_patterns, filter_variables]
       end
 
       def reject_aggregations_from_vars(variables, aggregate_projections)
