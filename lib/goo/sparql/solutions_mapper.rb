@@ -22,7 +22,7 @@ module Goo
         @incl = options[:include]
         @count = options[:count]
         @collection = options[:collection]
-        @requested_lang =  options[:requested_lang]
+        @requested_lang =  options[:requested_lang] || :ALL
       end
       
       def map_each_solutions(select)
@@ -30,9 +30,9 @@ module Goo
         objects_new = {}
         list_attributes = Set.new(@klass.attributes(:list))
         all_attributes = Set.new(@klass.attributes(:all))
+
         @lang_filter = Goo::SPARQL::Solution::LanguageFilter.new(requested_lang: @requested_lang, unmapped: @unmapped,
            list_attributes: list_attributes)
-
         
         select.each_solution do |sol|
           next if sol[:some_type] && @klass.type_uri(@collection) != sol[:some_type]
@@ -74,8 +74,8 @@ module Goo
           add_object_to_model(id, objects, object, predicate)
         end
       
-
-        @lang_filter.enrich_models(@models_by_id)
+        # for this moment we are not going to enrich models , maybe we will use it if the results are empty  
+        # @lang_filter.enrich_models(@models_by_id)
 
         init_unloaded_attributes(found, list_attributes)
 

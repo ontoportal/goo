@@ -9,13 +9,12 @@ module Goo
           @list_attributes = list_attributes
           @objects_by_lang = {}
           @unmapped = unmapped
-          @requested_lang = requested_lang
           @fill_other_languages = init_requested_lang
-          @requested_lang = @requested_lang.to_s.upcase.to_sym
+          @requested_lang = requested_lang
         end
 
         def enrich_models(models_by_id)
-
+          
           return unless fill_other_languages?
 
           other_platform_languages = Goo.main_languages[1..] || []
@@ -43,14 +42,26 @@ module Goo
         
 
         def set_model_value(model, predicate, objects, object)
-          language = object_language(object) # if lang is nil, it means that the object is not a literal
-          if language.nil?
+                    
+          if requested_lang.eql?(:ALL)
             return model.send("#{predicate}=", objects, on_load: true)
-          elsif language_match?(language)
+          end
+          
+          unless is_literal(object)
+            return model.send("#{predicate}=", objects, on_load: true)
+          end
+          
+          # here the object is a literal (but it could be with no language) 
+
+          language = object_language(object)
+
+          if language_match?(language)
             return if language.eql?(:no_lang) && !model.instance_variable_get("@#{predicate}").nil? && !objects.is_a?(Array)
 
             return model.send("#{predicate}=", objects, on_load: true)
           end
+
+          # here the object is a literal with a different language , so we store it for to enrich the model later with the other platform languages
 
           store_objects_by_lang(model.id, predicate, object, language)
         end
@@ -72,7 +83,8 @@ module Goo
         end
 
         def language_match?(language)
-          !language.nil? && (language.eql?(requested_lang) || language.eql?(:no_lang) || requested_lang.nil?)
+          # no_lang means that the object is not a literal
+          language.eql?(requested_lang) || language.eql?(:no_lang)
         end
 
         def store_objects_by_lang(id, predicate, object, language)
@@ -139,6 +151,10 @@ module Goo
 
         def fill_other_languages?
           @fill_other_languages
+        end
+
+        def is_literal(object)
+          return object_language(object).nil? ? false : true
         end
 
       end
