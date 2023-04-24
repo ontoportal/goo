@@ -4,7 +4,7 @@ module Goo
       BNODES_TUPLES = Struct.new(:id, :attribute)
 
       def initialize(aggregate_projections, bnode_extraction, embed_struct,
-                     incl_embed, klass_struct, models_by_id,
+                      incl_embed, klass_struct, models_by_id,
                      properties_to_include, unmapped, variables, ids, options)
 
         @aggregate_projections = aggregate_projections
@@ -22,7 +22,7 @@ module Goo
         @incl = options[:include]
         @count = options[:count]
         @collection = options[:collection]
-        @requested_lang =  options[:requested_lang] || :ALL
+        @requested_lang =  get_language(options[:requested_lang].to_s) 
       end
       
       def map_each_solutions(select)
@@ -101,6 +101,13 @@ module Goo
       end
 
       private
+
+      def get_language(languages)
+        languages = 'ALL' if languages.nil? || languages.empty? 
+        lang = languages.split(',').map {|l| l.upcase.to_sym}
+        return lang.length == 1 ? lang.first : lang
+      end
+
 
       def init_unloaded_attributes(found, list_attributes)
         return if @incl.nil?

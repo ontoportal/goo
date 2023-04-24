@@ -84,7 +84,16 @@ module Goo
 
         def language_match?(language)
           # no_lang means that the object is not a literal
-          language.eql?(requested_lang) || language.eql?(:no_lang)
+          if language.eql?(:no_lang)
+            return true 
+          end
+
+          if requested_lang.is_a?(Array)
+            return requested_lang.include?(language)
+          end
+
+          return language.eql?(requested_lang)
+
         end
 
         def store_objects_by_lang(id, predicate, object, language)
