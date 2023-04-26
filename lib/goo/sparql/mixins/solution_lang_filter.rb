@@ -15,55 +15,31 @@ module Goo
 
         def enrich_models(models_by_id)
           
-          return unless fill_other_languages?
-
-          other_platform_languages = Goo.main_languages[1..] || []
-
+          ## if the requested language is ALL, we can enrich the models with the objects by language
           objects_by_lang.each do |id, predicates|
             model = models_by_id[id]
-            predicates.each do |predicate, languages|
-              model_attribute_val = get_model_attribute_value(model, predicate)
-              next unless model_attribute_val.nil? || model_attribute_val.empty?
-
-              other_platform_languages.each do |platform_language|
-                if languages[platform_language.to_s.upcase.to_sym]
-                    save_model_values(model, languages[platform_language], predicate, unmapped)
-                  break
-                end
-              end
-              model_attribute_val = get_model_attribute_value(model, predicate)
-              if model_attribute_val.nil? || model_attribute_val.empty?
-                save_model_values(model, languages.values.flatten.uniq, predicate, unmapped)
+            predicates.each do |predicate, values|
+              if predicate.eql?(:synonym) || predicate.eql?(:prefLabel)
+                save_model_values(model, values, predicate, unmapped)
               end
             end
-          end
-        
+          end  
         end
         
 
         def set_model_value(model, predicate, objects, object)
                     
-          if requested_lang.eql?(:ALL)
-            return model.send("#{predicate}=", objects, on_load: true)
-          end
-          
-          unless is_literal(object)
-            return model.send("#{predicate}=", objects, on_load: true)
-          end
-          
-          # here the object is a literal (but it could be with no language) 
-
           language = object_language(object)
 
-          if language_match?(language)
-            return if language.eql?(:no_lang) && !model.instance_variable_get("@#{predicate}").nil? && !objects.is_a?(Array)
+          if requested_lang.eql?(:ALL) || !is_literal(object) || language_match?(language)
+            model.send("#{predicate}=", objects, on_load: true)
+          end 
 
-            return model.send("#{predicate}=", objects, on_load: true)
+          if requested_lang.eql?(:ALL) || requested_lang.is_a?(Array)
+            language = "@none" if language.nil? || language.eql?(:no_lang)
+            store_objects_by_lang(model.id, predicate, object, language)
           end
 
-          # here the object is a literal with a different language , so we store it for to enrich the model later with the other platform languages
-
-          store_objects_by_lang(model.id, predicate, object, language)
         end
 
         def model_set_unmapped(model, predicate, value)
@@ -98,6 +74,8 @@ module Goo
 
         def store_objects_by_lang(id, predicate, object, language)
           # store objects in this format: [id][predicate][language] = [objects]
+
+          return if requested_lang.is_a?(Array) && !requested_lang.include?(language)
 
           objects_by_lang[id] ||= {}
           objects_by_lang[id][predicate] ||= {}
@@ -138,8 +116,11 @@ module Goo
           if unmapped
             add_unmapped_to_model(model, predicate, values)
           else
-            values = Array(values).map(&:object)
-            values = values.min unless list_attributes?(predicate)
+            
+            if !list_attributes?(predicate)
+              values = values.map { |k, v| [k, v.first] }.to_h
+            end
+
             model.send("#{predicate}=", values, on_load: true)
           end
         end

@@ -75,7 +75,7 @@ module Goo
         end
       
         # for this moment we are not going to enrich models , maybe we will use it if the results are empty  
-        # @lang_filter.enrich_models(@models_by_id)
+        @lang_filter.enrich_models(@models_by_id)
 
         init_unloaded_attributes(found, list_attributes)
 
