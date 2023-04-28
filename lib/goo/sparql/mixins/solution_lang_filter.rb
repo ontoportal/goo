@@ -32,7 +32,7 @@ module Goo
                     
           language = object_language(object)
 
-          if requested_lang.eql?(:ALL) || !is_literal(object) || language_match?(language)
+          if requested_lang.eql?(:ALL) || !literal?(object) || language_match?(language)
             model.send("#{predicate}=", objects, on_load: true)
           end 
 
@@ -144,7 +144,7 @@ module Goo
           @fill_other_languages
         end
 
-        def is_literal(object)
+        def literal?(object)
           return object_language(object).nil? ? false : true
         end
 
