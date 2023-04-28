@@ -10,7 +10,6 @@ module Goo
           @list_attributes = list_attributes
           @objects_by_lang = {}
           @unmapped = unmapped
-          @fill_other_languages = init_requested_lang
           @requested_lang = requested_lang
         end
 
@@ -85,14 +84,6 @@ module Goo
           objects_by_lang[id][predicate][language] << object
         end
 
-        def init_requested_lang
-          if @requested_lang.nil?
-            @requested_lang = Goo.main_languages[0] || :EN
-            return true
-          end
-
-          false
-        end
 
         def get_model_attribute_value(model, predicate)
           if unmapped
@@ -139,10 +130,6 @@ module Goo
           @list_attributes.include?(predicate)
         end
 
-
-        def fill_other_languages?
-          @fill_other_languages
-        end
 
         def literal?(object)
           return object_language(object).nil? ? false : true
