@@ -600,4 +600,15 @@ class TestWhere < MiniTest::Unit::TestCase
     end
   end
 
+  def test_complex_order_by
+    u = University.where.include(address: [:country]).order_by(address: {country: :asc}).all
+    countries = u.map {|x| x.address.map{|a| a.country}}.flatten
+    assert_equal countries.sort, countries
+
+
+    u = University.where.include(address: [:country]).order_by(address: {country: :desc}).all
+    countries = u.map {|x| x.address.map{|a| a.country}}.flatten
+    assert_equal countries.sort{|a,b| b<=>a }, countries
+  end
+
 end

@@ -17,24 +17,25 @@ module Goo
         @model_query_options = options[:query_options]
         @enable_rules = options[:rules]
         @order_by = options[:order_by]
-
+        @internal_variables_map = {}
         @query = get_client
       end
 
       def build_select_query(ids, variables, graphs, patterns,
                              query_options, properties_to_include)
 
-        internal_variables = graph_match(@collection, @graph_match, graphs, @klass, patterns, query_options, @unions)
+        patterns = graph_match(@collection, @graph_match, graphs, @klass, patterns, query_options, @unions)
 
         aggregate_projections, aggregate_vars,
           variables, optional_patterns = get_aggregate_vars(@aggregate, @collection, graphs,
-                                                            @klass, @unions, variables, internal_variables)
+                                                            @klass, @unions, variables)
 
-        @order_by, variables, optional_patterns = init_order_by(@count, @klass, @order_by, optional_patterns, variables)
+        @order_by, variables, optional_patterns = init_order_by(@count, @klass, @order_by, optional_patterns, variables,patterns, query_options, graphs)
         variables, patterns = add_some_type_to_id(patterns, query_options, variables)
 
         query_filter_str, patterns, optional_patterns, filter_variables =
-          filter_query_strings(@collection, graphs, internal_variables, @klass, optional_patterns, patterns, @query_filters)
+          filter_query_strings(@collection, graphs, @klass, optional_patterns, patterns, @query_filters)
+
         variables = [] if @count
         variables.delete :some_type
 
@@ -54,7 +55,7 @@ module Goo
         @query.union(*@unions) unless @unions.empty?
 
         ids_filter(ids) if ids
-        order_by if @order_by # TODO  test if work
+        order_by if @order_by
 
         put_query_aggregate_vars(aggregate_vars) if aggregate_vars
         count if @count
@@ -117,7 +118,13 @@ module Goo
       end
 
       def order_by
-        order_by_str = @order_by.map { |attr, order| "#{order.to_s.upcase}(?#{attr})" }
+        order_by_str = @order_by.map do |attr, order|
+          if order.is_a?(Hash)
+            sub_attr, order = order.first
+            attr = @internal_variables_map[sub_attr]
+          end
+          "#{order.to_s.upcase}(?#{attr})"
+        end
         @query.order_by(*order_by_str)
         self
       end
@@ -169,6 +176,7 @@ module Goo
             value = "#{attr}_agg_#{in_aggregate}".to_sym
           end
           internal_variables << value
+          @internal_variables_map[attr] = value
         end
 
         add_rules(attr, klass, query_options)
@@ -209,7 +217,7 @@ module Goo
         end
       end
 
-      def get_aggregate_vars(aggregate, collection, graphs, klass, unions, variables, internal_variables)
+      def get_aggregate_vars(aggregate, collection, graphs, klass, unions, variables)
         # mdorf, 6/03/20 If aggregate projections (sub-SELECT within main SELECT) use an alias, that alias cannot appear in the main SELECT
         # https://github.com/ncbo/goo/issues/106
         # See last sentence in https://www.w3.org/TR/sparql11-query/#aggregateExample
@@ -240,8 +248,6 @@ module Goo
       end
 
       def graph_match(collection, graph_match, graphs, klass, patterns, query_options, unions)
-        internal_variables = []
-
         if graph_match
           #make it deterministic - for caching
           graph_match_iteration = Goo::Base::PatternIteration.new(graph_match)
@@ -249,28 +255,38 @@ module Goo
                        internal_variables, in_aggregate = false, query_options, collection)
           graphs.uniq!
         end
-        internal_variables
+        patterns
       end
 
       def get_client
         Goo.sparql_query_client(@store)
       end
 
-      def init_order_by(count, klass, order_by, optional_patterns, variables)
+      def init_order_by(count, klass, order_by, optional_patterns, variables, patterns, query_options, graphs)
         order_by = nil if count
         if order_by
           order_by = order_by.first
           #simple ordering ... needs to use pattern inspection
           order_by.each do |attr, direction|
-            quad = query_pattern(klass, attr)
-            optional_patterns << quad[1]
+
+            if direction.is_a?(Hash)
+              sub_attr, direction = direction.first
+              graph_match_iteration = Goo::Base::PatternIteration.new(Goo::Base::Pattern.new({attr => [sub_attr]}))
+              old_internal = internal_variables.dup
+              walk_pattern(klass, graph_match_iteration, graphs, optional_patterns, @unions, internal_variables, in_aggregate = false, query_options, @collection)
+              variables << (internal_variables - old_internal).last
+            else
+              quad = query_pattern(klass, attr)
+              optional_patterns << quad[1]
+              variables << attr
+            end
+
             #patterns << quad[1]
             #mdorf, 9/22/16 If an ORDER BY clause exists, the columns used in the ORDER BY should be present in the SPARQL select
             #variables << attr unless variables.include?(attr)
           end
-          variables = %i[id attributeProperty attributeObject]
         end
-        [order_by, variables, optional_patterns]
+        [order_by, variables, optional_patterns, patterns]
       end
 
       def sparql_op_string(op)
@@ -342,7 +358,7 @@ module Goo
         end
       end
 
-      def filter_query_strings(collection, graphs, internal_variables, klass,
+      def filter_query_strings(collection, graphs, klass,
                                optional_patterns, patterns,
                                query_filters)
         query_filter_str = []
@@ -382,6 +398,9 @@ module Goo
         [variables, patterns]
       end
 
+      def internal_variables
+        @internal_variables_map.values
+      end
     end
   end
 end
