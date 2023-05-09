@@ -6,7 +6,7 @@ module Goo
         attr_reader :requested_lang, :unmapped, :objects_by_lang
 
         def initialize(requested_lang: nil, unmapped: false, list_attributes: [])
-          @attributes_to_translate = [:synonym, :prefLabel]
+          @attributes_to_translate = [:synonym, :prefLabel, :definition, :cui, :semanticType, :obsolete, :inScheme, :memberOf, :created, :modified, :links]
           @list_attributes = list_attributes
           @objects_by_lang = {}
           @unmapped = unmapped
@@ -19,8 +19,8 @@ module Goo
           objects_by_lang.each do |id, predicates|
             model = models_by_id[id]
             predicates.each do |predicate, values|
-              if @attributes_to_translate.any? { |attr| predicate.eql?(attr) }
-                save_model_values(model, values, predicate, unmapped)
+              if !@attributes_to_translate.any? { |attr| predicate.eql?(attr) }
+                save_model_values(model, values, predicate, unmapped) 
               end
             end
           end  
@@ -77,11 +77,13 @@ module Goo
 
           return if requested_lang.is_a?(Array) && !requested_lang.include?(language)
 
+          language_key = language.downcase  
+            
           objects_by_lang[id] ||= {}
           objects_by_lang[id][predicate] ||= {}
-          objects_by_lang[id][predicate][language] ||= []
+          objects_by_lang[id][predicate][language_key] ||= []
 
-          objects_by_lang[id][predicate][language] << object
+          objects_by_lang[id][predicate][language_key] << object
         end
 
 
