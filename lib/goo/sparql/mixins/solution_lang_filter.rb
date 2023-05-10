@@ -44,7 +44,7 @@ module Goo
 
         def model_set_unmapped(model, predicate, value)
           language = object_language(value)
-          if language.nil? || language_match?(language)
+          if requested_lang.eql?(:ALL) || language.nil? || language_match?(language)
             return add_unmapped_to_model(model, predicate, value)
           end
           
