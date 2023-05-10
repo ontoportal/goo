@@ -4,7 +4,7 @@ module Goo
       BNODES_TUPLES = Struct.new(:id, :attribute)
 
       def initialize(aggregate_projections, bnode_extraction, embed_struct,
-                     incl_embed, klass_struct, models_by_id,
+                      incl_embed, klass_struct, models_by_id,
                      properties_to_include, unmapped, variables, ids, options)
 
         @aggregate_projections = aggregate_projections
@@ -22,7 +22,7 @@ module Goo
         @incl = options[:include]
         @count = options[:count]
         @collection = options[:collection]
-        @requested_lang =  options[:requested_lang]
+        @requested_lang =  get_language(options[:requested_lang].to_s) 
       end
       
       def map_each_solutions(select)
@@ -30,9 +30,9 @@ module Goo
         objects_new = {}
         list_attributes = Set.new(@klass.attributes(:list))
         all_attributes = Set.new(@klass.attributes(:all))
+
         @lang_filter = Goo::SPARQL::Solution::LanguageFilter.new(requested_lang: @requested_lang, unmapped: @unmapped,
            list_attributes: list_attributes)
-
         
         select.each_solution do |sol|
           next if sol[:some_type] && @klass.type_uri(@collection) != sol[:some_type]
@@ -74,7 +74,7 @@ module Goo
           add_object_to_model(id, objects, object, predicate)
         end
       
-
+        # for this moment we are not going to enrich models , maybe we will use it if the results are empty  
         @lang_filter.enrich_models(@models_by_id)
 
         init_unloaded_attributes(found, list_attributes)
@@ -101,6 +101,16 @@ module Goo
       end
 
       private
+
+      def get_language(languages)
+        languages = portal_language if languages.nil? || languages.empty?
+        lang = languages.split(',').map {|l| l.upcase.to_sym}
+        lang.length == 1 ? lang.first : lang
+      end
+
+      def portal_language
+        Goo.main_languages.first
+      end
 
       def init_unloaded_attributes(found, list_attributes)
         return if @incl.nil?
