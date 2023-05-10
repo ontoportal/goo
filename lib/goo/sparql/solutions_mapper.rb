@@ -103,11 +103,14 @@ module Goo
       private
 
       def get_language(languages)
-        languages = 'ALL' if languages.nil? || languages.empty? 
+        languages = portal_language if languages.nil? || languages.empty?
         lang = languages.split(',').map {|l| l.upcase.to_sym}
-        return lang.length == 1 ? lang.first : lang
+        lang.length == 1 ? lang.first : lang
       end
 
+      def portal_language
+        Goo.main_languages.first
+      end
 
       def init_unloaded_attributes(found, list_attributes)
         return if @incl.nil?
