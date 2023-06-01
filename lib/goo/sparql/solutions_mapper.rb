@@ -35,6 +35,7 @@ module Goo
            list_attributes: list_attributes)
         
         select.each_solution do |sol|
+          
           next if sol[:some_type] && @klass.type_uri(@collection) != sol[:some_type]
           return sol[:count_var].object if @count
 
@@ -96,7 +97,8 @@ module Goo
         include_bnodes(blank_nodes, @models_by_id) unless blank_nodes.empty?
 
         models_unmapped_to_array(@models_by_id) if @unmapped
-
+        
+        
         @models_by_id
       end
 
@@ -269,8 +271,18 @@ module Goo
 
       def models_unmapped_to_array(models_by_id)
         models_by_id.each do |_idm, m|
-          m.unmmaped_to_array
+          if is_multiple_langs?
+            @lang_filter.model_group_by_lang(m, @requested_lang)
+          else
+            m.unmmaped_to_array
+          end
         end
+      end
+
+
+      def is_multiple_langs?
+        return true if @requested_lang.is_a?(Array) || @requested_lang.eql?(:ALL)
+        false
       end
 
       def include_bnodes(bnodes, models_by_id)

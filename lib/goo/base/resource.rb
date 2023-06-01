@@ -15,7 +15,7 @@ module Goo
       attr_reader :modified_attributes
       attr_reader :errors
       attr_reader :aggregates
-      attr_reader :unmapped
+      attr_accessor :unmapped
 
       attr_reader :id
 
@@ -129,6 +129,7 @@ module Goo
 
       def unmmaped_to_array
         cpy = {}
+        
         @unmapped.each do |attr,v|
           cpy[attr] = v.to_a
         end

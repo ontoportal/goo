@@ -51,8 +51,23 @@ module Goo
           store_objects_by_lang(model.id, predicate, value, language)
         end
 
+        def model_group_by_lang(model, requested_lang)
+          unmapped = model.unmapped 
+          cpy = {}
+  
+          unmapped.each do |attr, v|          
+             cpy[attr] = is_a_uri?(v.first) ? v.to_a : v.group_by { |x| x.language.to_s }
+          end
+  
+          model.unmapped = cpy
+        end
+
 
         private
+
+        def is_a_uri?(value)
+          value.is_a?(RDF::URI) && value.valid?
+        end
 
         def object_language(new_value)
           new_value.language || :no_lang if new_value.is_a?(RDF::Literal)
