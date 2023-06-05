@@ -56,7 +56,7 @@ module Goo
           cpy = {}
   
           unmapped.each do |attr, v|          
-             cpy[attr] = is_a_uri?(v.first) ? v.to_a : v.group_by { |x| x.language.to_s }
+            cpy[attr] = is_a_uri?(v.first) ? v.to_a : v.group_by { |x| x.language.to_s.downcase }
           end
   
           model.unmapped = cpy
