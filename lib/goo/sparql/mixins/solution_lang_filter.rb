@@ -56,7 +56,7 @@ module Goo
           cpy = {}
   
           unmapped.each do |attr, v|          
-            cpy[attr] = is_a_uri?(v.first) ? v.to_a : v.group_by { |x| x.language.to_s.downcase }
+            cpy[attr] = group_by_lang(v)
           end
   
           model.unmapped = cpy
@@ -64,6 +64,18 @@ module Goo
 
 
         private
+
+        def group_by_lang(values)
+          
+          return values.to_a if is_a_uri?(values.first)
+          
+          values = values.group_by { |x| x.language ? x.language.to_s.downcase : :none }
+                              
+          no_lang = values[:none] || []
+          return no_lang if !no_lang.empty? && no_lang.all? { |x| !x.plain? }
+
+          values 
+        end
 
         def is_a_uri?(value)
           value.is_a?(RDF::URI) && value.valid?
