@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 class StatusModel < Goo::Base::Resource
   model :status_model, name_with: :name
   attribute :description, enforce: [ :existence, :unique]
@@ -99,8 +97,8 @@ class TestDSLSeeting < MiniTest::Unit::TestCase
     assert !person.valid?
     assert !person.errors[:multiple_values]
 
-    assert_raises RuntimeError do
-      person.multiple_values << 99 #RuntimeError: can't modify frozen Array
+    assert_raises FrozenError do
+      person.multiple_values << 99
     end
 
     friends = [PersonModel.new , PersonModel.new]

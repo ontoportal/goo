@@ -1,8 +1,6 @@
 require_relative 'test_case'
 require_relative './app/models'
 
-GooTest.configure_goo
-
 module TestIndex
 
   class TestSchemaless < MiniTest::Unit::TestCase

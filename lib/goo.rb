@@ -12,6 +12,7 @@ require 'redis'
 require 'uuid'
 require "cube"
 
+require_relative "goo/config/config"
 require_relative "goo/sparql/sparql"
 require_relative "goo/search/search"
 require_relative "goo/base/base"
@@ -78,16 +79,6 @@ module Goo
                    cube_options: @@cube_options})
     @@sparql_backends[name][:backend_name] = opts[:backend_name]
     @@sparql_backends.freeze
-  end
-
-  def self.test_reset
-    if @@sparql_backends[:main][:query].url.to_s["localhost"].nil?
-      raise Exception, "only for testing"
-    end
-    @@sparql_backends[:main][:query]=Goo::SPARQL::Client.new("http://localhost:9000/sparql/",
-                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded",
-                   read_timeout: 300,
-                  redis_cache: @@redis_client })
   end
 
   def self.use_cache=(value)
@@ -199,7 +190,7 @@ module Goo
     configure_sanity_check()
 
     if @@search_backends.length > 0
-      @@search_backends.each { |name, val| @@search_connection[name] = RSolr.connect(:url => search_conf(name), :read_timeout => 1800, :open_timeout => 1800) }
+      @@search_backends.each { |name, val| @@search_connection[name] = RSolr.connect(url: search_conf(name), timeout: 1800, open_timeout: 1800) }
     end
 
     @@namespaces.freeze

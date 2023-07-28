@@ -1,8 +1,6 @@
 require_relative 'test_case'
 require_relative 'test_where'
 
-GooTest.configure_goo
-
 module TestReadOnly
 
   class TestReadOnlyWithStruct < TestWhere
@@ -44,7 +42,6 @@ module TestReadOnly
                 .include(:name)
                 .include(enrolled: [:name, university: [ :address ]])
                 .read_only.all
-      binding.pry
     end
   end
 end

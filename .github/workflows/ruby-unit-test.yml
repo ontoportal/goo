@@ -1,0 +1,34 @@
+name: Ruby Unit Test
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby-version: ['2.7', '3.0']
+        triplestore: ['fs', 'ag']
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Dependencies
+      run: sudo apt-get -y install raptor2-utils
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby-version }}
+        bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+    - name: Add config file
+      # tempoaray workaround for the config.rb file requirement
+      run:  echo 'Goo.config do |config| end' > config/config.rb
+    - name: Run tests
+      run: bundle exec rake test:docker:${{ matrix.triplestore }} TESTOPTS="-v"
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+

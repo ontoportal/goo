@@ -1,7 +1,4 @@
 require_relative 'test_case'
-
-GooTest.configure_goo
-
 require_relative 'models'
 
 class TestWhere < MiniTest::Unit::TestCase
@@ -14,7 +11,7 @@ class TestWhere < MiniTest::Unit::TestCase
     begin
       GooTestData.create_test_case_data
     rescue Exception => e
-      binding.pry
+      puts e.message
     end
   end
 
@@ -23,20 +20,20 @@ class TestWhere < MiniTest::Unit::TestCase
   end
 
   def test_where_simple
-    assert University.range(:programs) == Program
+    assert_equal Program, University.range(:programs)
 
     st = University.where(name: "Stanford")
-    assert st.length == 1
+    assert_equal 1, st.length
     st = st.first
-    assert st.instance_of?(University)
+    assert_instance_of University, st
 
     st.bring(programs: [:credits])
-    assert st.programs.length == 3
+    assert_equal 3, st.programs.length
     st.programs.each do |p|
-      assert_instance_of Fixnum, p.credits
+      assert_instance_of Integer, p.credits
     end
 
-    #nothing is loaded
+    # No attributes loaded
     st.class.attributes.each do |attr|
       assert_raises Goo::Base::AttributeNotLoaded do
         st.send("#{attr}")
@@ -44,33 +41,36 @@ class TestWhere < MiniTest::Unit::TestCase
     end
 
     st = University.where(name: "Stanford").include(University.attributes).all
-    assert st.length == 1
+    assert_equal 1, st.length
     st = st.first
-    assert assert st.instance_of?(University)
-    assert st.name == "Stanford"
+    assert_instance_of University, st
+    assert_equal "Stanford", st.name
     assert_raises Goo::Base::AttributeNotLoaded do
       st.programs
     end
-    #
-    #all includes inverse
+
+    # All clause (includes inverse)
     st = University.where(name: "Stanford").include(University.attributes(:all)).all
-    assert st.length == 1
+    assert_equal 1, st.length
     st = st.first
-    assert st.instance_of?(University)
-    assert st.name == "Stanford"
-    assert st.programs.length == 3
-    #programs here are not loaded
+    assert_instance_of University, st
+    assert_equal "Stanford", st.name
+    assert_equal 3, st.programs.length
+
+    # Programs aren't loaded
     pr = st.programs[0]
     pr.class.attributes.each do |attr|
       assert_raises Goo::Base::AttributeNotLoaded do
         pr.send("#{attr}")
       end
     end
-    program_ids = ["http://example.org/program/Stanford/BioInformatics",
- "http://example.org/program/Stanford/CompSci",
- "http://example.org/program/Stanford/Medicine"]
-   assert st.programs.map { |x| x.id.to_s }.sort == program_ids
 
+    program_ids = [
+      "http://example.org/program/Stanford/BioInformatics",
+      "http://example.org/program/Stanford/CompSci",
+      "http://example.org/program/Stanford/Medicine"
+    ]
+   assert_equal program_ids, st.programs.map { |x| x.id.to_s }.sort
   end
 
   def test_all
@@ -496,6 +496,12 @@ class TestWhere < MiniTest::Unit::TestCase
     f = Goo::Filter.new(enrolled: [ :xxx ]).unbound
     st = Student.where.filter(f).all
     assert st.length == 7
+
+    f = Goo::Filter.new(:name).regex("n") # will find all students that contains "n" in there name
+    st = Student.where.filter(f).include(:name).all # return "John" , "Daniel"  and  "Susan"
+
+    assert_equal 3, st.length
+    assert_equal ["John","Daniel","Susan"].sort, st.map { |x| x.name }.sort
   end
 
   def test_aggregated

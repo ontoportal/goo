@@ -1,8 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
-
 module Dep
   class Ontology < Goo::Base::Resource
     model :ontology, name_with: :name
@@ -264,10 +261,9 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
   end
 
   def test_update_array_values
-    #object should always return freezed arrays
-    #so that we detect the set
-    arr = ArrayValues.new(name: "x" , many: ["a","b"])
-    assert (arr.valid?)
+    # Object should always return frozen arrays, so that we detect the set
+    arr = ArrayValues.new(name: "x" , many: ["a", "b"])
+    assert arr.valid?
     arr.save
     assert arr.persistent?
     assert arr.exist?
@@ -275,19 +271,18 @@ class TestBasicPersistence < MiniTest::Unit::TestCase
     arr_from_backend = ArrayValues.find(arr.id).include(ArrayValues.attributes).first
     assert_equal ["a", "b"], arr_from_backend.many.sort
 
-    assert_raises RuntimeError do
+    assert_raises FrozenError do
       arr_from_backend.many << "c"
     end
 
-    arr_from_backend.many = ["A","B","C"]
+    arr_from_backend.many = ["A", "B", "C"]
     arr_from_backend.save
 
     arr_from_backend = ArrayValues.find(arr.id).include(ArrayValues.attributes).first
-    assert_equal ["A","B","C"], arr_from_backend.many.sort
+    assert_equal ["A", "B", "C"], arr_from_backend.many.sort
 
     arr_from_backend.delete
     assert !arr_from_backend.exist?
-
   end
 
   def test_person_save
