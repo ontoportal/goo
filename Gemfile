@@ -4,7 +4,6 @@ gemspec
 
 gem "activesupport"
 gem "cube-ruby", require: "cube"
-gem "faraday", '~> 1.9'
 gem "rake"
 gem "uuid"
 
@@ -22,4 +21,4 @@ group :profiling do
   gem "thin"
 end
 
-gem 'sparql-client', github: 'ncbo/sparql-client', branch: 'master'
+gem 'sparql-client', github: 'ncbo/sparql-client', branch: 'develop'
