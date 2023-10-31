@@ -159,14 +159,14 @@ module TestChunkWrite
           end
         }
 
-        threads.each do |t|
-          t.join
-        end
-        tput.join
-
         assert log_status.map { |x| x[:outstanding] }.max > 0
         assert_equal 16, log_status.map { |x| x[:running] }.max
       end
+
+      threads.each do |t|
+        t.join
+      end
+      tput.join
     end
 
     def self.params_for_backend(method, graph_name, ntriples_file_path = nil)
