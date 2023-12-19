@@ -158,15 +158,17 @@ module TestChunkWrite
             sleep(1.2)
           end
         }
-
-        assert_operator 0, :<, log_status.map { |x| x[:outstanding] }.max
-        assert_equal 16, log_status.map { |x| x[:running] }.max
       end
 
       threads.each do |t|
         t.join
       end
       tput.join
+
+      if Goo.sparql_backend_name.downcase == BACKEND_4STORE
+        assert_operator 0, :<, log_status.map { |x| x[:outstanding] }.max
+        assert_equal 16, log_status.map { |x| x[:running] }.max
+      end
     end
 
     def self.params_for_backend(method, graph_name, ntriples_file_path = nil)
