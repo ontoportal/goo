@@ -159,7 +159,7 @@ module TestChunkWrite
           end
         }
 
-        assert log_status.map { |x| x[:outstanding] }.max > 0
+        assert_operator 0, :<, log_status.map { |x| x[:outstanding] }.max
         assert_equal 16, log_status.map { |x| x[:running] }.max
       end
 
