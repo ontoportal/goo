@@ -85,16 +85,16 @@ module TestChunkWrite
       sleep(1.5)
       count_queries = 0
       tq = Thread.new {
-       5.times do
-         oq = "SELECT (count(?s) as ?c) WHERE { ?s a ?o }"
-         Goo.sparql_query_client.query(oq).each do |sol|
-           assert sol[:c].object > 0
-         end
-         count_queries += 1
-       end
+        5.times do
+          oq = "SELECT (count(?s) as ?c) WHERE { ?s a ?o }"
+          Goo.sparql_query_client.query(oq).each do |sol|
+            assert_operator 0, :<, sol[:c].object
+          end
+          count_queries += 1
+        end
       }
       tq.join
-      assert tput.alive?
+      assert_predicate tput, :alive?
       assert_equal 5, count_queries
       tput.join
 
@@ -110,13 +110,13 @@ module TestChunkWrite
       sleep(1.5)
       count_queries = 0
       tq = Thread.new {
-       5.times do
-         oq = "SELECT (count(?s) as ?c) WHERE { ?s a ?o }"
-         Goo.sparql_query_client.query(oq).each do |sol|
-           assert sol[:c].object > 0
-         end
-         count_queries += 1
-       end
+        5.times do
+          oq = "SELECT (count(?s) as ?c) WHERE { ?s a ?o }"
+          Goo.sparql_query_client.query(oq).each do |sol|
+            assert_operator 0, :<, sol[:c].object
+          end
+          count_queries += 1
+        end
       }
       tq.join
       assert tdelete.alive?
@@ -144,7 +144,7 @@ module TestChunkWrite
           50.times do |j|
             oq = "SELECT (count(?s) as ?c) WHERE { ?s a ?o }"
             Goo.sparql_query_client.query(oq).each do |sol|
-              assert sol[:c].object > 0
+              assert_operator 0, :<, sol[:c].object
             end
           end
         }
@@ -182,6 +182,5 @@ module TestChunkWrite
       end
       params
     end
-
   end
 end
