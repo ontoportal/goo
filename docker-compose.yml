@@ -21,15 +21,13 @@ services:
       retries: 5
 
   agraph-ut:
-    #image: franzinc/agraph:v7.3.1
-    image: ontoportal/agraph:v7.3.1-patch1
+    image: franzinc/agraph:v8.0.0
     platform: linux/amd64
     environment:
       - AGRAPH_SUPER_USER=test
       - AGRAPH_SUPER_PASSWORD=xyzzy
     shm_size: 1g
     ports:
-      #      - 10035:10035
       - 10000-10035:10000-10035
     volumes:
       - agdata:/agraph/data
@@ -41,8 +39,8 @@ services:
         ; agtool users grant anonymous root:ontoportal_test:rw
         ; tail -f /agraph/data/agraph.log"
     # healthcheck:
-    #   test: ["CMD-SHELL", "curl -sf http://127.0.0.1:10035/repositories/ontoportal_test/status | grep -iqE '(^running|^lingering)' || exit 1"]
-    #   start_period: 10s
+    #   test: ["CMD-SHELL", "curl -m 1 -sf http://127.0.0.1:10035/repositories/ontoportal_test/status | grep -iqE '(^running|^lingering)' || exit 1"]
+    #   start_period: 60s
     #   interval: 10s
     #   timeout: 5s
     #   retries: 5
