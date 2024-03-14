@@ -35,10 +35,14 @@ module Goo
         list_attributes = Set.new(klass.attributes(:list))
         all_attributes = Set.new(klass.attributes(:all))
 
-        # for using prefixes before queries
-        # mdorf, 7/27/2023, AllegroGraph supplied a patch (rfe17161-7.3.1.fasl.patch)
-        # that enables implicit internal ordering. The patch requires the prefix below
-        select.prefix('franzOption_imposeImplicitBasicOrdering: <franz:yes>') if @options[:page]
+        if @options[:page]
+          # for using prefixes before queries
+          # mdorf, 7/27/2023, AllegroGraph supplied a patch (rfe17161-7.3.1.fasl.patch)
+          # that enables implicit internal ordering. The patch requires the prefix below
+          select.prefix('franzOption_imposeImplicitBasicOrdering: <franz:yes>')
+          # mdorf, 1/24/2024, AllegroGraph 8 introduced a new feature that allows caching OFFSET/LIMIT queries
+          select.prefix('franzOption_allowCachingResults: <franz:yes>')
+        end
 
         # for troubleshooting specific queries (write 1 of 3)
         # ont_to_parse = 'OAE'

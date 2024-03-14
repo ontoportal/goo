@@ -10,7 +10,7 @@ services:
       retries: 30
 
   solr-ut:
-    image: ontoportal/solr-ut:0.0.2
+    image: ontoportal/solr-ut:0.1.0
     ports:
       - 8983:8983
     healthcheck:
@@ -21,7 +21,7 @@ services:
       retries: 5
 
   agraph-ut:
-    image: franzinc/agraph:v8.0.0
+    image: franzinc/agraph:v8.1.0
     platform: linux/amd64
     environment:
       - AGRAPH_SUPER_USER=test
@@ -38,12 +38,12 @@ services:
         ; agtool users add anonymous
         ; agtool users grant anonymous root:ontoportal_test:rw
         ; tail -f /agraph/data/agraph.log"
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -m 1 -sf http://127.0.0.1:10035/repositories/ontoportal_test/status | grep -iqE '(^running|^lingering)' || exit 1"]
-    #   start_period: 60s
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
+    healthcheck:
+      test: ["CMD-SHELL", "curl -m 1 -sf http://127.0.0.1:10035/repositories/ontoportal_test/status | grep -iqE '(^running|^lingering)' || exit 1"]
+      start_period: 60s
+      interval: 10s
+      timeout: 5s
+      retries: 5
     profiles:
       - ag
 
