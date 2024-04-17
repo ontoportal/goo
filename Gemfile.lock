@@ -43,10 +43,11 @@ GEM
     docile (1.4.0)
     domain_name (0.6.20240107)
     eventmachine (1.2.7)
-    faraday (2.9.0)
-      faraday-net_http (>= 2.0, < 3.2)
-    faraday-net_http (3.1.0)
-      net-http
+    faraday (2.8.1)
+      base64
+      faraday-net_http (>= 2.0, < 3.1)
+      ruby2_keywords (>= 0.0.4)
+    faraday-net_http (3.0.2)
     http-accept (1.7.0)
     http-cookie (1.0.5)
       domain_name (~> 0.5)
@@ -63,8 +64,6 @@ GEM
     multi_json (1.15.0)
     mustermann (3.0.0)
       ruby2_keywords (~> 0.0.1)
-    net-http (0.4.1)
-      uri
     net-http-persistent (2.9.4)
     netrc (0.11.0)
     pry (0.14.2)
@@ -120,7 +119,6 @@ GEM
     thread_safe (0.3.6)
     tilt (2.3.0)
     tzinfo (0.3.62)
-    uri (0.13.0)
     uuid (2.3.9)
       macaddr (~> 1.0)
 
@@ -145,4 +143,4 @@ DEPENDENCIES
   uuid
 
 BUNDLED WITH
-   2.2.33
+   2.4.22
