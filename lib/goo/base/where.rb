@@ -209,6 +209,11 @@ module Goo
 
         options_load[:ids] = ids if ids
         models_by_id = {}
+        if @page_i && (options_load[:models].length > 0)
+          options_load.delete(:filters)
+          options_load.delete(:order_by)
+        end
+
         if (@page_i && options_load[:models].length > 0) ||
             (!@page_i && (@count.nil? || @count > 0))
           models_by_id = Goo::SPARQL::Queries.model_load(options_load)
