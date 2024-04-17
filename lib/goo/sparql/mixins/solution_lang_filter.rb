@@ -50,7 +50,7 @@ module Goo
 
         def set_value(model, predicate, value, &block)
           language = object_language(value)
-          
+
           if requested_lang.eql?(:ALL) || !literal?(value) || (language_match?(language) && can_add_new_value?(model,predicate, language))
               block.call
           end
@@ -102,9 +102,9 @@ module Goo
           # no_lang means that the object is not a literal
           return true if language.eql?(:no_lang)
 
-          return requested_lang.include?(language)  if requested_lang.is_a?(Array)
+          return requested_lang.include?(language.upcase)  if requested_lang.is_a?(Array)
 
-          language.eql?(requested_lang)
+          language.upcase.eql?(requested_lang)
         end
 
         def literal?(object)
@@ -113,7 +113,7 @@ module Goo
 
         def store_objects_by_lang(id, predicate, object, language)
           # store objects in this format: [id][predicate][language] = [objects]
-          return if requested_lang.is_a?(Array) && !requested_lang.include?(language) && !language.eql?('@none')
+          return if requested_lang.is_a?(Array) && !requested_lang.include?(language.upcase) && !language.eql?('@none')
 
           language_key = language.downcase
 

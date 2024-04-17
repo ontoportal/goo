@@ -110,25 +110,7 @@ module Goo
     @@sparql_backends[name][:backend_name] = opts[:backend_name]
     @@sparql_backends.freeze
   end
-
-  def self.test_reset
-    if @@sparql_backends[:main][:query].url.to_s["localhost"].nil?
-      raise Exception, "only for testing"
-    end
-    @@sparql_backends[:main][:query]=Goo::SPARQL::Client.new("http://localhost:9000/sparql/",
-                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded",
-                   read_timeout: 300,
-                  redis_cache: @@redis_client })
-  end
-
-  def self.main_lang
-    @@main_lang
-  end
-
-  def self.main_lang=(value)
-    @@main_lang = value
-  end
-
+  
   def self.use_cache=(value)
     @@use_cache = value
     set_sparql_cache
