@@ -1,6 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
 require_relative 'models'
 
 class Person < Goo::Base::Resource

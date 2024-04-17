@@ -1,7 +1,5 @@
 require_relative 'test_case'
 
-GooTest.configure_goo
-
 class NewPersonModel < Goo::Base::Resource
   model :person_model_new, name_with: :name
   attribute :name, type: :string, enforce: [ :existence, :unique]
