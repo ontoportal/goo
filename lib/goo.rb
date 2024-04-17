@@ -30,6 +30,11 @@ module Goo
 
   @@resource_options = Set.new([:persistent]).freeze
 
+  # Define the languages from which the properties values will be taken
+  # It choose the first language that match otherwise return all the values
+  @@main_languages = %w[en]
+  @@requested_language = nil
+
   @@configure_flag = false
   @@sparql_backends = {}
   @@model_by_name = {}
@@ -46,6 +51,27 @@ module Goo
   @@use_cache = false
 
   @@slice_loading_size = 500
+
+
+  def self.main_languages
+    @@main_languages
+  end
+  def self.main_languages=(lang)
+    @@main_languages = lang
+  end
+
+  def self.requested_language
+    @@requested_language
+  end
+
+  def self.requested_language=(lang)
+    @@requested_language = lang
+  end
+
+  def self.language_includes(lang)
+    lang_str = lang.to_s
+    main_languages.index { |l| lang_str.downcase.eql?(l) || lang_str.upcase.eql?(l)}
+  end
 
   def self.add_namespace(shortcut, namespace,default=false)
     if !(namespace.instance_of? RDF::Vocabulary)
@@ -83,6 +109,24 @@ module Goo
                    cube_options: @@cube_options})
     @@sparql_backends[name][:backend_name] = opts[:backend_name]
     @@sparql_backends.freeze
+  end
+
+  def self.test_reset
+    if @@sparql_backends[:main][:query].url.to_s["localhost"].nil?
+      raise Exception, "only for testing"
+    end
+    @@sparql_backends[:main][:query]=Goo::SPARQL::Client.new("http://localhost:9000/sparql/",
+                 {protocol: "1.1", "Content-Type" => "application/x-www-form-urlencoded",
+                   read_timeout: 300,
+                  redis_cache: @@redis_client })
+  end
+
+  def self.main_lang
+    @@main_lang
+  end
+
+  def self.main_lang=(value)
+    @@main_lang = value
   end
 
   def self.use_cache=(value)
