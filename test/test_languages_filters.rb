@@ -10,13 +10,6 @@ class ExamplePerson < Goo::Base::Resource
   attribute :label, namespace: :rdf, enforce: [ :list ]
 end
 
-class ExamplePlace < Goo::Base::Resource
-  model :place, namespace: :bioportal, name_with: lambda { |k| k.id },
-        collection: :db
-  attribute :db, enforce: [ :database ]
-  attribute :label, namespace: :rdf, enforce: [ :list ]
-end
-
 class TestLanguageFilter < MiniTest::Unit::TestCase
   def self.before_suite
     RequestStore.store[:requested_lang] = Goo.main_languages.first
@@ -86,5 +79,29 @@ class TestLanguageFilter < MiniTest::Unit::TestCase
     person = ExamplePerson.find(@@person_id).in(@@db).include(:label).first
     # will return only not tagged values if existent
     assert_equal ["Juan Pérez"], person.label
+  end
+
+  def test_map_attribute_with_languages
+    RequestStore.store[:requested_lang] = :fr
+    person = ExamplePerson.find(@@person_id).in(@@db).include(:unmapped).first
+    ExamplePerson.map_attributes(person)
+    assert_equal ["Jean Dupont", "Juan Pérez"].sort, person.label.sort
+
+
+    expected_result = {:en=>["John Doe"], :fr=>["Jean Dupont"], "@none"=>["Juan Pérez"]}
+    RequestStore.store[:requested_lang] = [:en, :fr]
+    person = ExamplePerson.find(@@person_id).in(@@db).include(:unmapped).first
+    ExamplePerson.map_attributes(person)
+    assert_equal expected_result.values.flatten.sort.sort, person.label.sort
+
+
+    RequestStore.store[:requested_lang] = :all
+    person = ExamplePerson.find(@@person_id).in(@@db).include(:unmapped).first
+    ExamplePerson.map_attributes(person)
+    assert_equal expected_result.values.flatten.sort.sort, person.label.sort
+
+    person = ExamplePerson.find(@@person_id).in(@@db).include(:unmapped).first
+    ExamplePerson.map_attributes(person, include_languages: true)
+    assert_equal expected_result, person.label(include_languages: true)
   end
 end

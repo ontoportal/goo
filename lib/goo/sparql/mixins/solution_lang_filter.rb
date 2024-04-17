@@ -83,12 +83,11 @@ module Goo
         end
 
         def group_by_lang(values)
-
           return values.to_a if values.all?{|x| x.is_a?(RDF::URI) || !x.respond_to?(:language) }
 
-          values = values.group_by { |x| x.respond_to?(:language) && x.language ? x.language.to_s.downcase : :none }
+          values = values.group_by { |x| x.respond_to?(:language) && x.language ? x.language.to_s.downcase.to_sym : "@none" }
 
-          no_lang = values[:none] || []
+          no_lang = values["@none"] || []
           return no_lang if !no_lang.empty? && no_lang.all? { |x| x.respond_to?(:plain?) && !x.plain? }
 
           values
@@ -139,6 +138,7 @@ module Goo
 
         def pull_stored_values(model, values, predicate, unmapped)
           if unmapped
+            binding.pry
             add_unmapped_to_model(model, predicate, values)
           else
             values = values.map do  |language, values_literals|
