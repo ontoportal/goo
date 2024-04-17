@@ -51,7 +51,7 @@ module Goo
         def set_value(model, predicate, value, &block)
           language = object_language(value)
           
-          if requested_lang.eql?(:ALL) || !literal?(value) || (language_match?(language) && can_add_new_value(model,predicate, language))
+          if requested_lang.eql?(:ALL) || !literal?(value) || (language_match?(language) && can_add_new_value?(model,predicate, language))
               block.call
           end
 
@@ -62,7 +62,7 @@ module Goo
         end
 
 
-        def  can_add_new_value(model, predicate, new_language)
+        def  can_add_new_value?(model, predicate, new_language)
           old_val = model.send(predicate) rescue nil
           list_attributes?(predicate) || old_val.blank? || !no_lang?(new_language)
         end
@@ -114,7 +114,7 @@ module Goo
 
         def store_objects_by_lang(id, predicate, object, language)
           # store objects in this format: [id][predicate][language] = [objects]
-          return if requested_lang.is_a?(Array) && !requested_lang.include?(language)
+          return if requested_lang.is_a?(Array) && !requested_lang.include?(language) && !language.eql?('@none')
 
           language_key = language.downcase
 
@@ -172,7 +172,9 @@ module Goo
 
         def get_language(languages)
           languages = portal_language if languages.nil? || languages.empty?
-          lang = languages.to_s.split(',').map { |l| l.upcase.to_sym }
+          lang = languages
+          lang = languages.to_s.split(',') unless lang.is_a?(Array)
+          lang = lang.map { |l| l.upcase.to_sym }
           lang.length == 1 ? lang.first : lang
         end
 

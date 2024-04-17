@@ -31,7 +31,7 @@ module Goo
         list_attributes = Set.new(@klass.attributes(:list))
         all_attributes = Set.new(@klass.attributes(:all))
 
-        @lang_filter = Goo::SPARQL::Solution::LanguageFilter.new(requested_lang: @options[:requested_lang].to_s, unmapped: @unmapped,
+        @lang_filter = Goo::SPARQL::Solution::LanguageFilter.new(requested_lang: @options[:requested_lang], unmapped: @unmapped,
            list_attributes: list_attributes)
         
         if @options[:page]
