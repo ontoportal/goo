@@ -16,6 +16,7 @@ PATH
       pry
       rdf (= 1.0.8)
       redis
+      request_store
       rest-client
       rsolr
       sparql-client
@@ -42,11 +43,10 @@ GEM
     docile (1.4.0)
     domain_name (0.6.20240107)
     eventmachine (1.2.7)
-    faraday (2.8.1)
-      base64
-      faraday-net_http (>= 2.0, < 3.1)
-      ruby2_keywords (>= 0.0.4)
-    faraday-net_http (3.0.2)
+    faraday (2.9.0)
+      faraday-net_http (>= 2.0, < 3.2)
+    faraday-net_http (3.1.0)
+      net-http
     http-accept (1.7.0)
     http-cookie (1.0.5)
       domain_name (~> 0.5)
@@ -63,6 +63,8 @@ GEM
     multi_json (1.15.0)
     mustermann (3.0.0)
       ruby2_keywords (~> 0.0.1)
+    net-http (0.4.1)
+      uri
     net-http-persistent (2.9.4)
     netrc (0.11.0)
     pry (0.14.2)
@@ -84,6 +86,8 @@ GEM
       redis-client (>= 0.22.0)
     redis-client (0.22.1)
       connection_pool
+    request_store (1.6.0)
+      rack (>= 1.4)
     rest-client (2.1.0)
       http-accept (>= 1.7.0, < 2.0)
       http-cookie (>= 1.0.2, < 2.0)
@@ -116,11 +120,13 @@ GEM
     thread_safe (0.3.6)
     tilt (2.3.0)
     tzinfo (0.3.62)
+    uri (0.13.0)
     uuid (2.3.9)
       macaddr (~> 1.0)
 
 PLATFORMS
-  x86_64-darwin-18
+  x86_64-darwin-23
+  x86_64-linux
 
 DEPENDENCIES
   activesupport
@@ -139,4 +145,4 @@ DEPENDENCIES
   uuid
 
 BUNDLED WITH
-   2.3.15
+   2.2.33
