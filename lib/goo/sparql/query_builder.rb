@@ -17,24 +17,24 @@ module Goo
         @model_query_options = options[:query_options]
         @enable_rules = options[:rules]
         @order_by = options[:order_by]
-
+        @internal_variables_map = {}
         @query = get_client
       end
 
       def build_select_query(ids, variables, graphs, patterns,
                              query_options, properties_to_include)
 
-        internal_variables = graph_match(@collection, @graph_match, graphs, @klass, patterns, query_options, @unions)
+        patterns = graph_match(@collection, @graph_match, graphs, @klass, patterns, query_options, @unions)
 
         aggregate_projections, aggregate_vars,
           variables, optional_patterns = get_aggregate_vars(@aggregate, @collection, graphs,
-                                                            @klass, @unions, variables, internal_variables)
+                                                            @klass, @unions, variables)
 
         @order_by, variables, optional_patterns = init_order_by(@count, @klass, @order_by, optional_patterns, variables)
         variables, patterns = add_some_type_to_id(patterns, query_options, variables)
 
-        query_filter_str, patterns, optional_patterns =
-          filter_query_strings(@collection, graphs, internal_variables, @klass, optional_patterns, patterns, @query_filters)
+        query_filter_str, patterns, optional_patterns, filter_variables =
+          filter_query_strings(@collection, graphs, @klass, optional_patterns, patterns, @query_filters)
 
         variables = [] if @count
         variables.delete :some_type
@@ -170,6 +170,7 @@ module Goo
             value = "#{attr}_agg_#{in_aggregate}".to_sym
           end
           internal_variables << value
+          @internal_variables_map[attr] = value
         end
 
         add_rules(attr, klass, query_options)
@@ -210,7 +211,7 @@ module Goo
         end
       end
 
-      def get_aggregate_vars(aggregate, collection, graphs, klass, unions, variables, internal_variables)
+      def get_aggregate_vars(aggregate, collection, graphs, klass, unions, variables)
         # mdorf, 6/03/20 If aggregate projections (sub-SELECT within main SELECT) use an alias, that alias cannot appear in the main SELECT
         # https://github.com/ncbo/goo/issues/106
         # See last sentence in https://www.w3.org/TR/sparql11-query/#aggregateExample
@@ -241,8 +242,6 @@ module Goo
       end
 
       def graph_match(collection, graph_match, graphs, klass, patterns, query_options, unions)
-        internal_variables = []
-
         if graph_match
           #make it deterministic - for caching
           graph_match_iteration = Goo::Base::PatternIteration.new(graph_match)
@@ -250,7 +249,7 @@ module Goo
                        internal_variables, in_aggregate = false, query_options, collection)
           graphs.uniq!
         end
-        internal_variables
+        patterns
       end
 
       def get_client
@@ -336,7 +335,7 @@ module Goo
         end
       end
 
-      def filter_query_strings(collection, graphs, internal_variables, klass,
+      def filter_query_strings(collection, graphs, klass,
                                optional_patterns, patterns,
                                query_filters)
         query_filter_str = []
@@ -376,6 +375,9 @@ module Goo
         [variables, patterns]
       end
 
+      def internal_variables
+        @internal_variables_map.values
+      end
     end
   end
 end
