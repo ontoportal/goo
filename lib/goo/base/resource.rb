@@ -298,26 +298,45 @@ module Goo
       def save(*opts)
 
         if self.kind_of?(Goo::Base::Enum)
-          unless opts[0] && opts[0][:init_enum]
-            raise ArgumentError, "Enums can only be created on initialization"
-          end
+          raise ArgumentError, "Enums can only be created on initialization" unless opts[0] && opts[0][:init_enum]
         end
         batch_file = nil
-        if opts && opts.length > 0
-          if opts.first.is_a?(Hash) && opts.first[:batch] && opts.first[:batch].is_a?(File)
+        callbacks = true
+        if opts && opts.length > 0 && opts.first.is_a?(Hash)
+          if opts.first[:batch] && opts.first[:batch].is_a?(File)
             batch_file = opts.first[:batch]
           end
+
+          callbacks = opts.first[:callbacks]
         end
 
         if !batch_file
-          if not modified?
-            return self
-          end
+          return self if not modified?
           raise Goo::Base::NotValidException, "Object is not valid. Check errors." unless valid?
         end
 
+        #set default values before saving
+        unless self.persistent?
+          self.class.attributes_with_defaults.each do |attr|
+            value = self.send("#{attr}")
+            if value.nil?
+              value = self.class.default(attr).call(self)
+              self.send("#{attr}=", value)
+            end
+          end
+        end
+
+        #call update callback before saving
+        if callbacks
+          self.class.attributes_with_update_callbacks.each do |attr|
+            Goo::Validators::Enforce.enforce_callbacks(self, attr)
+          end
+        end
+
         graph_insert, graph_delete = Goo::SPARQL::Triples.model_update_triples(self)
-        graph = self.graph()
+        graph = self.graph
+
+
         if graph_delete and graph_delete.size > 0
           begin
             Goo.sparql_update_client.delete_data(graph_delete, graph: graph)
