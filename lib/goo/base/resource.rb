@@ -15,7 +15,7 @@ module Goo
       attr_reader :modified_attributes
       attr_reader :errors
       attr_reader :aggregates
-      attr_reader :unmapped
+      attr_writer :unmapped
 
       attr_reader :id
 
@@ -123,7 +123,12 @@ module Goo
 
       def unmapped_set(attribute,value)
         @unmapped ||= {}
-        (@unmapped[attribute] ||= Set.new) << value
+        @unmapped[attribute] ||= Set.new
+        @unmapped[attribute].merge(Array(value)) unless value.nil?
+      end
+ 
+      def unmapped_get(attribute)
+        @unmapped[attribute]
       end
 
       def unmmaped_to_array
@@ -132,6 +137,12 @@ module Goo
           cpy[attr] = v.to_a
         end
         @unmapped = cpy
+      end
+
+      def unmapped(*args)
+        @unmapped&.transform_values do  |language_values|
+          self.class.not_show_all_languages?(language_values, args) ?  language_values.values.flatten: language_values
+        end
       end
 
       def delete(*args)
@@ -211,13 +222,13 @@ module Goo
         return col ? col.id : nil
       end
 
-      def self.map_attributes(inst,equivalent_predicates=nil)
+      def self.map_attributes(inst,equivalent_predicates=nil, include_languages: false)
         if (inst.kind_of?(Goo::Base::Resource) && inst.unmapped.nil?) ||
-            (!inst.respond_to?(:unmapped) && inst[:unmapped].nil?)
+          (!inst.respond_to?(:unmapped) && inst[:unmapped].nil?)
           raise ArgumentError, "Resource.map_attributes only works for :unmapped instances"
         end
         klass = inst.respond_to?(:klass) ? inst[:klass] : inst.class
-        unmapped = inst.respond_to?(:klass) ? inst[:unmapped] : inst.unmapped
+        unmapped = inst.respond_to?(:klass) ? inst[:unmapped] : inst.unmapped(include_languages: include_languages)
         list_attrs = klass.attributes(:list)
         unmapped_string_keys = Hash.new
         unmapped.each do |k,v|
@@ -228,36 +239,38 @@ module Goo
           next unless inst.respond_to?(attr)
           attr_uri = klass.attribute_uri(attr,inst.collection).to_s
           if unmapped_string_keys.include?(attr_uri.to_s) ||
-              (equivalent_predicates && equivalent_predicates.include?(attr_uri))
-            object = nil
+            (equivalent_predicates && equivalent_predicates.include?(attr_uri))
             if !unmapped_string_keys.include?(attr_uri)
-              equivalent_predicates[attr_uri].each do |eq_attr|
-                if object.nil? and !unmapped_string_keys[eq_attr].nil?
-                  object = unmapped_string_keys[eq_attr].dup
-                else
-                  if object.is_a?Array
-                    if !unmapped_string_keys[eq_attr].nil?
-                      object.concat(unmapped_string_keys[eq_attr])
-                    end
-                  end
+              object = Array(equivalent_predicates[attr_uri].map { |eq_attr| unmapped_string_keys[eq_attr] }).flatten.compact
+              if include_languages && [RDF::URI, Hash].all?{|c| object.map(&:class).include?(c)}
+                object = object.reduce({})  do |all, new_v|
+                  new_v =  { none: [new_v] } if new_v.is_a?(RDF::URI)
+                  all.merge(new_v) {|_, a, b| a + b }
                 end
+              elsif include_languages
+                object = object.first
               end
+
               if object.nil?
-                inst.send("#{attr}=",
-                           list_attrs.include?(attr) ? [] : nil, on_load: true)
+                inst.send("#{attr}=", list_attrs.include?(attr) ? [] : nil, on_load: true)
                 next
               end
             else
               object = unmapped_string_keys[attr_uri]
             end
-            object = object.map { |o| o.is_a?(RDF::URI) ? o : o.object }
+
+            if object.is_a?(Hash)
+              object = object.transform_values{|values| Array(values).map{|o|o.is_a?(RDF::URI) ? o : o.object}}
+            else
+              object = object.map {|o| o.is_a?(RDF::URI) ? o : o.object}
+            end
+
             if klass.range(attr)
               object = object.map { |o|
                 o.is_a?(RDF::URI) ? klass.range_object(attr,o) : o }
             end
-            unless list_attrs.include?(attr)
-              object = object.first
-            end
+
+            object = object.first unless list_attrs.include?(attr) || include_languages
             if inst.respond_to?(:klass)
               inst[attr] = object
             else
@@ -266,15 +279,11 @@ module Goo
           else
             inst.send("#{attr}=",
                       list_attrs.include?(attr) ? [] : nil, on_load: true)
-            if inst.id.to_s == "http://purl.obolibrary.org/obo/IAO_0000415"
-              if attr == :definition
-               # binding.pry
-              end
-            end
           end
 
         end
       end
+
 
       def collection
         opts = self.class.collection_opts
@@ -414,12 +423,8 @@ module Goo
       end
 
       def self.find(id, *options)
-        if !id.instance_of?(RDF::URI) && self.name_with == :id
-          id = RDF::URI.new(id)
-        end
-        unless id.instance_of?(RDF::URI)
-          id = id_from_unique_attribute(name_with(),id)
-        end
+        id = RDF::URI.new(id) if !id.instance_of?(RDF::URI) && self.name_with == :id
+        id = id_from_unique_attribute(name_with(),id) unless id.instance_of?(RDF::URI)
         if self.inmutable? && self.inm_instances && self.inm_instances[id]
           w = Goo::Base::Where.new(self)
           w.instance_variable_set("@result", [self.inm_instances[id]])
