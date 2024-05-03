@@ -14,4 +14,5 @@ Gem::Specification.new do |s|
   s.add_dependency("rsolr")
   s.add_dependency("sparql-client")
   s.add_dependency("uuid")
+  s.add_dependency("request_store")
 end

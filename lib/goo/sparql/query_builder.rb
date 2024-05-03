@@ -6,177 +6,188 @@ module Goo
       def initialize(options)
         @no_graphs = options[:no_graphs]
         @query_filters = options[:filters]
+        @klass = options[:klass]
         @store = options[:store] || :main
         @page = options[:page]
         @count = options[:count]
         @graph_match = options[:graph_match]
+        @unions = options[:unions] || []
         @aggregate = options[:aggregate]
         @collection = options[:collection]
         @model_query_options = options[:query_options]
         @enable_rules = options[:rules]
-        @unions = []
+        @order_by = options[:order_by]
+        @internal_variables_map = {}
+        @query = get_client
       end
 
-      def build_select_query(ids, binding_as, klass, graphs, optional_patterns,
-                             order_by, patterns, query_options, variables)
+      def build_select_query(ids, variables, graphs, patterns,
+                             query_options, properties_to_include)
+
+        patterns = graph_match(@collection, @graph_match, graphs, @klass, patterns, query_options, @unions)
+        variables, patterns = add_some_type_to_id(patterns, query_options, variables)
+        aggregate_projections, aggregate_vars, variables, optional_patterns = get_aggregate_vars(@aggregate, @collection, graphs, @klass, @unions, variables)
+
+        @order_by, variables, optional_patterns = init_order_by(@count, @klass, @order_by, optional_patterns, variables,patterns, query_options, graphs)
+        order_by_str, order_variables = order_by_string
 
 
-        internal_variables = graph_match(@collection, @graph_match, graphs, klass, patterns, query_options, @unions)
-        aggregate_projections, aggregate_vars, variables, optional_patterns = get_aggregate_vars(@aggregate, @collection,
-                                                                                                 graphs, internal_variables,
-                                                                                                 klass, optional_patterns,
-                                                                                                 @unions, variables)
-        filter_id_str, query_filter_str = filter_id_query_strings(@collection, graphs, ids, internal_variables,
-                                                                  klass, optional_patterns, patterns, @query_filters)
+        query_filter_str, patterns, optional_patterns, filter_variables =
+          filter_query_strings(@collection, graphs, @klass, optional_patterns, patterns, @query_filters)
 
-
-        order_by, variables, patterns = order_by(@count, klass, order_by, patterns, variables)
-
-        query_options[:rules] = [:NONE] unless @enable_rules
-        query_options = nil if query_options.empty?
 
         variables = [] if @count
-
-        variables, patterns = add_some_type_to_id(patterns, query_options, variables)
-
-        select = get_select(aggregate_projections, variables, @store)
         variables.delete :some_type
-        select.where(*patterns)
+
+        select_distinct(variables, aggregate_projections, filter_variables, order_variables)
+          .from(graphs)
+          .where(patterns)
+          .union_bind_in_where(properties_to_include)
 
         optional_patterns.each do |optional|
-          select.optional(*[optional])
-        end
-        select.union(*@unions) if @unions.length > 0
-        if order_by
-          order_by_str = order_by.map { |attr, order| "#{order.to_s.upcase}(?#{attr})" }
-          select.order_by(*order_by_str)
+          @query.optional(*[optional])
         end
 
-        select.filter(filter_id_str)
-
-        #if unmapped && predicates && predicates.length > 0
-        #  filter_predicates = predicates.map { |p| "?predicate = #{p.to_ntriples}" }
-        #  filter_predicates = filter_predicates.join " || "
-        #  select.filter(filter_predicates)
-        #end
-
-        if query_filter_str.length > 0
-          query_filter_str.each do |f|
-            select.filter(f)
-          end
+        query_filter_str&.each do |filter|
+          @query.filter(filter)
         end
 
-        if aggregate_vars
-          select.options[:group_by] = [:id]
-          select.options[:count] = aggregate_vars
-        end
+        @query.union(*@unions) unless @unions.empty?
 
-        if @count
-          select.options[:count] = [[:id, :count_var, :count]]
-        end
+        ids_filter(ids) if ids
 
-        if @page
-          offset = (@page[:page_i] - 1) * @page[:page_size]
-          select.slice(offset, @page[:page_size])
-          # mdorf, 1/12/2023, AllegroGraph returns duplicate results across
-          # different pages unless the order_by clause is explicitly specified
-          # see https://github.com/ncbo/bioportal-project/issues/264
-          # However, using the .order call has added a significant overhead;
-          # therefore, a different solution is now being sought
-          # mdorf, 7/27/2023, AllegroGraph supplied a patch (rfe17161-7.3.1.fasl.patch)
-          # that enables implicit internal ordering, which addresses this issue
-          # select.order(:id)
-        end
 
-        select.distinct(true)
+        @query.order_by(*order_by_str) if @order_by
 
-        if query_options && !binding_as
-          query_options[:rules] = query_options[:rules].map { |x| x.to_s }.join("+")
-          select.options[:query_options] = query_options
-        else
-          query_options = { rules: ["NONE"] }
-          select.options[:query_options] = query_options
-        end
 
-        if !graphs.nil? && graphs.length > 0
-          graphs.select! { |g| g.to_s["owl#Class"].nil? }
-        end
+        put_query_aggregate_vars(aggregate_vars) if aggregate_vars
+        count if @count
+        paginate if @page
 
-        unless @no_graphs
-          select.from(graphs.uniq)
-        else
-          select.options[:graphs] = graphs.uniq
-        end
-
+        ## TODO see usage of rules and query_options
         query_options.merge!(@model_query_options) if @model_query_options
-        if binding_as
-          select.union_with_bind_as(*binding_as)
+        query_options[:rules] = [:NONE] unless @enable_rules
+        query_options = nil if query_options.empty?
+        if query_options
+          query_options[:rules] = query_options[:rules]&.map { |x| x.to_s }.join('+')
+        else
+          query_options = { rules: ['NONE'] }
         end
-        [select, aggregate_projections]
+        @query.options[:query_options] = query_options
+        [@query, aggregate_projections]
       end
 
+      def union_bind_in_where(properties)
+        binding_as = []
+        properties.each do |property_attr, property|
+          predicates = [property[:uri]] + (property[:equivalents] || [])
+          options = {
+            binds: [{ value: property_attr, as: :attributeProperty }]
+          }
+          subject = property[:subject] || :id
+          predicates.uniq.each do |predicate_uri|
+            pattern = if property[:is_inverse]
+                        [:attributeObject, predicate_uri, subject]
+                      else
+                        [subject, predicate_uri, :attributeObject]
+                      end
+            binding_as << [[pattern], options]
+          end
+        end
+        @query.optional_union_with_bind_as(*binding_as) unless binding_as.empty?
+        self
+      end
 
+      def where(patterns)
+        @query.where(*patterns)
+        self
+      end
+
+      def paginate
+        offset = (@page[:page_i] - 1) * @page[:page_size]
+        @query.slice(offset, @page[:page_size])
+        self
+      end
+
+      def count
+        @query.options[:count] = [%i[id count_var count]]
+        self
+      end
+
+      def put_query_aggregate_vars(aggregate_vars)
+        @query.options[:group_by] = [:id]
+        @query.options[:count] = aggregate_vars
+        self
+      end
+
+      def order_by_string
+        order_variables = []
+        order_str = @order_by&.map do |attr, order|
+          if order.is_a?(Hash)
+            sub_attr, order = order.first
+            attr =  @internal_variables_map.select{ |internal_var, attr_var| attr_var.eql?({attr => sub_attr}) || attr_var.eql?(sub_attr)}.keys.last
+          end
+          order_variables << attr
+          "#{order.to_s.upcase}(?#{attr})"
+        end
+        [order_str,order_variables]
+      end
+
+      def from(graphs)
+
+        graphs.select! { |g| g.to_s['owl#Class'].nil? } if !graphs.nil? && !graphs.empty?
+
+        if @no_graphs
+          @query.options[:graphs] = graphs.uniq
+        else
+          @query.from(graphs.uniq)
+        end
+        self
+      end
+
+      def select_distinct(variables, aggregate_variables, filter_variables, order_variables)
+        select_vars = variables.dup
+        reject_aggregations_from_vars(select_vars, aggregate_variables) if aggregate_variables
+        # Fix for 4store pagination with a filter https://github.com/ontoportal-lirmm/ontologies_api/issues/25
+        select_vars = (select_vars + filter_variables + order_variables).uniq  if @page
+        @query = @query.select(*select_vars).distinct(true)
+        self
+      end
+
+      def ids_filter(ids)
+        filter_id = []
+
+        ids.each do |id|
+          filter_id << "?id = #{id.to_ntriples.to_s.gsub(' ', '%20')}"
+        end
+        filter_id_str = filter_id.join ' || '
+        @query.filter filter_id_str
+        self
+      end
 
       private
 
-      def order_by(count, klass, order_by, patterns, variables)
-      order_by = nil if count
-      if order_by
-        order_by = order_by.first
-        #simple ordering ... needs to use pattern inspection
-        order_by.each do |attr, direction|
-          quad = query_pattern(klass, attr)
-          patterns << quad[1]
-          #mdorf, 9/22/16 If an ORDER BY clause exists, the columns used in the ORDER BY should be present in the SPARQL select
-          variables << attr unless variables.include?(attr)
-        end
-      end
-      [order_by, variables, patterns]
-      end
-      def sparql_op_string(op)
-        case op
-        when :or
-          return "||"
-        when :and
-          return "&&"
-        when :==
-          return "="
-        end
-        return op.to_s
-      end
-
-      def graph_match(collection, graph_match, graphs, klass, patterns, query_options, unions)
-        internal_variables = []
-
-        if graph_match
-          #make it deterministic - for caching
-          graph_match_iteration = Goo::Base::PatternIteration.new(graph_match)
-          walk_pattern(klass, graph_match_iteration, graphs, patterns, unions,
-                       internal_variables, in_aggregate = false, query_options, collection)
-          graphs.uniq!
-        end
-        internal_variables
-      end
-
-      def patterns_for_match(klass,attr,value,graphs,patterns,unions,
-                                  internal_variables,subject=:id,in_union=false,
-                                  in_aggregate=false, query_options={}, collection=nil)
+      def patterns_for_match(klass, attr, value, graphs, patterns, unions,
+                             internal_variables, subject = :id, in_union = false,
+                             in_aggregate = false, query_options = {}, collection = nil)
+        new_internal_var = value
         if value.respond_to?(:each) || value.instance_of?(Symbol)
           next_pattern = value.instance_of?(Array) ? value.first : value
 
           #for filters
           next_pattern = { next_pattern => [] } if next_pattern.instance_of?(Symbol)
 
-          value = "internal_join_var_#{internal_variables.length}".to_sym
+          new_internal_var = "internal_join_var_#{internal_variables.length}".to_sym
           if in_aggregate
-            value = "#{attr}_agg_#{in_aggregate}".to_sym
+            new_internal_var = "#{attr}_agg_#{in_aggregate}".to_sym
           end
-          internal_variables << value
+          internal_variables << new_internal_var
+          @internal_variables_map[new_internal_var] = value.empty? ? attr : {attr => value}
         end
 
-        add_rules(attr,klass,query_options)
+        add_rules(attr, klass, query_options)
         graph, pattern =
-          query_pattern(klass,attr,value: value,subject: subject, collection: collection)
+          query_pattern(klass, attr, value: new_internal_var, subject: subject, collection: collection)
         if pattern
           if !in_union
             patterns << pattern
@@ -187,18 +198,140 @@ module Goo
         graphs << graph if graph
         if next_pattern
           range = klass.range(attr)
-          next_pattern.each do |next_attr,next_value|
+          next_pattern.each do |next_attr, next_value|
             patterns_for_match(range, next_attr, next_value, graphs,
-                               patterns, unions, internal_variables, subject=value,
-                               in_union, in_aggregate, collection=collection)
+                               patterns, unions, internal_variables, subject = new_internal_var,
+                               in_union, in_aggregate, collection = collection)
           end
         end
       end
-      def query_filter_sparql(klass,filter,filter_patterns,filter_graphs,
-                                   filter_operations,
-                                   internal_variables,
-                                   inspected_patterns,
-                                   collection)
+
+      def walk_pattern(klass, match_patterns, graphs, patterns, unions,
+                       internal_variables, in_aggregate = false, query_options = {},
+                       collection)
+        match_patterns.each do |match, in_union|
+          unions << [] if in_union
+          match = match.is_a?(Symbol) ? { match => [] } : match
+          match.each do |attr, value|
+            patterns_for_match(klass, attr, value, graphs, patterns,
+                               unions, internal_variables,
+                               subject = :id, in_union = in_union,
+                               in_aggregate = in_aggregate,
+                               query_options = query_options,
+                               collection)
+          end
+        end
+      end
+
+      def get_aggregate_vars(aggregate, collection, graphs, klass, unions, variables)
+        # mdorf, 6/03/20 If aggregate projections (sub-SELECT within main SELECT) use an alias, that alias cannot appear in the main SELECT
+        # https://github.com/ncbo/goo/issues/106
+        # See last sentence in https://www.w3.org/TR/sparql11-query/#aggregateExample
+        aggregate_vars = nil
+        aggregate_projections = nil
+        optional_patterns = []
+
+        aggregate&.each do |agg|
+          agg_patterns = []
+          graph_match_iteration =
+            Goo::Base::PatternIteration.new(Goo::Base::Pattern.new(agg.pattern))
+          walk_pattern(klass, graph_match_iteration, graphs, agg_patterns, unions,
+                       internal_variables, in_aggregate = agg.aggregate, collection)
+          unless agg_patterns.empty?
+            projection = "#{internal_variables.last.to_s}_projection".to_sym
+            aggregate_on_attr = internal_variables.last.to_s
+            aggregate_on_attr =
+              aggregate_on_attr[0..aggregate_on_attr.index('_agg_') - 1].to_sym
+            (aggregate_projections ||= {})[projection] = [agg.aggregate, aggregate_on_attr]
+            (aggregate_vars ||= []) << [internal_variables.last,
+                                        projection,
+                                        agg.aggregate]
+            variables << projection
+            optional_patterns.concat(agg_patterns)
+          end
+        end
+        [aggregate_projections, aggregate_vars, variables, optional_patterns]
+      end
+
+      def graph_match(collection, graph_match, graphs, klass, patterns, query_options, unions)
+        if graph_match
+          #make it deterministic - for caching
+          graph_match_iteration = Goo::Base::PatternIteration.new(graph_match)
+          walk_pattern(klass, graph_match_iteration, graphs, patterns, unions,
+                       internal_variables, in_aggregate = false, query_options, collection)
+          graphs.uniq!
+        end
+        patterns
+      end
+
+      def get_client
+        Goo.sparql_query_client(@store)
+      end
+
+      def init_order_by(count, klass, order_by, optional_patterns, variables, patterns, query_options, graphs)
+        order_by = nil if count
+        if order_by
+          order_by = order_by.first
+          #simple ordering ... needs to use pattern inspection
+          order_by.each do |attr, direction|
+
+            if direction.is_a?(Hash)
+              # TODO this part can be improved/refactored, the complexity was added because order by don't work
+              # if the pattern is in the mandatory ones (variable `patterns`)
+              # and optional (variable `optional_patterns`) at the same time
+              sub_attr, direction = direction.first
+              graph_match_iteration = Goo::Base::PatternIteration.new(Goo::Base::Pattern.new({attr => [sub_attr]}))
+              old_internal = internal_variables.dup
+              old_patterns = optional_patterns.dup
+
+              walk_pattern(klass, graph_match_iteration, graphs, optional_patterns, @unions, internal_variables, in_aggregate = false, query_options, @collection)
+              new_variables = (internal_variables - old_internal)
+              internal_variables.delete(new_variables)
+              new_patterns = optional_patterns - old_patterns
+              already_existent_pattern = patterns.select{|x| x[1].eql?(new_patterns.last[1])}.first
+
+              if already_existent_pattern
+                already_existent_variable = already_existent_pattern[2]
+                optional_patterns = old_patterns
+                key = @internal_variables_map.select{|key, value|  key.eql?(new_variables.last)}.keys.first
+                @internal_variables_map[key] = (already_existent_variable || new_variables.last) if key
+
+                #variables << already_existent_variable
+              else
+                #variables <<  new_variables.last
+              end
+
+            else
+              quad = query_pattern(klass, attr)
+              optional_patterns << quad[1]
+              #variables << attr
+            end
+
+            #patterns << quad[1]
+            #mdorf, 9/22/16 If an ORDER BY clause exists, the columns used in the ORDER BY should be present in the SPARQL select
+            #variables << attr unless variables.include?(attr)
+          end
+        end
+        [order_by, variables, optional_patterns, patterns]
+      end
+
+      def sparql_op_string(op)
+        case op
+        when :or
+          return '||'
+        when :and
+          return '&&'
+        when :==
+          return '='
+        end
+        op.to_s
+      end
+
+      def query_filter_sparql(klass, filter, filter_patterns, filter_graphs,
+                              filter_operations,
+                              internal_variables,
+                              inspected_patterns,
+                              collection)
         #create a object variable to project the value in the filter
         filter.filter_tree.each do |filter_operation|
           filter_pattern_match = {}
@@ -211,15 +344,21 @@ module Goo
             attr = filter_pattern_match.keys.first
             patterns_for_match(klass, attr, filter_pattern_match[attr],
                                filter_graphs, filter_patterns,
-                               [],internal_variables,
-                               subject=:id,in_union=false,in_aggregate=false,
-                               collection=collection)
+                               [], internal_variables,
+                               subject = :id, in_union = false, in_aggregate = false,
+                               collection = collection)
             inspected_patterns[filter_pattern_match] = internal_variables.last
           end
           filter_var = inspected_patterns[filter_pattern_match]
-          if !filter_operation.value.instance_of?(Goo::Filter)
+
+          if filter_operation.value.instance_of?(Goo::Filter)
+            filter_operations << "#{sparql_op_string(filter_operation.operator)}"
+            query_filter_sparql(klass, filter_operation.value, filter_patterns,
+                                filter_graphs, filter_operations,
+                                internal_variables, inspected_patterns, collection)
+          else
             case filter_operation.operator
-            when :unbound
+            when  :unbound
               filter_operations << "!BOUND(?#{filter_var.to_s})"
               return :optional
 
@@ -227,8 +366,8 @@ module Goo
               filter_operations << "BOUND(?#{filter_var.to_s})"
               return :optional
             when :regex
-              if filter_operation.value.is_a?(String)
-                filter_operations << "REGEX(STR(?#{filter_var.to_s}) , \"#{filter_operation.value.to_s}\")"
+              if  filter_operation.value.is_a?(String)
+                filter_operations << "REGEX(STR(?#{filter_var.to_s}) , \"#{filter_operation.value.to_s}\", \"i\")"
               end
 
             else
@@ -240,114 +379,54 @@ module Goo
                 "?#{filter_var.to_s} #{sparql_op_string(filter_operation.operator)} " +
                   " #{value.to_ntriples}")
             end
-          else
-            filter_operations << "#{sparql_op_string(filter_operation.operator)}"
-            query_filter_sparql(klass,filter_operation.value,filter_patterns,
-                                filter_graphs,filter_operations,
-                                internal_variables,inspected_patterns,collection)
-          end
-        end
-      end
-      def walk_pattern(klass, match_patterns, graphs, patterns, unions,
-                            internal_variables,in_aggregate=false,query_options={},
-                            collection)
-        match_patterns.each do |match,in_union|
-          unions << [] if in_union
-          match = match.is_a?(Symbol) ? { match => [] } : match
-          match.each do |attr,value|
-            patterns_for_match(klass, attr, value, graphs, patterns,
-                               unions,internal_variables,
-                               subject=:id,in_union=in_union,
-                               in_aggregate=in_aggregate,
-                               query_options=query_options,
-                               collection)
+
           end
         end
       end
 
-
-
-      def get_aggregate_vars(aggregate, collection, graphs, internal_variables, klass, optional_patterns, unions, variables)
-        aggregate_vars = nil
-        aggregate_projections = nil
-        if aggregate
-          aggregate.each do |agg|
-            agg_patterns = []
-            graph_match_iteration =
-              Goo::Base::PatternIteration.new(Goo::Base::Pattern.new(agg.pattern))
-            walk_pattern(klass, graph_match_iteration, graphs, agg_patterns, unions,
-                         internal_variables, in_aggregate = agg.aggregate, collection)
-            if agg_patterns.length > 0
-              projection = "#{internal_variables.last.to_s}_projection".to_sym
-              aggregate_on_attr = internal_variables.last.to_s
-              aggregate_on_attr =
-                aggregate_on_attr[0..aggregate_on_attr.index("_agg_") - 1].to_sym
-              (aggregate_projections ||= {})[projection] = [agg.aggregate, aggregate_on_attr]
-              (aggregate_vars ||= []) << [internal_variables.last,
-                                          projection,
-                                          agg.aggregate]
-              variables << projection
-              optional_patterns.concat(agg_patterns)
-            end
-          end
-        end
-        return aggregate_projections, aggregate_vars, variables, optional_patterns
-      end
-
-      def filter_id_query_strings(collection, graphs, ids, internal_variables, klass, optional_patterns, patterns, query_filters)
-        filter_id = []
-        if ids
-          ids.each do |id|
-            filter_id << "?id = #{id.to_ntriples.to_s}"
-          end
-        end
-        filter_id_str = filter_id.join " || "
-
+      def filter_query_strings(collection, graphs, klass,
+                               optional_patterns, patterns,
+                               query_filters)
         query_filter_str = []
-        if query_filters
+        filter_graphs = []
+        filter_variables = []
+        inspected_patterns = {}
+        query_filters&.each do |query_filter|
+          filter_operations = []
           filter_patterns = []
-          filter_graphs = []
-          inspected_patterns = {}
-          query_filters.each do |query_filter|
-            filter_operations = []
-            type = query_filter_sparql(klass, query_filter, filter_patterns, filter_graphs,
-                                       filter_operations, internal_variables,
-                                       inspected_patterns, collection)
-            query_filter_str << filter_operations.join(" ")
-            graphs.concat(filter_graphs) if filter_graphs.length > 0
-            if filter_patterns.length > 0
-              if type == :optional
-                optional_patterns.concat(filter_patterns)
-              else
-                patterns.concat(filter_patterns)
-              end
+          type = query_filter_sparql(klass, query_filter, filter_patterns, filter_graphs,
+                                     filter_operations, internal_variables,
+                                     inspected_patterns, collection)
+          query_filter_str << filter_operations.join(' ')
+          graphs.concat(filter_graphs) unless filter_graphs.empty?
+          unless filter_patterns.empty?
+            if type == :optional
+              optional_patterns.concat(filter_patterns)
+            else
+              patterns.concat(filter_patterns)
             end
           end
+          filter_variables << inspected_patterns.values.last
         end
-        return filter_id_str, query_filter_str
+        [query_filter_str, patterns, optional_patterns, filter_variables]
       end
 
-
-      def get_select(aggregate_projections, variables, store)
-        client = Goo.sparql_query_client(store)
-        # mdorf, 6/03/20 If aggregate projections (sub-SELECT within main SELECT) use an alias, that alias cannot appear in the main SELECT
-        # https://github.com/ncbo/goo/issues/106
-        # See last sentence in https://www.w3.org/TR/sparql11-query/#aggregateExample
-        select_vars = variables.dup
-        select_vars.reject! { |var| aggregate_projections.key?(var) } if aggregate_projections
-        client.select(*select_vars).distinct()
+      def reject_aggregations_from_vars(variables, aggregate_projections)
+        variables.reject! { |var| aggregate_projections.key?(var) }
       end
-
 
       def add_some_type_to_id(patterns, query_options, variables)
         #rdf:type <x> breaks the reasoner
-        if query_options && query_options[:rules] != [:NONE]
+        if query_options && !query_options.empty? && query_options[:rules] != [:NONE]
           patterns[0] = [:id, RDF[:type], :some_type]
           variables << :some_type
         end
         [variables, patterns]
       end
 
+      def internal_variables
+        @internal_variables_map.keys
+      end
     end
   end
 end

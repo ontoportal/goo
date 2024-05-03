@@ -39,11 +39,11 @@ services:
         ; agtool users grant anonymous root:ontoportal_test:rw
         ; tail -f /agraph/data/agraph.log"
     healthcheck:
-      test: ["CMD-SHELL", "curl -m 1 -sf http://127.0.0.1:10035/repositories/ontoportal_test/status | grep -iqE '(^running|^lingering)' || exit 1"]
-      start_period: 60s
+      test: ["CMD-SHELL", "agtool storage-report ontoportal_test || exit 1"]
+      start_period: 30s
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 10
     profiles:
       - ag
 

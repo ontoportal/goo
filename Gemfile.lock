@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/ncbo/sparql-client.git
-  revision: 55e7dbf858eb571c767bc67868f9af61663859cb
+  revision: 1657f0dd69fd4b522d3549a6848670175f5e98cc
   branch: develop
   specs:
     sparql-client (1.0.1)
@@ -16,6 +16,7 @@ PATH
       pry
       rdf (= 1.0.8)
       redis
+      request_store
       rest-client
       rsolr
       sparql-client
@@ -52,10 +53,10 @@ GEM
       domain_name (~> 0.5)
     i18n (0.9.5)
       concurrent-ruby (~> 1.0)
-    json_pure (2.7.1)
+    json_pure (2.7.2)
     macaddr (1.7.2)
       systemu (~> 2.6.5)
-    method_source (1.0.0)
+    method_source (1.1.0)
     mime-types (3.5.2)
       mime-types-data (~> 3.2015)
     mime-types-data (3.2024.0305)
@@ -68,8 +69,8 @@ GEM
     pry (0.14.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
-    public_suffix (5.0.4)
-    rack (2.2.8.1)
+    public_suffix (5.0.5)
+    rack (2.2.9)
     rack-accept (0.4.5)
       rack (>= 0.4)
     rack-post-body-to-params (0.1.8)
@@ -77,20 +78,22 @@ GEM
     rack-protection (3.2.0)
       base64 (>= 0.1.0)
       rack (~> 2.2, >= 2.2.4)
-    rake (13.1.0)
+    rake (13.2.1)
     rdf (1.0.8)
       addressable (>= 2.2)
-    redis (5.1.0)
-      redis-client (>= 0.17.0)
-    redis-client (0.21.0)
+    redis (5.2.0)
+      redis-client (>= 0.22.0)
+    redis-client (0.22.1)
       connection_pool
+    request_store (1.6.0)
+      rack (>= 1.4)
     rest-client (2.1.0)
       http-accept (>= 1.7.0, < 2.0)
       http-cookie (>= 1.0.2, < 2.0)
       mime-types (>= 1.16, < 4.0)
       netrc (~> 0.8)
     rexml (3.2.6)
-    rsolr (2.5.0)
+    rsolr (2.6.0)
       builder (>= 2.1.2)
       faraday (>= 0.9, < 3, != 2.0.0)
     ruby2_keywords (0.0.5)
@@ -120,7 +123,8 @@ GEM
       macaddr (~> 1.0)
 
 PLATFORMS
-  ruby
+  x86_64-darwin-21
+  x86_64-darwin-23
   x86_64-linux
 
 DEPENDENCIES

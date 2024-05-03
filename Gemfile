@@ -6,6 +6,8 @@ gem "activesupport"
 gem "cube-ruby", require: "cube"
 gem "rake"
 gem "uuid"
+gem 'sparql-client', github: 'ncbo/sparql-client', branch: 'develop'
+
 
 group :test do
   gem "minitest", '< 5.0'
@@ -21,4 +23,3 @@ group :profiling do
   gem "thin"
 end
 
-gem 'sparql-client', github: 'ncbo/sparql-client', branch: 'develop'
