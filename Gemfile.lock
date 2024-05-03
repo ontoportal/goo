@@ -1,7 +1,7 @@
 GIT
   remote: https://github.com/ncbo/sparql-client.git
-  revision: 1657f0dd69fd4b522d3549a6848670175f5e98cc
-  branch: develop
+  revision: e89c26aa96f184dbe9b52d51e04fb3d9ba998dbc
+  branch: master
   specs:
     sparql-client (1.0.1)
       json_pure (>= 1.4)
@@ -85,7 +85,7 @@ GEM
       redis-client (>= 0.22.0)
     redis-client (0.22.1)
       connection_pool
-    request_store (1.6.0)
+    request_store (1.7.0)
       rack (>= 1.4)
     rest-client (2.1.0)
       http-accept (>= 1.7.0, < 2.0)
@@ -123,6 +123,7 @@ GEM
       macaddr (~> 1.0)
 
 PLATFORMS
+  arm64-darwin-22
   x86_64-darwin-21
   x86_64-darwin-23
   x86_64-linux
