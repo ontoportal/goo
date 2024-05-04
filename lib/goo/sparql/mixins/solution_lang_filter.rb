@@ -56,7 +56,7 @@ module Goo
           end
 
           if requested_lang.eql?(:ALL) || requested_lang.is_a?(Array)
-            language = "@none" if no_lang?(language)
+            language = :none if no_lang?(language)
             store_objects_by_lang(model.id, predicate, value, language)
           end
         end
@@ -85,9 +85,9 @@ module Goo
         def group_by_lang(values)
           return values.to_a if values.all?{|x| x.is_a?(RDF::URI) || !x.respond_to?(:language) }
 
-          values = values.group_by { |x| x.respond_to?(:language) && x.language ? x.language.to_s.downcase.to_sym : "@none" }
+          values = values.group_by { |x| x.respond_to?(:language) && x.language ? x.language.to_s.downcase.to_sym : :none }
 
-          no_lang = values["@none"] || []
+          no_lang = values[:none] || []
           return no_lang if !no_lang.empty? && no_lang.all? { |x| x.respond_to?(:plain?) && !x.plain? }
 
           values
@@ -113,7 +113,7 @@ module Goo
 
         def store_objects_by_lang(id, predicate, object, language)
           # store objects in this format: [id][predicate][language] = [objects]
-          return if requested_lang.is_a?(Array) && !requested_lang.include?(language.upcase) && !language.eql?('@none')
+          return if requested_lang.is_a?(Array) && !requested_lang.include?(language.upcase) && !language.eql?(:none)
 
           language_key = language.downcase
 

@@ -60,7 +60,7 @@ class TestLanguageFilter < MiniTest::Unit::TestCase
   def test_multiple_languages
     # select all languages
     RequestStore.store[:requested_lang] = :all
-    expected_result = {:en=>["John Doe"], :fr=>["Jean Dupont"], "@none"=>["Juan Pérez"]}
+    expected_result = {:en=>["John Doe"], :fr=>["Jean Dupont"], :none=>["Juan Pérez"]}
     person = ExamplePerson.find(@@person_id).in(@@db).include(:label).first
     assert_equal expected_result.values.flatten.sort, person.label.sort
 
@@ -88,7 +88,7 @@ class TestLanguageFilter < MiniTest::Unit::TestCase
     assert_equal ["Jean Dupont", "Juan Pérez"].sort, person.label.sort
 
 
-    expected_result = {:en=>["John Doe"], :fr=>["Jean Dupont"], "@none"=>["Juan Pérez"]}
+    expected_result = {:en=>["John Doe"], :fr=>["Jean Dupont"], :none=>["Juan Pérez"]}
     RequestStore.store[:requested_lang] = [:en, :fr]
     person = ExamplePerson.find(@@person_id).in(@@db).include(:unmapped).first
     ExamplePerson.map_attributes(person)
