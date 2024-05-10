@@ -81,26 +81,27 @@ module Goo
       end
 
       def append_triples_no_bnodes(graph,file_path,mime_type_in)
-        bnodes_filter = nil
         dir = nil
         response = nil
         if file_path.end_with?('ttl')
           bnodes_filter = file_path
+          file = File.foreach(bnodes_filter)
+          response = execute_append_request graph, file, mime_type_in
         else
           bnodes_filter, dir = bnodes_filter_file(file_path, mime_type_in)
-        end
-        chunk_lines = 500_000 # number of line
-        file = File.foreach(bnodes_filter)
-        lines = []
-        file.each_entry do |line|
-          lines << line
-          if lines.size == chunk_lines
-            response = execute_append_request graph, lines.join, mime_type_in
-            lines.clear
+          chunk_lines = 500_000 # number of line
+          file = File.foreach(bnodes_filter)
+          lines = []
+          file.each_entry do |line|
+            lines << line
+            if lines.size == chunk_lines
+              response = execute_append_request graph, lines.join, mime_type_in
+              lines.clear
+            end
           end
+          response = execute_append_request graph, lines.join, mime_type_in unless lines.empty?
         end
 
-        response = execute_append_request graph, lines.join, mime_type_in unless lines.empty?
 
 
         unless dir.nil?
