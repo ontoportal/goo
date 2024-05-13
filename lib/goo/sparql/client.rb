@@ -85,7 +85,7 @@ module Goo
         response = nil
         if file_path.end_with?('ttl')
           bnodes_filter = file_path
-          file = File.foreach(bnodes_filter)
+          file = File.read(bnodes_filter)
           response = execute_append_request graph, file, mime_type_in
         else
           bnodes_filter, dir = bnodes_filter_file(file_path, mime_type_in)
