@@ -357,7 +357,9 @@ module Goo
                                 filter_graphs, filter_operations,
                                 internal_variables, inspected_patterns, collection)
           else
+        #??  if !filter_operation.value.instance_of?(Goo::Filter)
             case filter_operation.operator
+
             when  :unbound
               filter_operations << "!BOUND(?#{filter_var.to_s})"
               return :optional
@@ -369,7 +371,6 @@ module Goo
               if  filter_operation.value.is_a?(String)
                 filter_operations << "REGEX(STR(?#{filter_var.to_s}) , \"#{filter_operation.value.to_s}\", \"i\")"
               end
-
             else
               value = RDF::Literal.new(filter_operation.value)
               if filter_operation.value.is_a? String
