@@ -10,7 +10,7 @@ services:
       retries: 30
 
   solr-ut:
-    image: ontoportal/solr-ut:0.2.0
+    image: ontoportal/solr-ut:0.1.0
     ports:
       - 8983:8983
     healthcheck:
