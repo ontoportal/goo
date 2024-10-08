@@ -1,0 +1,9 @@
+<http://data.bioontology.org/resource1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.bioontology.org/Person> .
+<http://data.bioontology.org/resource1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> "John Doe"@en .
+<http://data.bioontology.org/resource1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> "Jean Dupont"@fr .
+<http://data.bioontology.org/resource1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> "Juan Pérez" .
+<http://data.bioontology.org/resource2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.bioontology.org/Place> .
+<http://data.bioontology.org/resource2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> "Paris"@en .
+<http://data.bioontology.org/resource2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> "Paris"@fr .
+<http://data.bioontology.org/resource2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> "París"@es .
+<http://data.bioontology.org/resource2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#label> "Berlin" .
