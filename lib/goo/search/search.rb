@@ -65,14 +65,6 @@ module Goo
       def indexBatch(collection, connection_name=:main)
         docs = Array.new
         collection.each do |c|
-
-
-
-          # c.bring(:prefLabel)
-          # binding.pry if c.prefLabel == "biodiversity"
-
-
-
           docs << c.indexable_object
         end
         Goo.search_connection(connection_name).add(docs)

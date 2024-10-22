@@ -171,15 +171,11 @@ module Goo
         end
 
         def get_language(languages)
-          languages = portal_language if languages.nil? || languages.empty?
+          languages = Goo.portal_language if languages.nil? || languages.empty?
           lang = languages
           lang = languages.to_s.split(',') unless lang.is_a?(Array)
           lang = lang.map { |l| l.upcase.to_sym }
           lang.length == 1 ? lang.first : lang
-        end
-
-        def portal_language
-          Goo.main_languages.first
         end
 
       end
