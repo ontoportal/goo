@@ -247,11 +247,11 @@ module Goo
             if object.is_a?(Hash)
               object = object.transform_values{|values| Array(values).map{|o|o.is_a?(RDF::URI) ? o : o.object}}
             else
-              object = object.map {|o| o.is_a?(RDF::URI) ? o : o.object}
+              object = Array(object).map {|o| o.is_a?(RDF::URI) ? o : o.object}
             end
 
             if klass.range(attr)
-              object = object.map { |o|
+              object = Array(object).map { |o|
                 o.is_a?(RDF::URI) ? klass.range_object(attr,o) : o }
             end
 
