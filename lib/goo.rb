@@ -265,6 +265,10 @@ module Goo
     return @@sparql_backends[name][:backend_name]
   end
 
+  def self.portal_language
+    @@main_languages.first.downcase.to_sym
+  end
+
   def self.id_prefix
     return @@id_prefix
   end
