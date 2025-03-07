@@ -6,7 +6,7 @@ gem "activesupport"
 gem "cube-ruby", require: "cube"
 gem "rake"
 gem "uuid"
-gem 'sparql-client', github: 'ncbo/sparql-client', branch: 'master'
+gem 'sparql-client', github: 'ncbo/sparql-client', branch: 'develop'
 
 
 group :test do
