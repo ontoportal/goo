@@ -3,7 +3,7 @@ module Goo
     class SafeText < ValidatorBase
       include Validator
 
-      SAFE_TEXT_REGEX = /\A[\p{L}\p{N} .,'\-@()&!$%\/\[\]:;]+\z/u.freeze
+      SAFE_TEXT_REGEX = /\A[\p{L}\p{N} .,'\-@()&!$%\/\[\]:;*+=?#^_{}|~"]+\z/u.freeze
       DISALLOWED_UNICODE = /[\u0000-\u001F\u007F\u00A0\u200B-\u200F\u2028-\u202F\u202E\u2066-\u2069]/u.freeze
 
       key :safe_text
