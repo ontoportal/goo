@@ -165,7 +165,7 @@ class TestValidators < MiniTest::Unit::TestCase
     m.description = "This string has a tab\tcharacter"
     refute m.valid?
 
-    m.description = "Price is #1!"
+    m.description = "Price is < than $1!"
     refute m.valid?
 
     m.description = "This has\u200Bhidden content"
