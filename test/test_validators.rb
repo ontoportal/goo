@@ -159,6 +159,9 @@ class TestValidators < MiniTest::Unit::TestCase
     m.description = "I am a valid description"
     assert m.valid?
 
+    m.description = "临床表现"
+    assert m.valid?
+
     m.description = "This string contains\na newline"
     refute m.valid?
 
