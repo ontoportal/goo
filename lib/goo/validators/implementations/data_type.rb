@@ -1,9 +1,12 @@
+require 'uri'
+
 module Goo
   module Validators
     class DataType < ValidatorBase
       include Validator
+      MAX_URL_LENGTH = 2048
 
-      keys [:list, :uri, :string, :integer, :boolean, :date_time, :float]
+      keys %i[list uri url string integer boolean date_time float]
 
       error_message ->(obj) {
         if @value.kind_of? Array
@@ -23,25 +26,22 @@ module Goo
         @type = type
       end
 
-
-
       def enforce_type(type, value)
         return true if value.nil?
 
         if type == :boolean
-          self.enforce_type_boolean(value)
+          enforce_type_boolean(value)
         elsif type.eql?(:uri) || type.eql?(RDF::URI)
-          self.enforce_type_uri(value)
-        elsif type.eql?(:uri) || type.eql?(Array)
-          value.is_a? Array
+          enforce_type_uri(value)
+        elsif type.eql?(:url)
+          enforce_type_url(value)
+        elsif type.eql?(Array)
+          value.is_a?(Array)
+        elsif value.is_a?(Array)
+          value.all? { |x| x.is_a?(type) }
         else
-          if value.is_a? Array
-             value.select{|x| !x.is_a?(type)}.empty?
-          else
-             value.is_a? type
-          end
+          value.is_a?(type)
         end
-
       end
 
       def enforce_type_uri(value)
@@ -52,7 +52,23 @@ module Goo
         else
           is_a_uri?(value)
         end
+      end
 
+      
+      def enforce_type_url(value)
+        return true if value.nil?
+        return value.all? { |x| url?(x) } if value.is_a?(Array)
+        url?(value)
+      end
+
+      def enforce_type_url1(value)
+        return true if value.nil?
+
+        if value.is_a? Array
+          value.reject { |x| url?(x) }.empty?
+        else
+          url?(value)
+        end
       end
 
       def enforce_type_boolean(value)
@@ -70,6 +86,17 @@ module Goo
       def is_a_uri?(value)
         value.is_a?(RDF::URI) && value.valid?
       end
+
+      def url?(val)
+        s = val.to_s
+        return false if s.empty? || s.length > MAX_URL_LENGTH
+
+        uri = URI.parse(s)
+        uri.is_a?(URI::HTTP) && uri.host && !uri.host.empty?
+      rescue URI::InvalidURIError
+        false
+      end
+
     end
   end
 end
