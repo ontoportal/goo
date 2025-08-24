@@ -54,21 +54,10 @@ module Goo
         end
       end
 
-      
       def enforce_type_url(value)
         return true if value.nil?
         return value.all? { |x| url?(x) } if value.is_a?(Array)
         url?(value)
-      end
-
-      def enforce_type_url1(value)
-        return true if value.nil?
-
-        if value.is_a? Array
-          value.reject { |x| url?(x) }.empty?
-        else
-          url?(value)
-        end
       end
 
       def enforce_type_boolean(value)
@@ -87,8 +76,8 @@ module Goo
         value.is_a?(RDF::URI) && value.valid?
       end
 
-      def url?(val)
-        s = val.to_s
+      def url?(value)
+        s = value.to_s
         return false if s.empty? || s.length > MAX_URL_LENGTH
 
         uri = URI.parse(s)
@@ -96,7 +85,6 @@ module Goo
       rescue URI::InvalidURIError
         false
       end
-
     end
   end
 end
