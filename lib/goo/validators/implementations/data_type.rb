@@ -8,18 +8,15 @@ module Goo
 
       keys %i[list uri url string integer boolean date_time float]
 
-      error_message ->(obj) {
-        if @value.kind_of? Array
-          return "All values in attribute `#{@attr}` must be `#{@type}`"
+      error_message ->(_obj) {
+        if @value.is_a?(Array)
+          "All values in attribute `#{@attr}` must be `#{@type}`"
         else
-          return "Attribute `#{@attr}` with the value `#{@value}` must be `#{@type}`"
-
+          "Attribute `#{@attr}` with the value `#{@value}` must be `#{@type}`"
         end
       }
 
-      validity_check -> (obj) do
-        self.enforce_type(@type, @value)
-      end
+      validity_check ->(_obj) { enforce_type(@type, @value) }
 
       def initialize(inst, attr, value, type)
         super(inst, attr, value)
@@ -28,51 +25,44 @@ module Goo
 
       def enforce_type(type, value)
         return true if value.nil?
+        return enforce_type_boolean(value) if type == :boolean
+        return enforce_type_uri(value)     if [:uri, RDF::URI].include?(type)
+        return enforce_type_url(value)     if type == :url
+        return value.is_a?(Array)          if type == Array
+        return value.all? { |x| x.is_a?(type) } if value.is_a?(Array)
 
-        if type == :boolean
-          enforce_type_boolean(value)
-        elsif type.eql?(:uri) || type.eql?(RDF::URI)
-          enforce_type_uri(value)
-        elsif type.eql?(:url)
-          enforce_type_url(value)
-        elsif type.eql?(Array)
-          value.is_a?(Array)
-        elsif value.is_a?(Array)
-          value.all? { |x| x.is_a?(type) }
-        else
-          value.is_a?(type)
-        end
+        value.is_a?(type)
       end
 
       def enforce_type_uri(value)
-        return true  if value.nil?
+        return true if value.nil?
+        return value.all? { |x| uri?(x) } if value.is_a?(Array)
 
-        if value.kind_of? Array
-          value.select { |x| !is_a_uri?(x) }.empty?
-        else
-          is_a_uri?(value)
-        end
+        uri?(value)
       end
 
       def enforce_type_url(value)
         return true if value.nil?
         return value.all? { |x| url?(x) } if value.is_a?(Array)
+
         url?(value)
       end
 
       def enforce_type_boolean(value)
-        if value.kind_of? Array
-          value.select { |x| !is_a_boolean?(x) }.empty?
+        if value.is_a?(Array)
+          value.all? { |x| boolean?(x) }
         else
-          is_a_boolean?(value)
+          boolean?(value)
         end
       end
 
-      def is_a_boolean?(value)
-         (value.class == TrueClass) || (value.class == FalseClass)
+      private
+
+      def boolean?(value)
+        value.instance_of?(TrueClass) || value.instance_of?(FalseClass)
       end
 
-      def is_a_uri?(value)
+      def uri?(value)
         value.is_a?(RDF::URI) && value.valid?
       end
 
