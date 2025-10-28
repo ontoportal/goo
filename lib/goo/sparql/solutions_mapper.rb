@@ -43,6 +43,8 @@ module Goo
           select.prefix('franzOption_allowCachingResults: <franz:yes>')
         end
 
+        select.options[:bypass_cache] = @options[:bypass_cache] if @options.has_key?(:bypass_cache)
+
         # for troubleshooting specific queries (write 1 of 3)
         # ont_to_parse = 'OAE'
         # sub_id = 171
