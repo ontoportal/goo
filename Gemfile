@@ -16,7 +16,7 @@ group :test do
   gem 'rubocop-minitest', require: false
   gem 'simplecov'
   gem 'simplecov-cobertura' # for submitting code coverage results to codecov.io
-  gem 'ontoportal_testkit', github: 'agroportal/ontoportal_testkit', branch: 'main'
+  gem 'ontoportal_testkit', github: 'ontoportal/ontoportal_testkit', branch: 'main'
 end
 
 group :profiling do

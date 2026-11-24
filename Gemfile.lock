@@ -1,5 +1,5 @@
 GIT
-  remote: https://github.com/agroportal/ontoportal_testkit.git
+  remote: https://github.com/ontoportal/ontoportal_testkit.git
   revision: 3f670c9b3072a3550ce706bc9283bf09a3cd9c45
   branch: main
   specs:
